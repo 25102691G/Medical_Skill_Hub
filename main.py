@@ -17,6 +17,7 @@ from diagnosis.agents.digestive_diagnosis_agent import (
 from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
 from diagnosis.agents.phenotype_extraction_agent import build_phenotype_extraction_agent
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
+from diagnosis.tools.disease_normalization_tool import normalize_disease_name_text
 from schemas import DiagnosisResult, PhenotypeExtractionResult, TriageResult
 
 
@@ -42,10 +43,19 @@ def _print_debug_section(title: str, model_object: object) -> None:
     print(_as_json(model_object), file=sys.stderr)
 
 
+def _normalize_final_diagnosis_result(
+    diagnosis_result: DiagnosisResult,
+    *,
+    debug: bool = False,
+) -> None:
+    for item in diagnosis_result.topk_diagnoses:
+        item.disease = normalize_disease_name_text(item.disease, debug=debug)
+
+
 def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
     # 1.1 Phenotype extraction stage:
     # phenotype_agent = build_phenotype_extraction_agent()
-    # phenotype_prompt = f"Patient information:\n{case_text}"
+    # phenotype_prompt = f"Patient information:\n{case_text}\n\nWrite every output field in English."
     # phenotype_result: PhenotypeExtractionResult = Runner.run_sync(
     #     phenotype_agent,
     #     phenotype_prompt,
@@ -55,7 +65,10 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
 
     # 1.2 Search planning stage:
     search_planning_agent = build_search_planning_agent()
-    search_planning_prompt = f"Patient information:\n{case_text}"
+    search_planning_prompt = (
+        f"Patient information:\n{case_text}\n\n"
+        "Write every output field in English."
+    )
     search_planning_result = Runner.run_sync(
         search_planning_agent,
         search_planning_prompt,
@@ -67,9 +80,11 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Case information:\n{case_text}\n\n"
-        f"Search planning result:\n{_as_json(search_planning_result)}"
+        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
+        "Write every output field in English."
     )
-    knowledge_search_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    # knowledge_search_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    knowledge_search_result = ""
     if debug:
         _print_debug_section("Knowledge Search Result", knowledge_search_result)
 
@@ -79,7 +94,8 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         # f"Case information:\n{case_text}\n\n"
         f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
         # f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"{TRIAGE_INSTRUCTIONS}"
+        f"{TRIAGE_INSTRUCTIONS}\n\n"
+        "Write every output field in English."
     )
     triage_result = Runner.run_sync(triage_agent, triage_prompt).final_output
     if debug:
@@ -95,7 +111,8 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
         f"Triage result:\n{_as_json(triage_result)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
-        f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
+        f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
+        "Write every output field in English."
     )
     run_config = None
     if True:
@@ -109,6 +126,7 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         diagnosis_prompt,
         run_config=run_config,
     ).final_output
+    # _normalize_final_diagnosis_result(diagnosis_result, debug=debug)
     if debug:
         _print_debug_section("Final Diagnosis Result", diagnosis_result)
     return diagnosis_result

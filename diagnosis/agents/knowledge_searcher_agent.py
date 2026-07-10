@@ -19,6 +19,7 @@ Task:
 5. Clearly distinguish Arxiv results from PubMed results.
 6. Summarize what the retrieved literature may support, and state when the retrieved results are insufficient.
 7. The output is for research assistance only and cannot replace clinical diagnosis or treatment decisions.
+8. Write all search summaries, extracted evidence, and conclusions in English.
 """.strip()
 
 
@@ -51,7 +52,7 @@ def _retrieve_documents(retriever: Any, query: str) -> list[Any]:
     return list(retriever.get_relevant_documents(query))
 
 
-# TODO：后续判断是否需要做Summarize_Agent
+# TODO: Decide later whether a Summarize_Agent is needed.
 @function_tool
 def arxiv_search(case_info: str, max_docs: int = 5) -> dict[str, Any]:
     """

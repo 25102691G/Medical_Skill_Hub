@@ -106,7 +106,7 @@ print(result.final_output)
 
 ## Disease Normalization Tool
 
-`diagnosis/tools/disease_normalization_tool.py` 是独立的疾病名标准化 FunctionTool，当前不接入 `main.py` 主流程。它使用 `FremyCompany/BioLORD-2023-C` 对输入疾病名和 ICD10 诊断名称编码，并按余弦相似度返回最接近的 ICD10 诊断候选。
+`diagnosis/tools/disease_normalization_tool.py` 是疾病名标准化工具，已接入最终诊断阶段。`final_diagnosis` agent 可以调用 `normalize_disease_name` FunctionTool；同时 `main.py` 会在最终诊断输出后，对 `topk_diagnoses[*].disease` 逐个调用 `normalize_disease_name_text` 做强制标准化。它输入一个诊断疾病名，使用 `FremyCompany/BioLORD-2023-C` 与 ICD10 诊断名称做语义匹配，并输出最接近的标准诊断疾病名。
 
 该 tool 依赖 `database/icd10_id2diagnose.json`。首次运行时会生成 ICD10 诊断名称 embedding 缓存：
 
@@ -120,6 +120,14 @@ database/icd10_diagnose_embeddings.pt
 from diagnosis.tools.disease_normalization_tool import normalize_disease_name
 
 tools = [normalize_disease_name]
+```
+
+主流程后处理示例：
+
+```python
+from diagnosis.tools.disease_normalization_tool import normalize_disease_name_text
+
+standard_name = normalize_disease_name_text("克罗恩病")
 ```
 
 ## Similar Case Retrieval Agent
