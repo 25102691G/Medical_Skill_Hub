@@ -5,3 +5,4 @@ __pycache__/
 .env.*
 /skills
 AGENTS.md
+/database

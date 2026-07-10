@@ -9,13 +9,14 @@ from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
 
 from config import DIAGNOSIS_TOPK
-from diagnosis_agents.digestive_diagnosis_agent import (
+from diagnosis.agents.digestive_diagnosis_agent import (
     SKILLS_DIR,
     build_digestive_diagnosis_agent,
     TRIAGE_INSTRUCTIONS
 )
-from diagnosis_agents.knowledge_searcher_agent import build_knowledge_searcher_agent
-from diagnosis_agents.phenotype_extraction_agent import build_phenotype_extraction_agent
+from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
+from diagnosis.agents.phenotype_extraction_agent import build_phenotype_extraction_agent
+from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from schemas import DiagnosisResult, PhenotypeExtractionResult, TriageResult
 
 
@@ -42,35 +43,47 @@ def _print_debug_section(title: str, model_object: object) -> None:
 
 
 def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
-    # 1. Phenotype extraction stage:
-    phenotype_agent = build_phenotype_extraction_agent()
-    phenotype_prompt = f"Patient information:\n{case_text}"
-    phenotype_result: PhenotypeExtractionResult = Runner.run_sync(
-        phenotype_agent,
-        phenotype_prompt,
+    # 1.1 Phenotype extraction stage:
+    # phenotype_agent = build_phenotype_extraction_agent()
+    # phenotype_prompt = f"Patient information:\n{case_text}"
+    # phenotype_result: PhenotypeExtractionResult = Runner.run_sync(
+    #     phenotype_agent,
+    #     phenotype_prompt,
+    # ).final_output
+    # if debug:
+    #     _print_debug_section("Phenotype Extraction Result", phenotype_result)
+
+    # 1.2 Search planning stage:
+    search_planning_agent = build_search_planning_agent()
+    search_planning_prompt = f"Patient information:\n{case_text}"
+    search_planning_result = Runner.run_sync(
+        search_planning_agent,
+        search_planning_prompt,
     ).final_output
     if debug:
-        _print_debug_section("Phenotype Extraction Result", phenotype_result)
+        _print_debug_section("Search Planning Result", search_planning_result)
 
     # 2. Knowledge retrieval stage:
-    # knowledge_agent = build_knowledge_searcher_agent()
-    # knowledge_prompt = (
-    #     f"Case information:\n{case_text}\n\n"
-    #     f"Extracted phenotype keywords:\n{_as_json(phenotype_result)}"
-    # )
-    # knowledge_search_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
-    # if debug:
-    #     _print_debug_section("Knowledge Search Result", knowledge_search_result)
+    knowledge_agent = build_knowledge_searcher_agent()
+    knowledge_prompt = (
+        f"Case information:\n{case_text}\n\n"
+        f"Search planning result:\n{_as_json(search_planning_result)}"
+    )
+    knowledge_search_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    if debug:
+        _print_debug_section("Knowledge Search Result", knowledge_search_result)
 
     # 3. Triage stage:
     triage_agent = build_digestive_diagnosis_agent(TriageResult, phase="triage")
     triage_prompt = (
-        f"Case information:\n{case_text}\n\n"
-        f"Extracted phenotype keywords:\n{_as_json(phenotype_result)}\n\n"
-        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
+        # f"Case information:\n{case_text}\n\n"
+        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
+        # f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"{TRIAGE_INSTRUCTIONS}"
     )
     triage_result = Runner.run_sync(triage_agent, triage_prompt).final_output
+    if debug:
+        _print_debug_section("Triage Result", triage_result)
 
     # 4. Final diagnosis stage:
     diagnosis_agent = build_digestive_diagnosis_agent(
@@ -78,8 +91,8 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         phase="final_diagnosis",
     )
     diagnosis_prompt = (
-        f"Case information:\n{case_text}\n\n"
-        f"Extracted phenotype keywords:\n{_as_json(phenotype_result)}\n\n"
+        # f"Case information:\n{case_text}\n\n"
+        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
         f"Triage result:\n{_as_json(triage_result)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
@@ -97,7 +110,7 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         run_config=run_config,
     ).final_output
     if debug:
-    _print_debug_section("Final Diagnosis Result", diagnosis_result)
+        _print_debug_section("Final Diagnosis Result", diagnosis_result)
     return diagnosis_result
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -37,3 +39,33 @@ class DiagnosisResult(BaseModel):
     topk_diagnoses: list[DiagnosisItem] = Field(description="TopK 疑似诊断")
     summary: str = Field(description="简要诊断分析总结")
     safety_note: str = Field(description="医疗安全提示")
+
+
+class SearchQueryItem(BaseModel):
+    intent: Literal[
+        "acute_problem",
+        "most_likely_disease",
+        "diagnostic_criteria_or_case_features",
+        "key_differential_diagnosis",
+    ] = Field(description="检索意图：当前急性问题、最可能的疾病、诊断标准或病例特征、关键鉴别诊断")
+    query: str = Field(description="医学文献检索查询词")
+
+
+class SearchPlanningResult(BaseModel):
+    problem_representation: str = Field(description="当前最重要临床问题的简要表述")
+    hypotheses: list[str] = Field(min_length=3, max_length=5, description="3-5 个主要候选诊断")
+    search_queries: list[SearchQueryItem] = Field(max_length=5, description="最多 5 条医学文献检索查询")
+
+
+class SimilarCaseDiagnosisItem(BaseModel):
+    source_query: SearchQueryItem = Field(description="用于相似病例检索的原始查询")
+    diagnosis: str = Field(description="该查询对应的相似病例诊断")
+    matched_case_summary: str = Field(description="相似病例的简要摘要；如未接入真实病例库，应说明仅基于查询归纳")
+    supporting_reason: str = Field(description="为什么该查询对应这个诊断")
+    confidence: int = Field(ge=0, le=100, description="诊断匹配置信度百分比整数，范围 0-100")
+
+
+class SimilarCaseRetrievalResult(BaseModel):
+    items: list[SimilarCaseDiagnosisItem] = Field(description="每条检索查询对应的相似病例诊断结果")
+    summary: str = Field(description="相似病例诊断结果的整体总结")
+    limitations: list[str] = Field(description="当前相似病例检索结果的限制")

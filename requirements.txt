@@ -4,3 +4,5 @@ python-dotenv
 langchain-community
 arxiv
 xmltodict
+torch
+transformers

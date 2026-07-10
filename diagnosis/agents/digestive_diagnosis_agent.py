@@ -14,29 +14,6 @@ from config import OPENAI_MODEL
 
 SKILLS_DIR = Path(__file__).resolve().parents[1] / "skills"
 
-DISEASE_SKILL_REGISTRY: dict[str, dict[str, object]] = {
-    "克罗恩病": {
-        "skill_name": "china-crohns-guideline-2023",
-        "aliases": ["克罗恩病", "Crohn病", "Crohn disease", "Crohn's disease", "CD"],
-    },
-    "溃疡性结肠炎": {
-        "skill_name": "china-ulcerative-colitis-guideline-2023",
-        "aliases": ["溃疡性结肠炎", "ulcerative colitis", "UC"],
-    },
-    "肠白塞病": {
-        "skill_name": "intestinal-behcet-consensus-2022",
-        "aliases": ["肠白塞病", "肠型白塞病", "肠型贝赫切特综合征", "肠贝赫切特病", "intestinal Behcet"],
-    },
-    "肠结核": {
-        "skill_name": "intestinal-tuberculosis-diagnosis-treatment",
-        "aliases": ["肠结核", "intestinal tuberculosis", "ITB"],
-    },
-    "淋巴瘤": {
-        "skill_name": "china-lymphoma-guideline-2022",
-        "aliases": ["淋巴瘤", "lymphoma"],
-    },
-}
-
 BASE_INSTRUCTIONS = """
 You are a specialist in the field of Gastroenterology.
 
@@ -66,19 +43,6 @@ DIAGNOSIS_WITH_SKILLS_INSTRUCTIONS = """
 
 如 skill 资料未检索到明确依据，不要编造推荐意见编号、证据等级或推荐强度。
 """.strip()
-
-
-def resolve_skill_names_for_diseases(disease_names: list[str]) -> list[str]:
-    matched_skill_names: list[str] = []
-    for disease_name in disease_names:
-        normalized_disease_name = disease_name.lower()
-        for item in DISEASE_SKILL_REGISTRY.values():
-            skill_name = str(item["skill_name"])
-            aliases = [str(alias).lower() for alias in item["aliases"]]
-            if any(alias in normalized_disease_name for alias in aliases):
-                if (SKILLS_DIR / skill_name).is_dir() and skill_name not in matched_skill_names:
-                    matched_skill_names.append(skill_name)
-    return matched_skill_names
 
 
 def _build_guideline_skill_capability() -> Skills:
