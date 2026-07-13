@@ -148,14 +148,7 @@ from diagnosis.agents.similar_case_retrieval_agent import (
     build_similar_case_retrieval_agent,
     build_similar_case_retrieval_prompt,
 )
-from schemas import SearchQueryItem
-
-search_queries = [
-    SearchQueryItem(
-        intent="most_likely_disease",
-        query="Crohn disease ileal ulcers chronic diarrhea weight loss diagnosis",
-    )
-]
+search_queries = ["Crohn disease ileal ulcers chronic diarrhea weight loss diagnosis"]
 
 agent = build_similar_case_retrieval_agent()
 prompt = build_similar_case_retrieval_prompt(search_queries)

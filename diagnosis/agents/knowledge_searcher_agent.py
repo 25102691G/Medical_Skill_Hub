@@ -9,7 +9,7 @@ from config import OPENAI_MODEL
 
 
 KNOWLEDGE_SEARCHER_INSTRUCTIONS = """
-You are a Knowledge Searcher agent for medical case analysis.
+You are a clinical Knowledge search specialist in gastroenterology.
 
 Task:
 1. Read the provided patient case information.
@@ -52,7 +52,6 @@ def _retrieve_documents(retriever: Any, query: str) -> list[Any]:
     return list(retriever.get_relevant_documents(query))
 
 
-# TODO: Decide later whether a Summarize_Agent is needed.
 @function_tool
 def arxiv_search(case_info: str, max_docs: int = 5) -> dict[str, Any]:
     """

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
 
@@ -40,24 +38,14 @@ class GuidelineSearchResult(BaseModel):
     limitations: list[str] = Field(description="Limitations of the guideline skill search")
 
 
-class SearchQueryItem(BaseModel):
-    intent: Literal[
-        "acute_problem",
-        "most_likely_disease",
-        "diagnostic_criteria_or_case_features",
-        "key_differential_diagnosis",
-    ] = Field(description="Search intent: current acute problem, most likely disease, diagnostic criteria or case features, or key differential diagnosis")
-    query: str = Field(description="Medical literature search query")
-
-
 class SearchPlanningResult(BaseModel):
     problem_representation: str = Field(description="Brief representation of the most important current clinical problem")
-    hypotheses: list[str] = Field(min_length=3, max_length=5, description="3-5 major candidate diagnoses")
-    search_queries: list[SearchQueryItem] = Field(max_length=5, description="Up to 5 medical literature search queries")
+    hypotheses: list[str] = Field(max_length=5, description="Up to 5 major candidate diagnoses")
+    search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
 
 
 class SimilarCaseDiagnosisItem(BaseModel):
-    source_query: SearchQueryItem = Field(description="Original query used for similar-case retrieval")
+    source_query: str = Field(description="Original query used for similar-case retrieval")
     diagnosis: str = Field(description="Similar-case diagnosis corresponding to this query")
     matched_case_summary: str = Field(description="Brief summary of the similar case; if no real case database is connected, state that this is inferred only from the query")
     supporting_reason: str = Field(description="Why this query corresponds to this diagnosis")
