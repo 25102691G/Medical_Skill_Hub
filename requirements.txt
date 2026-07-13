@@ -2,7 +2,7 @@ openai-agents
 pydantic
 python-dotenv
 langchain-community
-arxiv
 xmltodict
 torch
 transformers
+mineru[all]
