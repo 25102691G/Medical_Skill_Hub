@@ -12,13 +12,20 @@ from config import DIAGNOSIS_TOPK
 from diagnosis.agents.digestive_diagnosis_agent import (
     SKILLS_DIR,
     build_digestive_diagnosis_agent,
-    TRIAGE_INSTRUCTIONS
 )
+from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
 from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
-from diagnosis.agents.phenotype_extraction_agent import build_phenotype_extraction_agent
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
-from diagnosis.tools.disease_normalization_tool import normalize_disease_name_text
-from schemas import DiagnosisResult, PhenotypeExtractionResult, TriageResult
+from diagnosis.agents.similar_case_retrieval_agent import (
+    build_similar_case_retrieval_agent,
+    build_similar_case_retrieval_prompt,
+)
+from schemas import (
+    DiagnosisResult,
+    DiagnosticJudgementResult,
+    SearchPlanningResult,
+    SimilarCaseRetrievalResult,
+)
 
 
 def _read_case_text(args: argparse.Namespace) -> str:
@@ -32,10 +39,20 @@ def _read_case_text(args: argparse.Namespace) -> str:
     return sys.stdin.read().strip()
 
 
+def _to_jsonable(value: object) -> object:
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if isinstance(value, list):
+        return [_to_jsonable(item) for item in value]
+    if isinstance(value, tuple):
+        return [_to_jsonable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _to_jsonable(item) for key, item in value.items()}
+    return value
+
+
 def _as_json(model_object: object) -> str:
-    if hasattr(model_object, "model_dump"):
-        return json.dumps(model_object.model_dump(), ensure_ascii=False, indent=2)
-    return json.dumps(model_object, ensure_ascii=False, indent=2)
+    return json.dumps(_to_jsonable(model_object), ensure_ascii=False, indent=2)
 
 
 def _print_debug_section(title: str, model_object: object) -> None:
@@ -43,93 +60,185 @@ def _print_debug_section(title: str, model_object: object) -> None:
     print(_as_json(model_object), file=sys.stderr)
 
 
-def _normalize_final_diagnosis_result(
-    diagnosis_result: DiagnosisResult,
+def _run_search_planning(
+    case_text: str,
     *,
+    previous_search_planning_result: SearchPlanningResult | None = None,
+    previous_diagnosis_result: DiagnosisResult | None = None,
+    diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
     debug: bool = False,
-) -> None:
-    for item in diagnosis_result.topk_diagnoses:
-        item.disease = normalize_disease_name_text(item.disease, debug=debug)
-
-
-def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
-    # 1.1 Phenotype extraction stage:
-    # phenotype_agent = build_phenotype_extraction_agent()
-    # phenotype_prompt = f"Patient information:\n{case_text}\n\nWrite every output field in English."
-    # phenotype_result: PhenotypeExtractionResult = Runner.run_sync(
-    #     phenotype_agent,
-    #     phenotype_prompt,
-    # ).final_output
-    # if debug:
-    #     _print_debug_section("Phenotype Extraction Result", phenotype_result)
-
-    # 1.2 Search planning stage:
+    round_index: int | None = None,
+) -> SearchPlanningResult:
     search_planning_agent = build_search_planning_agent()
     search_planning_prompt = (
         f"Patient information:\n{case_text}\n\n"
         "Write every output field in English."
     )
-    search_planning_result = Runner.run_sync(
+    if previous_search_planning_result and previous_diagnosis_result and diagnostic_judgement_result:
+        search_planning_prompt = (
+            f"Patient information:\n{case_text}\n\n"
+            f"Previous search planning result:\n{_as_json(previous_search_planning_result)}\n\n"
+            f"Previous diagnosis result:\n{_as_json(previous_diagnosis_result)}\n\n"
+            f"Diagnostic judgement result:\n{_as_json(diagnostic_judgement_result)}\n\n"
+            "The diagnostic judgement found that hypotheses were closer to the patient information "
+            "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
+            "diagnosis round while using only information present in the patient record. "
+            "Write every output field in English."
+        )
+
+    result = Runner.run_sync(
         search_planning_agent,
         search_planning_prompt,
     ).final_output
     if debug:
-        _print_debug_section("Search Planning Result", search_planning_result)
+        _print_debug_section(f"Search Planning Result - Round {round_index}", result)
+    return result
 
-    # 2. Knowledge retrieval stage:
+
+def _run_knowledge_search(
+    case_text: str,
+    search_planning_result: SearchPlanningResult,
+    *,
+    debug: bool = False,
+    round_index: int | None = None,
+) -> object:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Case information:\n{case_text}\n\n"
-        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
+        f"Search queries:\n{_as_json(search_planning_result.search_queries)}\n\n"
         "Write every output field in English."
     )
-    # knowledge_search_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
-    knowledge_search_result = ""
+    result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
     if debug:
-        _print_debug_section("Knowledge Search Result", knowledge_search_result)
+        _print_debug_section(f"Knowledge Search Result - Round {round_index}", result)
+    return result
 
-    # 3. Triage stage:
-    triage_agent = build_digestive_diagnosis_agent(TriageResult, phase="triage")
-    triage_prompt = (
-        # f"Case information:\n{case_text}\n\n"
-        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
-        # f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"{TRIAGE_INSTRUCTIONS}\n\n"
-        "Write every output field in English."
-    )
-    triage_result = Runner.run_sync(triage_agent, triage_prompt).final_output
+
+def _run_similar_case_retrieval(
+    search_planning_result: SearchPlanningResult,
+    *,
+    debug: bool = False,
+    round_index: int | None = None,
+) -> SimilarCaseRetrievalResult:
+    similar_case_agent = build_similar_case_retrieval_agent()
+    similar_case_prompt = build_similar_case_retrieval_prompt(search_planning_result.search_queries)
+    result = Runner.run_sync(similar_case_agent, similar_case_prompt).final_output
     if debug:
-        _print_debug_section("Triage Result", triage_result)
+        _print_debug_section(f"Similar Case Retrieval Result - Round {round_index}", result)
+    return result
 
-    # 4. Final diagnosis stage:
+
+def _run_final_diagnosis(
+    case_text: str,
+    search_planning_result: SearchPlanningResult,
+    knowledge_search_result: object,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult | None = None,
+    *,
+    debug: bool = False,
+    round_index: int | None = None,
+) -> DiagnosisResult:
     diagnosis_agent = build_digestive_diagnosis_agent(
         DiagnosisResult,
         phase="final_diagnosis",
     )
     diagnosis_prompt = (
-        # f"Case information:\n{case_text}\n\n"
+        f"Case information:\n{case_text}\n\n"
         f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
-        f"Triage result:\n{_as_json(triage_result)}\n\n"
+        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
+        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
         "Write every output field in English."
     )
-    run_config = None
-    if True:
-        run_config = RunConfig(
-            sandbox=SandboxRunConfig(
-                client=UnixLocalSandboxClient(),
-            ),
-        )
-    diagnosis_result = Runner.run_sync(
+    run_config = RunConfig(
+        sandbox=SandboxRunConfig(
+            client=UnixLocalSandboxClient(),
+        ),
+    )
+    result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
         run_config=run_config,
     ).final_output
-    # _normalize_final_diagnosis_result(diagnosis_result, debug=debug)
     if debug:
-        _print_debug_section("Final Diagnosis Result", diagnosis_result)
-    return diagnosis_result
+        _print_debug_section(f"Final Diagnosis Result - Round {round_index}", result)
+    return result
+
+
+def _run_diagnostic_judgement(
+    case_text: str,
+    search_planning_result: SearchPlanningResult,
+    diagnosis_result: DiagnosisResult,
+    *,
+    debug: bool = False,
+    round_index: int | None = None,
+) -> DiagnosticJudgementResult:
+    diagnostic_judgement_agent = build_diagnostic_judgement_agent()
+    diagnostic_judgement_prompt = (
+        f"Patient information:\n{case_text}\n\n"
+        f"Problem representation:\n{search_planning_result.problem_representation}\n\n"
+        f"Hypotheses from search planning:\n{_as_json(search_planning_result.hypotheses)}\n\n"
+        f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
+        "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
+        "Write every output field in English."
+    )
+    result = Runner.run_sync(
+        diagnostic_judgement_agent,
+        diagnostic_judgement_prompt,
+    ).final_output
+    if debug:
+        _print_debug_section(f"Diagnostic Judgement Result - Round {round_index}", result)
+    return result
+
+
+def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
+    max_diagnosis_rounds = 2
+    search_planning_result = _run_search_planning(case_text, debug=debug, round_index=1)
+
+    for round_index in range(1, max_diagnosis_rounds + 1):
+        knowledge_search_result = _run_knowledge_search(
+            case_text,
+            search_planning_result,
+            debug=debug,
+            round_index=round_index,
+        )
+
+        # similar_case_retrieval_result = _run_similar_case_retrieval(
+        #     search_planning_result,
+        #     debug=debug,
+        #     round_index=round_index,
+        # )
+
+        diagnosis_result = _run_final_diagnosis(
+            case_text,
+            search_planning_result,
+            knowledge_search_result,
+            # similar_case_retrieval_result,
+            debug=debug,
+            round_index=round_index,
+        )
+
+        diagnostic_judgement_result = _run_diagnostic_judgement(
+            case_text,
+            search_planning_result,
+            diagnosis_result,
+            debug=debug,
+            round_index=round_index,
+        )
+
+        if diagnostic_judgement_result.should_stop or round_index == max_diagnosis_rounds:
+            return diagnosis_result
+
+        search_planning_result = _run_search_planning(
+            case_text,
+            previous_search_planning_result=search_planning_result,
+            previous_diagnosis_result=diagnosis_result,
+            diagnostic_judgement_result=diagnostic_judgement_result,
+            debug=debug,
+            round_index=round_index + 1,
+        )
+
+    raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
 
 
 def main() -> int:
@@ -138,7 +247,7 @@ def main() -> int:
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="Print intermediate phenotype extraction, knowledge retrieval, triage, and skill matching details.",
+        help="Print search planning, retrieval, diagnosis, and judgement details.",
     )
     args = parser.parse_args()
 
@@ -148,6 +257,7 @@ def main() -> int:
         return 1
 
     result = make_diagnosis(case_text, debug=args.debug)
+    # print(_as_json(result))
     return 0
 
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Type
 
-from agents import Agent
 from agents.sandbox import Manifest, SandboxAgent, SandboxPathGrant
 from agents.sandbox.capabilities import Capabilities, LocalDirLazySkillSource, Skills
 from agents.sandbox.entries import LocalDir
@@ -25,20 +24,13 @@ All outputs must be written in English.
 """.strip()
 
 
-TRIAGE_INSTRUCTIONS = """
-Enumerate the top 5 most likely diagnoses.
-Each diagnosis should be a gastrointestinal disease. 
-Use ## to tag the disease name. 
-Make sure to reorder the diagnoses from most likely to least likely. 
-Output all diagnoses and explanations in English.
-The top 5 diagnoses are:
-""".strip()
-
-
 DIAGNOSIS_WITH_SKILLS_INSTRUCTIONS = """
-This is the final diagnosis stage. Available skills directory provides the root directory for local disease guideline skills.
+This is the final diagnosis stage. You will receive patient information, search planning output,
+knowledge search output, similar-case retrieval output, and the available skills directory.
+Use search_queries from the search planning output as the primary retrieval-driven diagnostic input.
+Available skills directory provides the root directory for local disease guideline skills.
 
-When the patient input, phenotype extraction result, or triage result contains symptoms, endoscopic findings, imaging findings, pathology findings, laboratory evidence, or an explicit suspected diagnosis pointing to a disease:
+When the patient information, search planning output, knowledge search output, or similar-case retrieval output contains symptoms, endoscopic findings, imaging findings, pathology findings, laboratory evidence, or an explicit suspected diagnosis pointing to a disease:
 1. First inspect which skills are available under Available skills directory.
 2. If a corresponding disease guideline skill exists, you must call load_skill to load that skill.
 3. After loading it, read .agents/{skill_name}/SKILL.md and follow its workflow to read references or run scripts.
@@ -78,34 +70,25 @@ def build_digestive_diagnosis_agent(
     *,
     phase: str,
 ) -> Agent:
+    if phase != "final_diagnosis":
+        raise ValueError(f"Unsupported digestive diagnosis phase: {phase}")
+
     instructions = [BASE_INSTRUCTIONS]
     tools = []
 
-    if phase == "triage":
-        instructions.append(TRIAGE_INSTRUCTIONS)
-    elif phase == "final_diagnosis":
-        instructions.append(
-            DIAGNOSIS_WITH_SKILLS_INSTRUCTIONS
-        )
-        # TODO: This tool is added and the instructions require it, but the model may not use it. A regular function call is used as a temporary fallback.
-        tools.append(normalize_disease_name)
-        return SandboxAgent(
-            name="Gastroenterology Diagnosis Agent",
-            model=OPENAI_MODEL,
-            instructions="\n\n".join(instructions),
-            tools=tools,
-            output_type=output_type,
-            capabilities=[
-                *Capabilities.default(),
-                _build_guideline_skill_capability(),
-            ],
-            default_manifest=_build_guideline_skill_manifest(),
-        )
-
-    return Agent(
+    instructions.append(
+        DIAGNOSIS_WITH_SKILLS_INSTRUCTIONS
+    )
+    tools.append(normalize_disease_name)
+    return SandboxAgent(
         name="Gastroenterology Diagnosis Agent",
         model=OPENAI_MODEL,
         instructions="\n\n".join(instructions),
         tools=tools,
         output_type=output_type,
+        capabilities=[
+            *Capabilities.default(),
+            _build_guideline_skill_capability(),
+        ],
+        default_manifest=_build_guideline_skill_manifest(),
     )

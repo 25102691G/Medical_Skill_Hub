@@ -14,15 +14,6 @@ class PhenotypeExtractionResult(BaseModel):
     phenotypes: list[PhenotypeItem] = Field(description="Patient phenotype list extracted from the case text")
 
 
-class TriageResult(BaseModel):
-    has_preliminary_disease: bool = Field(description="Whether a clear preliminary disease direction already exists")
-    suspected_diseases: list[str] = Field(description="Diseases explicitly mentioned in the case text as suspected, considered, favored, preliminarily diagnosed, or to be ruled out")
-    should_use_skill: bool = Field(description="Whether existing disease guideline skills should be enabled")
-    matched_skills: list[str] = Field(description="List of matched skill names")
-    reason: str = Field(description="Rationale for triggering or not triggering skills")
-    topk_without_skill: list[str] = Field(description="Initial suspected diagnosis list when no skill is used")
-
-
 class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
     disease: str = Field(description="Suspected diagnosis disease name")
@@ -69,3 +60,13 @@ class SimilarCaseRetrievalResult(BaseModel):
     items: list[SimilarCaseDiagnosisItem] = Field(description="Similar-case diagnosis result for each search query")
     summary: str = Field(description="Overall summary of the similar-case diagnosis results")
     limitations: list[str] = Field(description="Limitations of the current similar-case retrieval results")
+
+
+class DiagnosticJudgementResult(BaseModel):
+    closer_result: Literal["topk_diagnoses", "hypotheses"] = Field(
+        description="Which candidate diagnosis set is closer to the patient information"
+    )
+    should_stop: bool = Field(
+        description="Whether the current topk_diagnoses should be accepted as the final diagnosis result"
+    )
+    reason: str = Field(description="Reasoning for the diagnostic judgement")
