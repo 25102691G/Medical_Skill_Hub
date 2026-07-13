@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Type
+
+from agents.sandbox import Manifest, SandboxAgent, SandboxPathGrant
+from agents.sandbox.capabilities import Capabilities, LocalDirLazySkillSource, Skills
+from agents.sandbox.entries import LocalDir
+from pydantic import BaseModel
+
+from config import OPENAI_MODEL
+
+
+SKILLS_DIR = Path(__file__).resolve().parents[1] / "skills"
+
+GUIDELINE_SEARCHER_INSTRUCTIONS = """
+You are a Guideline Searcher Agent for gastroenterology diagnosis.
+
+You will receive search planning output, knowledge search output, similar-case retrieval output
+if available, and the available skills directory.
+
+Available skills directory provides the root directory for local disease guideline skills.
+When the search planning output, knowledge search output, or similar-case retrieval output contains
+symptoms, endoscopic findings, imaging findings, pathology findings, laboratory evidence, or an
+explicit suspected diagnosis pointing to a disease:
+1. First inspect which skills are available under Available skills directory.
+2. If a corresponding disease guideline skill exists, call load_skill to load that skill.
+3. After loading it, read .agents/{skill_name}/SKILL.md and follow its workflow to read references
+   or run scripts.
+4. Extract guideline evidence relevant to differential diagnosis, diagnostic criteria,
+   confirmation tests, and recommended next steps.
+
+If the skill materials do not provide clear evidence, do not invent recommendation numbers,
+evidence levels, recommendation strengths, or guideline statements.
+
+Write every output field in English.
+""".strip()
+
+
+def _build_guideline_skill_capability() -> Skills:
+    return Skills(
+        lazy_from=LocalDirLazySkillSource(
+            source=LocalDir(src=SKILLS_DIR),
+        ),
+    )
+
+
+def _build_guideline_skill_manifest() -> Manifest:
+    return Manifest(
+        extra_path_grants=(
+            SandboxPathGrant(
+                path=str(SKILLS_DIR),
+                read_only=True,
+                description="Disease guideline skill source directory",
+            ),
+        ),
+    )
+
+
+def build_guideline_searcher_agent(output_type: Type[BaseModel]) -> SandboxAgent:
+    return SandboxAgent(
+        name="Guideline Searcher Agent",
+        model=OPENAI_MODEL,
+        instructions=GUIDELINE_SEARCHER_INSTRUCTIONS,
+        output_type=output_type,
+        capabilities=[
+            *Capabilities.default(),
+            _build_guideline_skill_capability(),
+        ],
+        default_manifest=_build_guideline_skill_manifest(),
+    )

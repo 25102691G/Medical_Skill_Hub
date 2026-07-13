@@ -25,11 +25,19 @@ class DiagnosisItem(BaseModel):
 
 
 class DiagnosisResult(BaseModel):
-    used_skill: bool = Field(description="Whether a skill was used in the final diagnosis stage")
+    used_skill: bool = Field(description="Whether a guideline skill was used before the final diagnosis stage")
     skill_names: list[str] = Field(description="List of skill names actually used")
     topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
     summary: str = Field(description="Brief diagnostic analysis summary")
     safety_note: str = Field(description="Medical safety note")
+
+
+class GuidelineSearchResult(BaseModel):
+    used_skill: bool = Field(description="Whether any guideline skill was used")
+    skill_names: list[str] = Field(description="List of guideline skill names actually used")
+    guideline_evidence: list[str] = Field(description="Relevant guideline evidence extracted from loaded skills")
+    summary: str = Field(description="Brief summary of guideline search findings")
+    limitations: list[str] = Field(description="Limitations of the guideline skill search")
 
 
 class SearchQueryItem(BaseModel):

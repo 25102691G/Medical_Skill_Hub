@@ -9,11 +9,9 @@ from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
 
 from config import DIAGNOSIS_TOPK
-from diagnosis.agents.digestive_diagnosis_agent import (
-    SKILLS_DIR,
-    build_digestive_diagnosis_agent,
-)
+from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
+from diagnosis.agents.guideline_searcher_agent import SKILLS_DIR, build_guideline_searcher_agent
 from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import (
@@ -23,6 +21,7 @@ from diagnosis.agents.similar_case_retrieval_agent import (
 from schemas import (
     DiagnosisResult,
     DiagnosticJudgementResult,
+    GuidelineSearchResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
 )
@@ -96,7 +95,6 @@ def _run_search_planning(
 
 
 def _run_knowledge_search(
-    case_text: str,
     search_planning_result: SearchPlanningResult,
     *,
     debug: bool = False,
@@ -104,7 +102,6 @@ def _run_knowledge_search(
 ) -> object:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
-        f"Case information:\n{case_text}\n\n"
         f"Search queries:\n{_as_json(search_planning_result.search_queries)}\n\n"
         "Write every output field in English."
     )
@@ -128,10 +125,42 @@ def _run_similar_case_retrieval(
     return result
 
 
-def _run_final_diagnosis(
-    case_text: str,
+def _run_guideline_search(
     search_planning_result: SearchPlanningResult,
     knowledge_search_result: object,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult | None = None,
+    *,
+    debug: bool = False,
+    round_index: int | None = None,
+) -> GuidelineSearchResult:
+    guideline_agent = build_guideline_searcher_agent(GuidelineSearchResult)
+    guideline_prompt = (
+        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
+        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
+        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
+        f"Available skills directory:\n{SKILLS_DIR}\n\n"
+        "Search the local guideline skills for clinically relevant guideline evidence. "
+        "Write every output field in English."
+    )
+    run_config = RunConfig(
+        sandbox=SandboxRunConfig(
+            client=UnixLocalSandboxClient(),
+        ),
+    )
+    result = Runner.run_sync(
+        guideline_agent,
+        guideline_prompt,
+        run_config=run_config,
+    ).final_output
+    if debug:
+        _print_debug_section(f"Guideline Search Result - Round {round_index}", result)
+    return result
+
+
+def _run_final_diagnosis(
+    case_text: str,
+    knowledge_search_result: object,
+    guideline_search_result: GuidelineSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult | None = None,
     *,
     debug: bool = False,
@@ -143,22 +172,16 @@ def _run_final_diagnosis(
     )
     diagnosis_prompt = (
         f"Case information:\n{case_text}\n\n"
-        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
+        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
-        f"Available skills directory:\n{SKILLS_DIR}\n\n"
+        "Set used_skill and skill_names from the guideline search result. "
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
         "Write every output field in English."
-    )
-    run_config = RunConfig(
-        sandbox=SandboxRunConfig(
-            client=UnixLocalSandboxClient(),
-        ),
     )
     result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
-        run_config=run_config,
     ).final_output
     if debug:
         _print_debug_section(f"Final Diagnosis Result - Round {round_index}", result)
@@ -197,7 +220,6 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
 
     for round_index in range(1, max_diagnosis_rounds + 1):
         knowledge_search_result = _run_knowledge_search(
-            case_text,
             search_planning_result,
             debug=debug,
             round_index=round_index,
@@ -209,10 +231,18 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
         #     round_index=round_index,
         # )
 
-        diagnosis_result = _run_final_diagnosis(
-            case_text,
+        guideline_search_result = _run_guideline_search(
             search_planning_result,
             knowledge_search_result,
+            # similar_case_retrieval_result,
+            debug=debug,
+            round_index=round_index,
+        )
+
+        diagnosis_result = _run_final_diagnosis(
+            case_text,
+            knowledge_search_result,
+            guideline_search_result,
             # similar_case_retrieval_result,
             debug=debug,
             round_index=round_index,
