@@ -29,6 +29,14 @@ logger = logging.getLogger(__name__)
 
 DIAGNOSE_COMMANDS = {"开始诊断", "重新诊断", "诊断", "/diagnose"}
 CLEAR_COMMANDS = {"清空病例", "重置病例", "/clear", "/reset"}
+AGENT_DISPLAY_NAMES = {
+    "Search Planning Agent": "检索规划",
+    "Knowledge Searcher Agent": "医学知识检索",
+    "Similar Case Retrieval Agent": "相似病例检索",
+    "Guideline Searcher Agent": "本地指南检索",
+    "Digestive Diagnosis Agent": "消化内科诊断分析",
+    "Diagnostic Judgement Agent": "诊断结果评估",
+}
 
 
 def _extract_user_text(message: UserMessageItem | None) -> str:
@@ -80,7 +88,7 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
             )
 
     if result.used_skill:
-        sections.extend(["", f"使用的指南 Skill：{', '.join(result.skill_names)}"])
+        sections.extend(["", "已使用本地指南资料辅助诊断。"])
     sections.extend(["", f"> {result.safety_note}"])
     return "\n".join(sections)
 
@@ -155,9 +163,42 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
             )
             return
 
-        yield ProgressUpdateEvent(icon="analytics", text="正在运行医学诊断流水线…")
+        progress_queue: asyncio.Queue[tuple[str, str, str | None] | None] = asyncio.Queue()
+        loop = asyncio.get_running_loop()
+
+        def report_progress(event_type: str, title: str, content: str | None) -> None:
+            loop.call_soon_threadsafe(
+                progress_queue.put_nowait,
+                (event_type, title, content),
+            )
+
+        def run_diagnosis() -> DiagnosisResult:
+            try:
+                return make_diagnosis(
+                    case_text,
+                    debug=False,
+                    progress_callback=report_progress,
+                )
+            finally:
+                loop.call_soon_threadsafe(progress_queue.put_nowait, None)
+
+        diagnosis_task = asyncio.create_task(asyncio.to_thread(run_diagnosis))
         try:
-            result = await asyncio.to_thread(make_diagnosis, case_text)
+            while True:
+                progress_event = await progress_queue.get()
+                if progress_event is None:
+                    break
+
+                event_type, title, content = progress_event
+                if event_type == "agent_started":
+                    round_label = f"第 {content} 轮：" if content is not None else ""
+                    display_name = AGENT_DISPLAY_NAMES.get(title, "诊断处理")
+                    yield ProgressUpdateEvent(
+                        icon="analytics",
+                        text=f"{round_label}正在进行{display_name}…",
+                    )
+
+            result = await diagnosis_task
         except RateLimitError as exc:
             error_code = _rate_limit_error_code(exc)
             logger.warning(

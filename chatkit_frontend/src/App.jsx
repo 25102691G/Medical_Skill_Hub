@@ -7,6 +7,10 @@ export default function App() {
       url: "http://localhost:8000/chatkit",
       domainKey: "local-dev",
     },
+    locale: "zh-CN",
+    composer: {
+      placeholder: "请输入病例资料或诊断指令",
+    },
   });
 
   return (

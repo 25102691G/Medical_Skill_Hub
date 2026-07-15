@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 
 from agents import RunConfig, Runner
 from agents.sandbox import SandboxRunConfig
@@ -25,6 +26,9 @@ from schemas import (
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
 )
+
+
+DiagnosisProgressCallback = Callable[[str, str, str | None], None]
 
 
 def _read_case_text(args: argparse.Namespace) -> str:
@@ -59,6 +63,33 @@ def _print_debug_section(title: str, model_object: object) -> None:
     print(_as_json(model_object), file=sys.stderr)
 
 
+def _notify_agent_started(
+    progress_callback: DiagnosisProgressCallback | None,
+    agent_name: str,
+    round_index: int | None,
+) -> None:
+    if progress_callback is not None:
+        progress_callback(
+            "agent_started",
+            agent_name,
+            str(round_index) if round_index is not None else None,
+        )
+
+
+def _publish_debug_section(
+    title: str,
+    model_object: object,
+    *,
+    debug: bool,
+    progress_callback: DiagnosisProgressCallback | None,
+) -> None:
+    if not debug:
+        return
+    _print_debug_section(title, model_object)
+    if progress_callback is not None:
+        progress_callback("debug_section", title, _as_json(model_object))
+
+
 def _run_search_planning(
     case_text: str,
     *,
@@ -67,6 +98,7 @@ def _run_search_planning(
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SearchPlanningResult:
     search_planning_agent = build_search_planning_agent()
     search_planning_prompt = (
@@ -85,12 +117,17 @@ def _run_search_planning(
             "Write every output field in English."
         )
 
+    _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
     result = Runner.run_sync(
         search_planning_agent,
         search_planning_prompt,
     ).final_output
-    if debug:
-        _print_debug_section(f"Search Planning Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Search Planning Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
@@ -99,15 +136,21 @@ def _run_knowledge_search(
     *,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> object:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         "Write every output field in English."
     )
+    _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
     result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
-    if debug:
-        _print_debug_section(f"Knowledge Search Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Knowledge Search Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
@@ -116,12 +159,18 @@ def _run_similar_case_retrieval(
     *,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
     similar_case_agent = build_similar_case_retrieval_agent()
     similar_case_prompt = build_similar_case_retrieval_prompt(search_queries)
+    _notify_agent_started(progress_callback, "Similar Case Retrieval Agent", round_index)
     result = Runner.run_sync(similar_case_agent, similar_case_prompt).final_output
-    if debug:
-        _print_debug_section(f"Similar Case Retrieval Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Similar Case Retrieval Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
@@ -130,6 +179,7 @@ def _run_guideline_search(
     *,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> GuidelineSearchResult:
     guideline_agent = build_guideline_searcher_agent(GuidelineSearchResult)
     guideline_prompt = (
@@ -143,13 +193,18 @@ def _run_guideline_search(
             client=UnixLocalSandboxClient(),
         ),
     )
+    _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
     result = Runner.run_sync(
         guideline_agent,
         guideline_prompt,
         run_config=run_config,
     ).final_output
-    if debug:
-        _print_debug_section(f"Guideline Search Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Guideline Search Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
@@ -161,6 +216,7 @@ def _run_final_diagnosis(
     *,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
     diagnosis_agent = build_digestive_diagnosis_agent(
         DiagnosisResult,
@@ -173,14 +229,21 @@ def _run_final_diagnosis(
         f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
         "Set used_skill and skill_names from the guideline search result. "
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
-        "Write every output field in English."
+        "Write every user-facing output field in Simplified Chinese, including disease names, "
+        "supporting evidence, missing information, recommended next steps, guideline evidence, "
+        "the summary, and the safety note."
     )
+    _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
     result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
     ).final_output
-    if debug:
-        _print_debug_section(f"Final Diagnosis Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Final Diagnosis Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
@@ -194,6 +257,7 @@ def _run_diagnostic_judgement(
     *,
     debug: bool = False,
     round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosticJudgementResult:
     diagnostic_judgement_agent = build_diagnostic_judgement_agent()
     diagnostic_judgement_prompt = (
@@ -206,36 +270,54 @@ def _run_diagnostic_judgement(
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Write every output field in English."
     )
+    _notify_agent_started(progress_callback, "Diagnostic Judgement Agent", round_index)
     result = Runner.run_sync(
         diagnostic_judgement_agent,
         diagnostic_judgement_prompt,
     ).final_output
-    if debug:
-        _print_debug_section(f"Diagnostic Judgement Result - Round {round_index}", result)
+    _publish_debug_section(
+        f"Diagnostic Judgement Result - Round {round_index}",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
     return result
 
 
-def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
+def make_diagnosis(
+    case_text: str,
+    *,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> DiagnosisResult:
     max_diagnosis_rounds = 2
-    search_planning_result = _run_search_planning(case_text, debug=debug, round_index=1)
+    search_planning_result = _run_search_planning(
+        case_text,
+        debug=debug,
+        round_index=1,
+        progress_callback=progress_callback,
+    )
 
     for round_index in range(1, max_diagnosis_rounds + 1):
         knowledge_search_result = _run_knowledge_search(
             search_planning_result.search_queries,
             debug=debug,
             round_index=round_index,
+            progress_callback=progress_callback,
         )
 
         # similar_case_retrieval_result = _run_similar_case_retrieval(
         #     search_planning_result.search_queries,
         #     debug=debug,
         #     round_index=round_index,
+        #     progress_callback=progress_callback,
         # )
 
         guideline_search_result = _run_guideline_search(
             search_planning_result.search_queries,
             debug=debug,
             round_index=round_index,
+            progress_callback=progress_callback,
         )
 
         diagnosis_result = _run_final_diagnosis(
@@ -245,6 +327,7 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
             # similar_case_retrieval_result,
             debug=debug,
             round_index=round_index,
+            progress_callback=progress_callback,
         )
 
         diagnostic_judgement_result = _run_diagnostic_judgement(
@@ -256,6 +339,7 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
             guideline_search_result,
             debug=debug,
             round_index=round_index,
+            progress_callback=progress_callback,
         )
 
         if (
@@ -271,6 +355,7 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
             diagnostic_judgement_result=diagnostic_judgement_result,
             debug=debug,
             round_index=round_index + 1,
+            progress_callback=progress_callback,
         )
 
     raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
