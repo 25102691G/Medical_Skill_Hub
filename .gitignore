@@ -9,3 +9,5 @@ AGENTS.md
 /tmp/
 /guidelines
 /mineru
+/chatkit_frontend/node_modules/
+/chatkit_frontend/dist/

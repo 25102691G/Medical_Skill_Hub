@@ -1,4 +1,7 @@
 openai-agents
+openai-chatkit
+fastapi
+uvicorn[standard]
 pydantic
 python-dotenv
 langchain-community
