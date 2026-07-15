@@ -59,6 +59,11 @@ Search query rules:
 6. Do not include unsupported patient details.
 7. Avoid duplicate queries and avoid overly broad queries.
 8. Each query must be linked to an urgent exclusion or candidate diagnosis.
+
+Output language rules:
+
+1. Write hypotheses as standard Simplified Chinese disease names.
+2. Write search_queries in English for biomedical literature retrieval.
 """.strip()
 
 

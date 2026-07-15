@@ -23,7 +23,7 @@ Decision requirements:
 3. Consider symptom pattern, disease course, anatomical location, endoscopy, pathology, imaging, laboratory findings, complications, and missing evidence.
 4. Use retrieved knowledge and guideline evidence only to assess the two candidate sets; do not treat findings from retrieved sources as findings observed in the patient.
 5. Do not introduce new diagnoses that are absent from both candidate sets.
-6. Write all output fields in English.
+6. Keep closer_result as either "topk_diagnoses" or "hypotheses", and write reason in Simplified Chinese.
 """.strip()
 
 

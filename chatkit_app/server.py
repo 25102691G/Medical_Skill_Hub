@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import datetime
@@ -36,6 +37,44 @@ AGENT_DISPLAY_NAMES = {
     "Guideline Searcher Agent": "本地指南检索",
     "Digestive Diagnosis Agent": "消化内科诊断分析",
     "Diagnostic Judgement Agent": "诊断结果评估",
+}
+STAGE_DISPLAY_NAMES = {
+    "Search Planning Result": "检索规划结果",
+    "Knowledge Search Result": "医学知识检索结果",
+    "Similar Case Retrieval Result": "相似病例检索结果",
+    "Guideline Search Result": "本地指南检索结果",
+    "Final Diagnosis Result": "消化内科诊断结果",
+    "Diagnostic Judgement Result": "诊断结果评估",
+}
+FIELD_DISPLAY_NAMES = {
+    "hypotheses": "候选诊断",
+    "search_queries": "文献检索词",
+    "used_skill": "是否使用本地指南资料",
+    "skill_names": "指南资料标识",
+    "guideline_evidence": "指南依据",
+    "summary": "总结",
+    "limitations": "局限性",
+    "topk_diagnoses": "疑似诊断",
+    "rank": "排名",
+    "disease": "疾病",
+    "confidence": "支持强度",
+    "supporting_evidence": "支持证据",
+    "missing_information": "仍缺少的信息",
+    "recommended_next_steps": "建议下一步",
+    "safety_note": "安全提示",
+    "closer_result": "更接近病例的诊断结果",
+    "reason": "判断理由",
+    "query": "检索词",
+    "results": "检索结果",
+    "title": "标题",
+    "source": "来源",
+    "published": "发表时间",
+    "content": "内容",
+    "metadata": "元数据",
+}
+VALUE_DISPLAY_NAMES = {
+    "topk_diagnoses": "消化内科诊断结果",
+    "hypotheses": "检索规划候选诊断",
 }
 
 
@@ -91,6 +130,40 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
         sections.extend(["", "已使用本地指南资料辅助诊断。"])
     sections.extend(["", f"> {result.safety_note}"])
     return "\n".join(sections)
+
+
+def _translate_stage_value(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            FIELD_DISPLAY_NAMES.get(str(key), str(key)): _translate_stage_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_translate_stage_value(item) for item in value]
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    if value is None:
+        return "无"
+    if isinstance(value, str):
+        return VALUE_DISPLAY_NAMES.get(value, value)
+    return value
+
+
+def _format_stage_result(title: str, content: str) -> str:
+    stage_name, separator, round_index = title.partition(" - Round ")
+    display_name = STAGE_DISPLAY_NAMES.get(stage_name, "阶段输出结果")
+    heading = f"## 第 {round_index} 轮：{display_name}" if separator else f"## {display_name}"
+
+    try:
+        parsed_content = json.loads(content)
+    except json.JSONDecodeError:
+        return f"{heading}\n\n{content}"
+
+    translated_content = _translate_stage_value(parsed_content)
+    if isinstance(translated_content, str):
+        return f"{heading}\n\n{translated_content}"
+    formatted_content = json.dumps(translated_content, ensure_ascii=False, indent=2)
+    return f"{heading}\n\n```json\n{formatted_content}\n```"
 
 
 class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
@@ -196,6 +269,12 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                     yield ProgressUpdateEvent(
                         icon="analytics",
                         text=f"{round_label}正在进行{display_name}…",
+                    )
+                elif event_type == "stage_completed" and content is not None:
+                    yield self._assistant_event(
+                        thread,
+                        _format_stage_result(title, content),
+                        context,
                     )
 
             result = await diagnosis_task

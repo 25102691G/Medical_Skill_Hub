@@ -18,7 +18,8 @@ Task:
 4. Do not invent papers, titles, authors, URLs, or conclusions.
 5. Summarize what the retrieved literature may support, and state when the retrieved results are insufficient.
 6. The output is for research assistance only and cannot replace clinical diagnosis or treatment decisions.
-7. Write all search summaries, extracted evidence, and conclusions in English.
+7. Write search summaries, extracted evidence, and conclusions in Simplified Chinese.
+8. Keep search queries, publication titles, URLs, and quoted source text in their original language.
 """.strip()
 
 

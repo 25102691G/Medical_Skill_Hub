@@ -76,18 +76,17 @@ def _notify_agent_started(
         )
 
 
-def _publish_debug_section(
+def _publish_stage_result(
     title: str,
     model_object: object,
     *,
     debug: bool,
     progress_callback: DiagnosisProgressCallback | None,
 ) -> None:
-    if not debug:
-        return
-    _print_debug_section(title, model_object)
+    if debug:
+        _print_debug_section(title, model_object)
     if progress_callback is not None:
-        progress_callback("debug_section", title, _as_json(model_object))
+        progress_callback("stage_completed", title, _as_json(model_object))
 
 
 def _run_search_planning(
@@ -103,7 +102,7 @@ def _run_search_planning(
     search_planning_agent = build_search_planning_agent()
     search_planning_prompt = (
         f"Patient information:\n{case_text}\n\n"
-        "Write every output field in English."
+        "Write hypotheses in Simplified Chinese and search_queries in English."
     )
     if previous_search_planning_result and previous_diagnosis_result and diagnostic_judgement_result:
         search_planning_prompt = (
@@ -114,7 +113,7 @@ def _run_search_planning(
             "The diagnostic judgement found that hypotheses were closer to the patient information "
             "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
             "diagnosis round while using only information present in the patient record. "
-            "Write every output field in English."
+            "Write hypotheses in Simplified Chinese and search_queries in English."
         )
 
     _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
@@ -122,7 +121,7 @@ def _run_search_planning(
         search_planning_agent,
         search_planning_prompt,
     ).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Search Planning Result - Round {round_index}",
         result,
         debug=debug,
@@ -141,11 +140,12 @@ def _run_knowledge_search(
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
-        "Write every output field in English."
+        "Write the evidence synthesis and conclusions in Simplified Chinese. "
+        "Keep search queries, publication titles, URLs, and quoted source text in their original language."
     )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
     result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
         result,
         debug=debug,
@@ -165,7 +165,7 @@ def _run_similar_case_retrieval(
     similar_case_prompt = build_similar_case_retrieval_prompt(search_queries)
     _notify_agent_started(progress_callback, "Similar Case Retrieval Agent", round_index)
     result = Runner.run_sync(similar_case_agent, similar_case_prompt).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Similar Case Retrieval Result - Round {round_index}",
         result,
         debug=debug,
@@ -186,7 +186,8 @@ def _run_guideline_search(
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         "Search the local guideline skills for clinically relevant guideline evidence. "
-        "Write every output field in English."
+        "Write guideline evidence, summary, and limitations in Simplified Chinese. "
+        "Keep skill_names unchanged."
     )
     run_config = RunConfig(
         sandbox=SandboxRunConfig(
@@ -199,7 +200,7 @@ def _run_guideline_search(
         guideline_prompt,
         run_config=run_config,
     ).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
         debug=debug,
@@ -238,7 +239,7 @@ def _run_final_diagnosis(
         diagnosis_agent,
         diagnosis_prompt,
     ).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Final Diagnosis Result - Round {round_index}",
         result,
         debug=debug,
@@ -268,14 +269,14 @@ def _run_diagnostic_judgement(
         # f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
         f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
-        "Write every output field in English."
+        "Keep closer_result as the required enum value and write reason in Simplified Chinese."
     )
     _notify_agent_started(progress_callback, "Diagnostic Judgement Agent", round_index)
     result = Runner.run_sync(
         diagnostic_judgement_agent,
         diagnostic_judgement_prompt,
     ).final_output
-    _publish_debug_section(
+    _publish_stage_result(
         f"Diagnostic Judgement Result - Round {round_index}",
         result,
         debug=debug,
