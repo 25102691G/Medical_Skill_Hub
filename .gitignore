@@ -6,4 +6,6 @@ __pycache__/
 /skills
 AGENTS.md
 /database
-*.pdf
+/tmp/
+/guidelines
+/mineru

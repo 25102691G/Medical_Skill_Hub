@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -39,7 +41,6 @@ class GuidelineSearchResult(BaseModel):
 
 
 class SearchPlanningResult(BaseModel):
-    problem_representation: str = Field(description="Brief representation of the most important current clinical problem")
     hypotheses: list[str] = Field(max_length=5, description="Up to 5 major candidate diagnoses")
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
 
@@ -61,8 +62,5 @@ class SimilarCaseRetrievalResult(BaseModel):
 class DiagnosticJudgementResult(BaseModel):
     closer_result: Literal["topk_diagnoses", "hypotheses"] = Field(
         description="Which candidate diagnosis set is closer to the patient information"
-    )
-    should_stop: bool = Field(
-        description="Whether the current topk_diagnoses should be accepted as the final diagnosis result"
     )
     reason: str = Field(description="Reasoning for the diagnostic judgement")

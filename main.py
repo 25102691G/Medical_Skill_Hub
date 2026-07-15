@@ -95,14 +95,14 @@ def _run_search_planning(
 
 
 def _run_knowledge_search(
-    search_planning_result: SearchPlanningResult,
+    search_queries: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,
 ) -> object:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
-        f"Search queries:\n{_as_json(search_planning_result.search_queries)}\n\n"
+        f"Search queries:\n{_as_json(search_queries)}\n\n"
         "Write every output field in English."
     )
     result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
@@ -112,13 +112,13 @@ def _run_knowledge_search(
 
 
 def _run_similar_case_retrieval(
-    search_planning_result: SearchPlanningResult,
+    search_queries: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,
 ) -> SimilarCaseRetrievalResult:
     similar_case_agent = build_similar_case_retrieval_agent()
-    similar_case_prompt = build_similar_case_retrieval_prompt(search_planning_result.search_queries)
+    similar_case_prompt = build_similar_case_retrieval_prompt(search_queries)
     result = Runner.run_sync(similar_case_agent, similar_case_prompt).final_output
     if debug:
         _print_debug_section(f"Similar Case Retrieval Result - Round {round_index}", result)
@@ -126,18 +126,14 @@ def _run_similar_case_retrieval(
 
 
 def _run_guideline_search(
-    search_planning_result: SearchPlanningResult,
-    knowledge_search_result: object,
-    similar_case_retrieval_result: SimilarCaseRetrievalResult | None = None,
+    search_queries: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,
 ) -> GuidelineSearchResult:
     guideline_agent = build_guideline_searcher_agent(GuidelineSearchResult)
     guideline_prompt = (
-        f"Search planning result:\n{_as_json(search_planning_result)}\n\n"
-        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
+        f"Search queries:\n{_as_json(search_queries)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         "Search the local guideline skills for clinically relevant guideline evidence. "
         "Write every output field in English."
@@ -190,8 +186,11 @@ def _run_final_diagnosis(
 
 def _run_diagnostic_judgement(
     case_text: str,
-    search_planning_result: SearchPlanningResult,
+    hypotheses: list[str],
     diagnosis_result: DiagnosisResult,
+    knowledge_search_result: object,
+    # similar_case_retrieval_result: SimilarCaseRetrievalResult,
+    guideline_search_result: GuidelineSearchResult,
     *,
     debug: bool = False,
     round_index: int | None = None,
@@ -199,9 +198,11 @@ def _run_diagnostic_judgement(
     diagnostic_judgement_agent = build_diagnostic_judgement_agent()
     diagnostic_judgement_prompt = (
         f"Patient information:\n{case_text}\n\n"
-        f"Problem representation:\n{search_planning_result.problem_representation}\n\n"
-        f"Hypotheses from search planning:\n{_as_json(search_planning_result.hypotheses)}\n\n"
+        f"Hypotheses from search planning:\n{_as_json(hypotheses)}\n\n"
         f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
+        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
+        # f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
+        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Write every output field in English."
     )
@@ -220,21 +221,19 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
 
     for round_index in range(1, max_diagnosis_rounds + 1):
         knowledge_search_result = _run_knowledge_search(
-            search_planning_result,
+            search_planning_result.search_queries,
             debug=debug,
             round_index=round_index,
         )
 
         # similar_case_retrieval_result = _run_similar_case_retrieval(
-        #     search_planning_result,
+        #     search_planning_result.search_queries,
         #     debug=debug,
         #     round_index=round_index,
         # )
 
         guideline_search_result = _run_guideline_search(
-            search_planning_result,
-            knowledge_search_result,
-            # similar_case_retrieval_result,
+            search_planning_result.search_queries,
             debug=debug,
             round_index=round_index,
         )
@@ -250,13 +249,19 @@ def make_diagnosis(case_text: str, *, debug: bool = False) -> DiagnosisResult:
 
         diagnostic_judgement_result = _run_diagnostic_judgement(
             case_text,
-            search_planning_result,
+            search_planning_result.hypotheses,
             diagnosis_result,
+            knowledge_search_result,
+            # similar_case_retrieval_result,
+            guideline_search_result,
             debug=debug,
             round_index=round_index,
         )
 
-        if diagnostic_judgement_result.should_stop or round_index == max_diagnosis_rounds:
+        if (
+            diagnostic_judgement_result.closer_result == "topk_diagnoses"
+            or round_index == max_diagnosis_rounds
+        ):
             return diagnosis_result
 
         search_planning_result = _run_search_planning(

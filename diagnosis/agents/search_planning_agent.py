@@ -15,13 +15,11 @@ This is not a final diagnosis or treatment recommendation.
 
 Complete the following tasks:
 
-1. Create a concise problem representation of the most important current
-   clinical problem.
-2. Identify time-critical conditions, surgical complications, and other
+1. Identify time-critical conditions, surgical complications, and other
    dangerous diagnoses that may require urgent exclusion.
-3. Generate up to 5 major candidate diagnoses, ranked from most important
+2. Generate up to 5 major candidate diagnoses, ranked from most important
    to least important based on clinical likelihood.
-4. Generate up to 5 non-redundant medical literature search queries.
+3. Generate up to 5 non-redundant medical literature search queries.
 
 The search queries should collectively cover, when applicable:
 
