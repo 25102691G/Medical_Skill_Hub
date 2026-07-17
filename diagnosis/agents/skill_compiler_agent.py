@@ -83,7 +83,6 @@ Task:
 7. If OCR line breaks or missing context make an item unclear, explicitly mark that uncertainty in
    the Markdown index instead of filling unsupported fields.
 8. Generate concise metadata for SKILL.md and agents/openai.yaml.
-9. Prefer Chinese output for titles and user-facing skill metadata when the source document is Chinese.
 
 The output must be valid structured data matching the requested schema.
 """.strip()
@@ -147,7 +146,6 @@ Rules:
 5. Be concise while retaining the important source-backed information in this chunk.
 6. Return Markdown only, without a document-level H1 heading, JSON, code fences, or commentary.
 7. Use useful H2/H3 headings and keep the source order.
-8. Prefer Chinese output when the source is Chinese.
 """.strip()
 
 

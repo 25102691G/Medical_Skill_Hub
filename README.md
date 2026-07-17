@@ -51,10 +51,54 @@ cd chatkit_frontend
 npm run dev
 ```
 
-开始诊断后，聊天界面会实时显示当前阶段和诊断轮次。每个 Agent 完成后，会立即
-追加带有中文标题和中文字段名称的完整阶段输出；如果进入第二轮，会继续按轮次
-依次展示。用于 PubMed 等数据源的检索词、论文标题、URL 和引用原文保留原始语言，
-其余解释性内容使用中文。全部阶段结束后，界面会显示格式化的中文最终诊断结果。
+前端右上角可选择简体中文或英文作为显示语言。选择结果会同时控制 ChatKit 自带界面、
+页面静态文字以及后端消息的展示翻译。前端通过 `X-Display-Language` 请求头传递目标
+语言；每个 Agent 完成后，ChatKit 服务端会翻译该阶段的字段标签和字符串内容，再立即
+追加到聊天界面。如果切换显示语言，当前线程会按新语言重新加载已有助手消息。
+
+展示翻译不会修改 `make_diagnosis()` 的原始结构化结果。URL、数值、计量单位、医学
+编码、枚举值、住院号和 `skill_names` 等机器标识保持不变，其余可见内容按目标语言
+翻译。翻译失败时会回退到未翻译内容，不会中断诊断流水线。翻译默认使用
+`OPENAI_MODEL`，可在 `.env` 中单独设置：
+
+```dotenv
+CHATKIT_TRANSLATION_MODEL=your_translation_model
+```
+
+当前实时粒度为阶段级：`main.py` 产生 `stage_completed` 事件后翻译并展示完整阶段结果，
+不进行逐 token 翻译。
+
+## PubMed 检索配置
+
+医学知识检索通过 NCBI E-utilities 查询 PubMed。建议在项目根目录的 `.env` 中配置：
+
+```dotenv
+NCBI_API_KEY=your_ncbi_api_key
+NCBI_EMAIL=your_email@example.com
+NCBI_TOOL=medical_skill_hub
+```
+
+程序会统一限制 NCBI 请求频率：未配置 API Key 时默认不超过每秒 3 次，配置后默认
+不超过每秒 10 次；`ESearch`、批量 `EFetch` 和临时网络错误均使用指数退避重试。
+如需调整，可设置 `NCBI_REQUESTS_PER_SECOND`、`NCBI_MAX_RETRIES`、
+`NCBI_RETRY_BASE_SECONDS` 和 `NCBI_TIMEOUT_SECONDS`。
+
+## 相似病例检索
+
+检索规划阶段生成 `similar_case_queries`，其中的 `clinical_manifestations` 和
+`examination_results` 使用英文短语，分别与 `database/mimic_iv_case.csv` 中的同名列
+进行匹配。BM25 仅对英文和数字分词；每个字段分别执行 BM25 和 Dense Retriever 检索，
+再通过 RRF 融合各路排名。最终按相关性顺序输出最多 10 条病例对应的 `hadm_id`、
+`long_title`（输出字段为 `discharge_disease`）和 `discharge_text`。前端的相似病例
+检索结果只展示住院号和出院疾病，完整出院记录仅作为外部参考证据传入最终诊断和诊断
+判断阶段，不会被视为当前患者已经存在的临床事实。
+
+Dense Retriever 默认使用 `BAAI/bge-m3`，首次运行时由 Transformers 加载模型，并将
+病例库向量缓存到 `database/mimic_iv_case_embeddings.pt`。模型默认在 CPU 上运行，
+可通过 `SIMILAR_CASE_EMBEDDING_DEVICE` 设置为 `cpu`、`cuda` 或 `auto`；其中 `auto`
+会在 CUDA 可用时使用 GPU。其他配置可通过
+`MIMIC_IV_CASE_PATH`、`SIMILAR_CASE_TOP_K`、`SIMILAR_CASE_EMBEDDING_MODEL`、
+`SIMILAR_CASE_EMBEDDING_CACHE_PATH` 和 `SIMILAR_CASE_EMBEDDING_BATCH_SIZE` 调整配置。
 
 ## 医疗声明
 

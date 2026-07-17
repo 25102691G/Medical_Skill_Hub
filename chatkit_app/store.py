@@ -5,7 +5,16 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from chatkit.store import NotFoundError, Store
-from chatkit.types import Attachment, Page, ThreadItem, ThreadMetadata
+from chatkit.types import (
+    AssistantMessageContent,
+    AssistantMessageItem,
+    Attachment,
+    Page,
+    ThreadItem,
+    ThreadMetadata,
+)
+
+from chatkit_app.translation import DisplayTranslator, get_context_display_language
 
 
 RowT = TypeVar("RowT")
@@ -14,10 +23,15 @@ RowT = TypeVar("RowT")
 class InMemoryChatKitStore(Store[dict[str, Any]]):
     """Development store for ChatKit threads and accumulated case text."""
 
-    def __init__(self) -> None:
+    def __init__(self, translator: DisplayTranslator) -> None:
+        self.translator = translator
         self.threads: dict[str, ThreadMetadata] = {}
         self.items: dict[str, list[ThreadItem]] = defaultdict(list)
         self.case_sections: dict[str, list[str]] = defaultdict(list)
+        self.raw_assistant_texts: dict[str, str] = {}
+
+    def register_raw_assistant_text(self, item_id: str, text: str) -> None:
+        self.raw_assistant_texts[item_id] = text
 
     def append_case_section(self, thread_id: str, text: str) -> str:
         self.case_sections[thread_id].append(text)
@@ -70,13 +84,33 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         order: str,
         context: dict[str, Any],
     ) -> Page[ThreadItem]:
-        return self._paginate(
+        page = self._paginate(
             self.items.get(thread_id, []),
             after,
             limit,
             order,
             sort_key=lambda item: item.created_at.timestamp(),
             cursor_key=lambda item: item.id,
+        )
+        display_language = get_context_display_language(context)
+        localized_items: list[ThreadItem] = []
+        for item in page.data:
+            raw_text = self.raw_assistant_texts.get(item.id)
+            if not isinstance(item, AssistantMessageItem) or raw_text is None:
+                localized_items.append(item)
+                continue
+            translated_text = await self.translator.translate(raw_text, display_language)
+            localized_items.append(
+                item.model_copy(
+                    update={
+                        "content": [AssistantMessageContent(text=translated_text)],
+                    }
+                )
+            )
+        return Page(
+            data=localized_items,
+            has_more=page.has_more,
+            after=page.after,
         )
 
     async def add_thread_item(
@@ -116,6 +150,8 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         thread_id: str,
         context: dict[str, Any],
     ) -> None:
+        for item in self.items.get(thread_id, []):
+            self.raw_assistant_texts.pop(item.id, None)
         self.threads.pop(thread_id, None)
         self.items.pop(thread_id, None)
         self.case_sections.pop(thread_id, None)
@@ -126,6 +162,7 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         item_id: str,
         context: dict[str, Any],
     ) -> None:
+        self.raw_assistant_texts.pop(item_id, None)
         self.items[thread_id] = [
             item for item in self.items.get(thread_id, []) if item.id != item_id
         ]

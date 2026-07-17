@@ -15,15 +15,13 @@ from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgeme
 from diagnosis.agents.guideline_searcher_agent import SKILLS_DIR, build_guideline_searcher_agent
 from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
-from diagnosis.agents.similar_case_retrieval_agent import (
-    build_similar_case_retrieval_agent,
-    build_similar_case_retrieval_prompt,
-)
+from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
 from schemas import (
     DiagnosisResult,
     DiagnosticJudgementResult,
     GuidelineSearchResult,
     SearchPlanningResult,
+    SimilarCaseQueries,
     SimilarCaseRetrievalResult,
 )
 
@@ -102,7 +100,6 @@ def _run_search_planning(
     search_planning_agent = build_search_planning_agent()
     search_planning_prompt = (
         f"Patient information:\n{case_text}\n\n"
-        "Write hypotheses in Simplified Chinese and search_queries in English."
     )
     if previous_search_planning_result and previous_diagnosis_result and diagnostic_judgement_result:
         search_planning_prompt = (
@@ -113,7 +110,6 @@ def _run_search_planning(
             "The diagnostic judgement found that hypotheses were closer to the patient information "
             "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
             "diagnosis round while using only information present in the patient record. "
-            "Write hypotheses in Simplified Chinese and search_queries in English."
         )
 
     _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
@@ -140,7 +136,6 @@ def _run_knowledge_search(
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
-        "Write the evidence synthesis and conclusions in Simplified Chinese. "
         "Keep search queries, publication titles, URLs, and quoted source text in their original language."
     )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
@@ -155,16 +150,14 @@ def _run_knowledge_search(
 
 
 def _run_similar_case_retrieval(
-    search_queries: list[str],
+    similar_case_queries: SimilarCaseQueries,
     *,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
-    similar_case_agent = build_similar_case_retrieval_agent()
-    similar_case_prompt = build_similar_case_retrieval_prompt(search_queries)
     _notify_agent_started(progress_callback, "Similar Case Retrieval Agent", round_index)
-    result = Runner.run_sync(similar_case_agent, similar_case_prompt).final_output
+    result = retrieve_similar_cases(similar_case_queries)
     _publish_stage_result(
         f"Similar Case Retrieval Result - Round {round_index}",
         result,
@@ -186,7 +179,6 @@ def _run_guideline_search(
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         "Search the local guideline skills for clinically relevant guideline evidence. "
-        "Write guideline evidence, summary, and limitations in Simplified Chinese. "
         "Keep skill_names unchanged."
     )
     run_config = RunConfig(
@@ -213,7 +205,7 @@ def _run_final_diagnosis(
     case_text: str,
     knowledge_search_result: object,
     guideline_search_result: GuidelineSearchResult,
-    similar_case_retrieval_result: SimilarCaseRetrievalResult | None = None,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     debug: bool = False,
     round_index: int | None = None,
@@ -223,16 +215,19 @@ def _run_final_diagnosis(
         DiagnosisResult,
         phase="final_diagnosis",
     )
+    similar_case_diagnosis_evidence = {
+        "discharge_disease": similar_case_retrieval_result.discharge_disease,
+        "discharge_texts": similar_case_retrieval_result.discharge_texts,
+    }
     diagnosis_prompt = (
         f"Case information:\n{case_text}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
-        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
+        f"Similar case retrieval result:\n{_as_json(similar_case_diagnosis_evidence)}\n\n"
         "Set used_skill and skill_names from the guideline search result. "
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
-        "Write every user-facing output field in Simplified Chinese, including disease names, "
-        "supporting evidence, missing information, recommended next steps, guideline evidence, "
-        "the summary, and the safety note."
+        "End every supporting evidence item with its case source "
+        "suffix, such as [入院时辅助资料-血常规] or [住院经过-结肠镜]."
     )
     _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
     result = Runner.run_sync(
@@ -253,7 +248,7 @@ def _run_diagnostic_judgement(
     hypotheses: list[str],
     diagnosis_result: DiagnosisResult,
     knowledge_search_result: object,
-    # similar_case_retrieval_result: SimilarCaseRetrievalResult,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult,
     guideline_search_result: GuidelineSearchResult,
     *,
     debug: bool = False,
@@ -266,10 +261,10 @@ def _run_diagnostic_judgement(
         f"Hypotheses from search planning:\n{_as_json(hypotheses)}\n\n"
         f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        # f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
+        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
         f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
-        "Keep closer_result as the required enum value and write reason in Simplified Chinese."
+        "Keep closer_result as the required enum value."
     )
     _notify_agent_started(progress_callback, "Diagnostic Judgement Agent", round_index)
     result = Runner.run_sync(
@@ -307,12 +302,12 @@ def make_diagnosis(
             progress_callback=progress_callback,
         )
 
-        # similar_case_retrieval_result = _run_similar_case_retrieval(
-        #     search_planning_result.search_queries,
-        #     debug=debug,
-        #     round_index=round_index,
-        #     progress_callback=progress_callback,
-        # )
+        similar_case_retrieval_result = _run_similar_case_retrieval(
+            search_planning_result.similar_case_queries,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
 
         guideline_search_result = _run_guideline_search(
             search_planning_result.search_queries,
@@ -325,7 +320,7 @@ def make_diagnosis(
             case_text,
             knowledge_search_result,
             guideline_search_result,
-            # similar_case_retrieval_result,
+            similar_case_retrieval_result,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -336,7 +331,7 @@ def make_diagnosis(
             search_planning_result.hypotheses,
             diagnosis_result,
             knowledge_search_result,
-            # similar_case_retrieval_result,
+            similar_case_retrieval_result,
             guideline_search_result,
             debug=debug,
             round_index=round_index,

@@ -22,59 +22,127 @@ from chatkit.types import (
 from openai import RateLimitError
 
 from chatkit_app.store import InMemoryChatKitStore
+from chatkit_app.translation import (
+    DisplayTranslator,
+    get_context_display_language,
+)
 from main import make_diagnosis
 from schemas import DiagnosisResult
 
 
 logger = logging.getLogger(__name__)
 
-DIAGNOSE_COMMANDS = {"开始诊断", "重新诊断", "诊断", "/diagnose"}
-CLEAR_COMMANDS = {"清空病例", "重置病例", "/clear", "/reset"}
+DIAGNOSE_COMMANDS = {
+    "开始诊断",
+    "重新诊断",
+    "诊断",
+    "start diagnosis",
+    "diagnose",
+    "/diagnose",
+}
+CLEAR_COMMANDS = {
+    "清空病例",
+    "重置病例",
+    "clear case",
+    "reset case",
+    "/clear",
+    "/reset",
+}
 AGENT_DISPLAY_NAMES = {
-    "Search Planning Agent": "检索规划",
-    "Knowledge Searcher Agent": "医学知识检索",
-    "Similar Case Retrieval Agent": "相似病例检索",
-    "Guideline Searcher Agent": "本地指南检索",
-    "Digestive Diagnosis Agent": "消化内科诊断分析",
-    "Diagnostic Judgement Agent": "诊断结果评估",
+    "zh-CN": {
+        "Search Planning Agent": "检索规划",
+        "Knowledge Searcher Agent": "医学知识检索",
+        "Similar Case Retrieval Agent": "相似病例检索",
+        "Guideline Searcher Agent": "本地指南检索",
+        "Digestive Diagnosis Agent": "消化内科诊断分析",
+        "Diagnostic Judgement Agent": "诊断结果评估",
+    },
+    "en": {
+        "Search Planning Agent": "search planning",
+        "Knowledge Searcher Agent": "medical knowledge retrieval",
+        "Similar Case Retrieval Agent": "similar-case retrieval",
+        "Guideline Searcher Agent": "local guideline retrieval",
+        "Digestive Diagnosis Agent": "gastroenterology diagnosis analysis",
+        "Diagnostic Judgement Agent": "diagnostic result assessment",
+    },
 }
 STAGE_DISPLAY_NAMES = {
-    "Search Planning Result": "检索规划结果",
-    "Knowledge Search Result": "医学知识检索结果",
-    "Similar Case Retrieval Result": "相似病例检索结果",
-    "Guideline Search Result": "本地指南检索结果",
-    "Final Diagnosis Result": "消化内科诊断结果",
-    "Diagnostic Judgement Result": "诊断结果评估",
+    "Search Planning Result": "Search Planning Result",
+    "Knowledge Search Result": "Medical Knowledge Search Result",
+    "Similar Case Retrieval Result": "Similar-Case Retrieval Result",
+    "Guideline Search Result": "Local Guideline Search Result",
+    "Final Diagnosis Result": "Gastroenterology Diagnosis Result",
+    "Diagnostic Judgement Result": "Diagnostic Result Assessment",
 }
 FIELD_DISPLAY_NAMES = {
-    "hypotheses": "候选诊断",
-    "search_queries": "文献检索词",
-    "used_skill": "是否使用本地指南资料",
-    "skill_names": "指南资料标识",
-    "guideline_evidence": "指南依据",
-    "summary": "总结",
-    "limitations": "局限性",
-    "topk_diagnoses": "疑似诊断",
-    "rank": "排名",
-    "disease": "疾病",
-    "confidence": "支持强度",
-    "supporting_evidence": "支持证据",
-    "missing_information": "仍缺少的信息",
-    "recommended_next_steps": "建议下一步",
-    "safety_note": "安全提示",
-    "closer_result": "更接近病例的诊断结果",
-    "reason": "判断理由",
-    "query": "检索词",
-    "results": "检索结果",
-    "title": "标题",
-    "source": "来源",
-    "published": "发表时间",
-    "content": "内容",
-    "metadata": "元数据",
+    "hypotheses": "Candidate Diagnoses",
+    "search_queries": "Literature Search Queries",
+    "similar_case_queries": "Similar-Case Retrieval Features",
+    "clinical_manifestations": "Clinical Manifestations",
+    "examination_results": "Examination Results",
+    "used_skill": "Used Local Guideline Material",
+    "skill_names": "Guideline Material Identifiers",
+    "guideline_evidence": "Guideline Evidence",
+    "summary": "Summary",
+    "limitations": "Limitations",
+    "topk_diagnoses": "Suspected Diagnoses",
+    "rank": "Rank",
+    "disease": "Disease",
+    "confidence": "Support Strength",
+    "supporting_evidence": "Supporting Evidence",
+    "missing_information": "Missing Information",
+    "recommended_next_steps": "Recommended Next Steps",
+    "safety_note": "Safety Note",
+    "closer_result": "Diagnosis Set Closer to the Case",
+    "reason": "Judgement Reason",
+    "query": "Search Query",
+    "results": "Search Results",
+    "title": "Title",
+    "source": "Source",
+    "published": "Publication Date",
+    "content": "Content",
+    "metadata": "Metadata",
 }
 VALUE_DISPLAY_NAMES = {
-    "topk_diagnoses": "消化内科诊断结果",
-    "hypotheses": "检索规划候选诊断",
+    "topk_diagnoses": "Gastroenterology Diagnosis Result",
+    "hypotheses": "Search-Planning Candidate Diagnoses",
+}
+STATIC_TEXT = {
+    "zh-CN": {
+        "case_cleared": "当前线程中的病例信息已清空。请发送新的病例资料。",
+        "no_text": "没有读取到文本内容。请发送病例资料。",
+        "case_recorded": (
+            "已记录这段病例资料，当前累计 {character_count} 个字符。"
+            "你可以继续补充检查结果；资料完整后发送“开始诊断”。"
+        ),
+        "no_case": "当前还没有病例资料。请先发送患者病史、体征和检查结果。",
+        "progress": "第 {round_index} 轮：正在进行{agent_name}…",
+        "quota": (
+            "OpenAI API 额度不足。请检查 API Key 所属项目的余额、"
+            "Billing 和使用预算，更新后重启后端。"
+        ),
+        "rate_limit": "OpenAI API 当前达到速率限制，请稍后重试。",
+        "pipeline_error": "诊断流水线运行失败，请检查服务端日志后重试。",
+    },
+    "en": {
+        "case_cleared": "The case information in this thread has been cleared. Please send a new case.",
+        "no_text": "No text was received. Please send the case information.",
+        "case_recorded": (
+            "This section has been recorded; the case now contains {character_count} characters. "
+            "You may continue adding examination results. Send “start diagnosis” when complete."
+        ),
+        "no_case": (
+            "No case information has been recorded. Please first send the patient history, "
+            "physical findings, and examination results."
+        ),
+        "progress": "Round {round_index}: running {agent_name}…",
+        "quota": (
+            "The OpenAI API quota is insufficient. Check the balance, billing status, and usage "
+            "budget for the API key's project, then restart the backend."
+        ),
+        "rate_limit": "The OpenAI API rate limit has been reached. Please try again later.",
+        "pipeline_error": "The diagnosis pipeline failed. Check the server logs and try again.",
+    },
 }
 
 
@@ -98,22 +166,26 @@ def _rate_limit_error_code(error: RateLimitError) -> str | None:
     return code if isinstance(code, str) else None
 
 
+def _static_text(language: str, key: str, **values: object) -> str:
+    return STATIC_TEXT[language][key].format(**values)
+
+
 def _format_diagnosis(result: DiagnosisResult) -> str:
-    sections = ["## 诊断分析结果", "", result.summary]
+    sections = ["## Diagnostic Analysis Result", "", result.summary]
 
     for item in result.topk_diagnoses:
         sections.extend(
             [
                 "",
-                f"### {item.rank}. {item.disease}（支持强度 {item.confidence}%）",
+                f"### {item.rank}. {item.disease} (support strength: {item.confidence}%)",
                 "",
-                "**支持证据**",
+                "**Supporting Evidence**",
                 *[f"- {evidence}" for evidence in item.supporting_evidence],
                 "",
-                "**仍缺少的信息**",
+                "**Missing Information**",
                 *[f"- {information}" for information in item.missing_information],
                 "",
-                "**建议下一步**",
+                "**Recommended Next Steps**",
                 *[f"- {step}" for step in item.recommended_next_steps],
             ]
         )
@@ -121,29 +193,29 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
             sections.extend(
                 [
                     "",
-                    "**指南依据**",
+                    "**Guideline Evidence**",
                     *[f"- {evidence}" for evidence in item.guideline_evidence],
                 ]
             )
 
     if result.used_skill:
-        sections.extend(["", "已使用本地指南资料辅助诊断。"])
+        sections.extend(["", "Local guideline material was used to support the diagnosis."])
     sections.extend(["", f"> {result.safety_note}"])
     return "\n".join(sections)
 
 
-def _translate_stage_value(value: object) -> object:
+def _prepare_stage_value(value: object) -> object:
     if isinstance(value, dict):
         return {
-            FIELD_DISPLAY_NAMES.get(str(key), str(key)): _translate_stage_value(item)
+            FIELD_DISPLAY_NAMES.get(str(key), str(key)): _prepare_stage_value(item)
             for key, item in value.items()
         }
     if isinstance(value, list):
-        return [_translate_stage_value(item) for item in value]
+        return [_prepare_stage_value(item) for item in value]
     if isinstance(value, bool):
-        return "是" if value else "否"
+        return "Yes" if value else "No"
     if value is None:
-        return "无"
+        return "None"
     if isinstance(value, str):
         return VALUE_DISPLAY_NAMES.get(value, value)
     return value
@@ -151,37 +223,71 @@ def _translate_stage_value(value: object) -> object:
 
 def _format_stage_result(title: str, content: str) -> str:
     stage_name, separator, round_index = title.partition(" - Round ")
-    display_name = STAGE_DISPLAY_NAMES.get(stage_name, "阶段输出结果")
-    heading = f"## 第 {round_index} 轮：{display_name}" if separator else f"## {display_name}"
+    display_name = STAGE_DISPLAY_NAMES.get(stage_name, "Stage Output Result")
+    heading = f"## Round {round_index}: {display_name}" if separator else f"## {display_name}"
 
     try:
         parsed_content = json.loads(content)
     except json.JSONDecodeError:
         return f"{heading}\n\n{content}"
 
-    translated_content = _translate_stage_value(parsed_content)
-    if isinstance(translated_content, str):
-        return f"{heading}\n\n{translated_content}"
-    formatted_content = json.dumps(translated_content, ensure_ascii=False, indent=2)
+    if stage_name == "Similar Case Retrieval Result":
+        if not isinstance(parsed_content, dict):
+            return f"{heading}\n\nNo displayable similar cases were retrieved."
+        hadm_ids = parsed_content.get("hadm_id")
+        discharge_diseases = parsed_content.get("discharge_disease")
+        if not isinstance(hadm_ids, list) or not isinstance(discharge_diseases, list):
+            return f"{heading}\n\nNo displayable similar cases were retrieved."
+        case_items = [
+            (
+                str(hadm_id),
+                str(discharge_disease),
+            )
+            for hadm_id, discharge_disease in zip(hadm_ids, discharge_diseases)
+        ]
+        if not case_items:
+            return f"{heading}\n\nNo similar cases were retrieved."
+        formatted_cases = "\n".join(
+            (
+                f"{index}. Hospital admission ID: {hadm_id}\n"
+                f"   Discharge disease: {discharge_disease}"
+            )
+            for index, (hadm_id, discharge_disease) in enumerate(case_items, start=1)
+        )
+        return f"{heading}\n\n{formatted_cases}"
+
+    prepared_content = _prepare_stage_value(parsed_content)
+    if isinstance(prepared_content, str):
+        return f"{heading}\n\n{prepared_content}"
+    formatted_content = json.dumps(prepared_content, ensure_ascii=False, indent=2)
     return f"{heading}\n\n```json\n{formatted_content}\n```"
 
 
 class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
     store: InMemoryChatKitStore
 
-    def __init__(self, store: InMemoryChatKitStore) -> None:
+    def __init__(
+        self,
+        store: InMemoryChatKitStore,
+        translator: DisplayTranslator,
+    ) -> None:
         super().__init__(store=store)
         self.store = store
+        self.translator = translator
 
     def _assistant_event(
         self,
         thread: ThreadMetadata,
         text: str,
         context: dict[str, Any],
+        *,
+        raw_text: str | None = None,
     ) -> ThreadItemDoneEvent:
+        item_id = self.store.generate_item_id("message", thread, context)
+        self.store.register_raw_assistant_text(item_id, raw_text or text)
         return ThreadItemDoneEvent(
             item=AssistantMessageItem(
-                id=self.store.generate_item_id("message", thread, context),
+                id=item_id,
                 thread_id=thread.id,
                 created_at=datetime.now(),
                 content=[AssistantMessageContent(text=text)],
@@ -196,13 +302,15 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
     ) -> AsyncIterator[ThreadStreamEvent]:
         user_text = _extract_user_text(input_user_message)
         normalized_command = user_text.lower().rstrip("。.!！")
+        display_language = get_context_display_language(context)
 
         if normalized_command in CLEAR_COMMANDS:
             self.store.clear_case_text(thread.id)
             yield self._assistant_event(
                 thread,
-                "当前线程中的病例信息已清空。请发送新的病例资料。",
+                _static_text(display_language, "case_cleared"),
                 context,
+                raw_text=_static_text("en", "case_cleared"),
             )
             return
 
@@ -211,19 +319,26 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
             if not user_text:
                 yield self._assistant_event(
                     thread,
-                    "没有读取到文本内容。请发送病例资料。",
+                    _static_text(display_language, "no_text"),
                     context,
+                    raw_text=_static_text("en", "no_text"),
                 )
                 return
 
             case_text = self.store.append_case_section(thread.id, user_text)
             yield self._assistant_event(
                 thread,
-                (
-                    f"已记录这段病例资料，当前累计 {len(case_text)} 个字符。"
-                    "你可以继续补充检查结果；资料完整后发送“开始诊断”。"
+                _static_text(
+                    display_language,
+                    "case_recorded",
+                    character_count=len(case_text),
                 ),
                 context,
+                raw_text=_static_text(
+                    "en",
+                    "case_recorded",
+                    character_count=len(case_text),
+                ),
             )
             return
 
@@ -231,8 +346,9 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         if not case_text:
             yield self._assistant_event(
                 thread,
-                "当前还没有病例资料。请先发送患者病史、体征和检查结果。",
+                _static_text(display_language, "no_case"),
                 context,
+                raw_text=_static_text("en", "no_case"),
             )
             return
 
@@ -264,17 +380,30 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
 
                 event_type, title, content = progress_event
                 if event_type == "agent_started":
-                    round_label = f"第 {content} 轮：" if content is not None else ""
-                    display_name = AGENT_DISPLAY_NAMES.get(title, "诊断处理")
+                    agent_name = AGENT_DISPLAY_NAMES[display_language].get(
+                        title,
+                        "诊断处理" if display_language == "zh-CN" else "diagnostic processing",
+                    )
                     yield ProgressUpdateEvent(
                         icon="analytics",
-                        text=f"{round_label}正在进行{display_name}…",
+                        text=_static_text(
+                            display_language,
+                            "progress",
+                            round_index=content or "-",
+                            agent_name=agent_name,
+                        ),
                     )
                 elif event_type == "stage_completed" and content is not None:
+                    raw_stage_text = _format_stage_result(title, content)
+                    translated_stage_text = await self.translator.translate(
+                        raw_stage_text,
+                        display_language,
+                    )
                     yield self._assistant_event(
                         thread,
-                        _format_stage_result(title, content),
+                        translated_stage_text,
                         context,
+                        raw_text=raw_stage_text,
                     )
 
             result = await diagnosis_task
@@ -288,24 +417,31 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
             )
             if error_code == "insufficient_quota":
                 yield ErrorEvent(
-                    message=(
-                        "OpenAI API 额度不足。请检查 API Key 所属项目的余额、"
-                        "Billing 和使用预算，更新后重启后端。"
-                    ),
+                    message=_static_text(display_language, "quota"),
                     allow_retry=False,
                 )
             else:
                 yield ErrorEvent(
-                    message="OpenAI API 当前达到速率限制，请稍后重试。",
+                    message=_static_text(display_language, "rate_limit"),
                     allow_retry=True,
                 )
             return
         except Exception:
             logger.exception("Diagnosis pipeline failed for thread %s", thread.id)
             yield ErrorEvent(
-                message="诊断流水线运行失败，请检查服务端日志后重试。",
+                message=_static_text(display_language, "pipeline_error"),
                 allow_retry=True,
             )
             return
 
-        yield self._assistant_event(thread, _format_diagnosis(result), context)
+        raw_diagnosis_text = _format_diagnosis(result)
+        translated_diagnosis_text = await self.translator.translate(
+            raw_diagnosis_text,
+            display_language,
+        )
+        yield self._assistant_event(
+            thread,
+            translated_diagnosis_text,
+            context,
+            raw_text=raw_diagnosis_text,
+        )

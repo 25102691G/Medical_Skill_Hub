@@ -18,7 +18,13 @@ class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
     disease: str = Field(description="Suspected diagnosis disease name")
     confidence: int = Field(ge=0, le=100, description="Integer confidence percentage from 0 to 100, for example 45 means 45%")
-    supporting_evidence: list[str] = Field(description="Evidence in the case supporting this diagnosis")
+    supporting_evidence: list[str] = Field(
+        description=(
+            "Evidence from the current patient case supporting this diagnosis. Each item must end with "
+            "a source suffix in the form [case section-specific examination], for example "
+            "[入院时辅助资料-血常规]."
+        )
+    )
     missing_information: list[str] = Field(description="Additional information needed for further confirmation")
     recommended_next_steps: list[str] = Field(description="Recommended next examinations or clinical management directions")
     guideline_evidence: list[str] = Field(default_factory=list, description="Guideline evidence if a guideline skill is used")
@@ -40,23 +46,36 @@ class GuidelineSearchResult(BaseModel):
     limitations: list[str] = Field(description="Limitations of the guideline skill search")
 
 
+class SimilarCaseQueries(BaseModel):
+    clinical_manifestations: list[str] = Field(
+        description="Present illness history and positive symptoms explicitly documented in the case"
+    )
+    examination_results: list[str] = Field(
+        description="Explicitly documented examination results, including laboratory, endoscopic, imaging, pathology, and microbiology findings"
+    )
+
+
 class SearchPlanningResult(BaseModel):
     hypotheses: list[str] = Field(max_length=5, description="Up to 5 major candidate diagnoses")
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
-
-
-class SimilarCaseDiagnosisItem(BaseModel):
-    source_query: str = Field(description="Original query used for similar-case retrieval")
-    diagnosis: str = Field(description="Similar-case diagnosis corresponding to this query")
-    matched_case_summary: str = Field(description="Brief summary of the similar case; if no real case database is connected, state that this is inferred only from the query")
-    supporting_reason: str = Field(description="Why this query corresponds to this diagnosis")
-    confidence: int = Field(ge=0, le=100, description="Integer diagnosis matching confidence percentage from 0 to 100")
+    similar_case_queries: SimilarCaseQueries = Field(
+        description="Structured case features for future similar-case retrieval"
+    )
 
 
 class SimilarCaseRetrievalResult(BaseModel):
-    items: list[SimilarCaseDiagnosisItem] = Field(description="Similar-case diagnosis result for each search query")
-    summary: str = Field(description="Overall summary of the similar-case diagnosis results")
-    limitations: list[str] = Field(description="Limitations of the current similar-case retrieval results")
+    discharge_disease: list[str] = Field(
+        max_length=10,
+        description="Discharge diseases from the top 10 similar cases in retrieval rank order",
+    )
+    hadm_id: list[str] = Field(
+        max_length=10,
+        description="Hospital admission IDs from the top 10 similar cases in retrieval rank order",
+    )
+    discharge_texts: list[str] = Field(
+        max_length=10,
+        description="Discharge texts from the top 10 similar cases in retrieval rank order",
+    )
 
 
 class DiagnosticJudgementResult(BaseModel):

@@ -60,6 +60,37 @@ h1 {
   text-align: right;
 }
 
+.header-controls {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #52645f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.language-control select {
+  min-width: 120px;
+  padding: 7px 30px 7px 10px;
+  border: 1px solid rgba(42, 92, 77, 0.22);
+  border-radius: 9px;
+  color: #1f4439;
+  background: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  cursor: pointer;
+}
+
+.language-control select:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .chat-panel {
   min-height: 0;
   overflow: hidden;
@@ -93,5 +124,10 @@ footer {
   .instructions {
     margin-top: 10px;
     text-align: left;
+  }
+
+  .header-controls {
+    margin-top: 12px;
+    justify-items: start;
   }
 }

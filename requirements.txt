@@ -5,6 +5,7 @@ uvicorn[standard]
 pydantic
 python-dotenv
 langchain-community
+rank-bm25
 xmltodict
 torch
 transformers

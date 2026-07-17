@@ -32,8 +32,7 @@ or differential-diagnosis clue pointing to a disease:
 If the skill materials do not provide clear evidence, do not invent recommendation numbers,
 evidence levels, recommendation strengths, or guideline statements.
 
-Write guideline_evidence, summary, and limitations in Simplified Chinese. Keep skill_names as the
-original local skill identifiers.
+Keep skill_names as the original local skill identifiers.
 """.strip()
 
 

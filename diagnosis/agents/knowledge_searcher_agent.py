@@ -1,11 +1,28 @@
 from __future__ import annotations
 
+import json
+import random
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from collections.abc import Iterator
 from typing import Any
 
 from agents import Agent, function_tool
 from langchain_community.retrievers import PubMedRetriever
 
-from config import OPENAI_MODEL
+from config import (
+    NCBI_API_KEY,
+    NCBI_EMAIL,
+    NCBI_MAX_RETRIES,
+    NCBI_REQUESTS_PER_SECOND,
+    NCBI_RETRY_BASE_SECONDS,
+    NCBI_TIMEOUT_SECONDS,
+    NCBI_TOOL,
+    OPENAI_MODEL,
+)
 
 
 KNOWLEDGE_SEARCHER_INSTRUCTIONS = """
@@ -18,13 +35,130 @@ Task:
 4. Do not invent papers, titles, authors, URLs, or conclusions.
 5. Summarize what the retrieved literature may support, and state when the retrieved results are insufficient.
 6. The output is for research assistance only and cannot replace clinical diagnosis or treatment decisions.
-7. Write search summaries, extracted evidence, and conclusions in Simplified Chinese.
-8. Keep search queries, publication titles, URLs, and quoted source text in their original language.
+7. Keep search queries, publication titles, URLs, and quoted source text in their original language.
 """.strip()
 
 
 def _normalize_max_docs(max_docs: int) -> int:
     return max(1, min(max_docs, 10))
+
+
+class _NcbiRateLimiter:
+    def __init__(self, requests_per_second: float) -> None:
+        self._minimum_interval = 1.0 / max(requests_per_second, 0.1)
+        self._lock = threading.Lock()
+        self._last_request_at = 0.0
+
+    def wait(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            wait_seconds = self._minimum_interval - (now - self._last_request_at)
+            if wait_seconds > 0:
+                time.sleep(wait_seconds)
+            self._last_request_at = time.monotonic()
+
+
+_NCBI_RATE_LIMITER = _NcbiRateLimiter(NCBI_REQUESTS_PER_SECOND)
+
+
+def _request_ncbi(url: str) -> bytes:
+    for retry_index in range(NCBI_MAX_RETRIES + 1):
+        _NCBI_RATE_LIMITER.wait()
+        try:
+            with urllib.request.urlopen(url, timeout=NCBI_TIMEOUT_SECONDS) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            retryable = exc.code == 429 or 500 <= exc.code < 600
+            if not retryable or retry_index >= NCBI_MAX_RETRIES:
+                raise
+            retry_after = exc.headers.get("Retry-After")
+            try:
+                retry_after_seconds = float(retry_after) if retry_after else 0.0
+            except ValueError:
+                retry_after_seconds = 0.0
+        except urllib.error.URLError:
+            if retry_index >= NCBI_MAX_RETRIES:
+                raise
+            retry_after_seconds = 0.0
+
+        exponential_delay = NCBI_RETRY_BASE_SECONDS * (2**retry_index)
+        jitter = random.uniform(0, NCBI_RETRY_BASE_SECONDS)
+        time.sleep(max(retry_after_seconds, exponential_delay + jitter))
+
+    raise RuntimeError("NCBI request retry loop exited unexpectedly")
+
+
+def _ncbi_url(base_url: str, parameters: dict[str, str]) -> str:
+    request_parameters = {
+        **parameters,
+        "tool": NCBI_TOOL,
+    }
+    if NCBI_EMAIL:
+        request_parameters["email"] = NCBI_EMAIL
+    if NCBI_API_KEY:
+        request_parameters["api_key"] = NCBI_API_KEY
+    return f"{base_url}{urllib.parse.urlencode(request_parameters)}"
+
+
+def _record_uid(record: Any, fallback_uid: str) -> str:
+    if not isinstance(record, dict):
+        return fallback_uid
+    citation = record.get("MedlineCitation", {})
+    uid = citation.get("PMID", fallback_uid) if isinstance(citation, dict) else fallback_uid
+    if isinstance(uid, dict):
+        return str(uid.get("#text", fallback_uid))
+    return str(uid)
+
+
+class _RateLimitedPubMedRetriever(PubMedRetriever):
+    def lazy_load(self, query: str) -> Iterator[dict[str, Any]]:
+        search_url = _ncbi_url(
+            self.base_url_esearch,
+            {
+                "db": "pubmed",
+                "term": query[: self.MAX_QUERY_LENGTH],
+                "retmode": "json",
+                "retmax": str(self.top_k_results),
+                "usehistory": "y",
+            },
+        )
+        search_result = json.loads(_request_ncbi(search_url).decode("utf-8"))
+        search_data = search_result["esearchresult"]
+        uids = [str(uid) for uid in search_data.get("idlist", [])]
+        if not uids:
+            return
+
+        fetch_url = _ncbi_url(
+            self.base_url_efetch,
+            {
+                "db": "pubmed",
+                "retmode": "xml",
+                "id": ",".join(uids),
+                "webenv": str(search_data.get("webenv", "")),
+            },
+        )
+        parsed = self.parse(_request_ncbi(fetch_url).decode("utf-8"))
+        article_set = parsed.get("PubmedArticleSet", {})
+
+        articles = article_set.get("PubmedArticle", [])
+        if isinstance(articles, dict):
+            articles = [articles]
+        for index, article in enumerate(articles):
+            fallback_uid = uids[index] if index < len(uids) else ""
+            uid = _record_uid(article, fallback_uid)
+            yield self._parse_article(
+                uid,
+                {"PubmedArticleSet": {"PubmedArticle": article}},
+            )
+
+        book_articles = article_set.get("PubmedBookArticle", [])
+        if isinstance(book_articles, dict):
+            book_articles = [book_articles]
+        for book_article in book_articles:
+            yield self._parse_article(
+                "",
+                {"PubmedArticleSet": {"PubmedBookArticle": book_article}},
+            )
 
 
 def _document_to_result(document: Any) -> dict[str, Any]:
@@ -62,7 +196,13 @@ def pubmed_search(case_info: str, max_docs: int = 5) -> dict[str, Any]:
         max_docs: Maximum number of documents to retrieve. The value is limited to 1-10.
     """
     normalized_max_docs = _normalize_max_docs(max_docs)
-    retriever = PubMedRetriever(load_max_docs=normalized_max_docs)
+    retriever = _RateLimitedPubMedRetriever(
+        top_k_results=normalized_max_docs,
+        api_key=NCBI_API_KEY,
+        email=NCBI_EMAIL,
+        max_retry=NCBI_MAX_RETRIES,
+        sleep_time=NCBI_RETRY_BASE_SECONDS,
+    )
     documents = _retrieve_documents(retriever, case_info)
     return {
         "source": "pubmed",

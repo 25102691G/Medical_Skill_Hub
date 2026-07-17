@@ -11,3 +11,4 @@ AGENTS.md
 /mineru
 /chatkit_frontend/node_modules/
 /chatkit_frontend/dist/
+/similar_case/*.csv
