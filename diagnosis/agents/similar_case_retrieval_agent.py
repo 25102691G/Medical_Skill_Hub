@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import re
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from config import (
     MIMIC_IV_CASE_PATH,
@@ -28,6 +30,8 @@ REQUIRED_COLUMNS = {
 }
 RRF_K = 60
 _TEXT_PART_PATTERN = re.compile(r"[a-z0-9]+")
+RankingDetails = dict[str, object]
+RankingCallback = Callable[[RankingDetails], None]
 
 
 @dataclass(frozen=True)
@@ -133,7 +137,7 @@ def _empty_retrieval_result() -> SimilarCaseRetrievalResult:
     )
 
 
-def _bm25_ranking(query: str, corpus: list[str]) -> list[int]:
+def _bm25_ranking(query: str, corpus: list[str]) -> list[tuple[int, float]]:
     query_tokens = _tokenize(query)
     eligible_indices = [index for index, text in enumerate(corpus) if text]
     tokenized_corpus = [_tokenize(corpus[index]) for index in eligible_indices]
@@ -150,7 +154,10 @@ def _bm25_ranking(query: str, corpus: list[str]) -> list[int]:
         key=lambda position: float(scores[position]),
         reverse=True,
     )
-    return [eligible_indices[position] for position in ranked_positions]
+    return [
+        (eligible_indices[position], float(scores[position]))
+        for position in ranked_positions
+    ]
 
 
 def _database_fingerprint(path: Path) -> str:
@@ -244,13 +251,108 @@ def _dense_ranking(
     query: str,
     corpus_embeddings: Any,
     eligible_indices: list[int],
-) -> list[int]:
+) -> list[tuple[int, float]]:
     torch, _, _, _ = _require_dense_dependencies()
     query_embedding = _encode_texts([query])[0]
     eligible_embeddings = corpus_embeddings[eligible_indices]
     scores = torch.matmul(eligible_embeddings, query_embedding)
     ranked_positions = torch.argsort(scores, descending=True).tolist()
-    return [eligible_indices[position] for position in ranked_positions]
+    return [
+        (eligible_indices[position], float(scores[position]))
+        for position in ranked_positions
+    ]
+
+
+def _build_ranking_details(
+    query_field: str,
+    method: str,
+    query: str,
+    ranking: list[tuple[int, float]],
+    records: tuple[_CaseRecord, ...],
+    *,
+    skipped_reason: str | None = None,
+) -> RankingDetails:
+    ranking_items = [
+        {
+            "rank": rank,
+            "hadm_id": records[record_index].hadm_id,
+            "discharge_disease": records[record_index].discharge_disease,
+            "score": score,
+        }
+        for rank, (record_index, score) in enumerate(
+            ranking[:SIMILAR_CASE_TOP_K],
+            start=1,
+        )
+    ]
+    return {
+        "query_field": query_field,
+        "method": method,
+        "query": query,
+        "status": "skipped" if skipped_reason is not None else "completed",
+        "skipped_reason": skipped_reason,
+        "ranking": ranking_items,
+    }
+
+
+def _print_ranking_debug(details: RankingDetails) -> None:
+    print(
+        (
+            "\n===== Similar Case Retrieval "
+            f"{details['query_field']} {details['method']} Ranking ====="
+        ),
+        file=sys.stderr,
+    )
+    print(
+        json.dumps(details, ensure_ascii=False, indent=2),
+        file=sys.stderr,
+    )
+
+
+def _report_ranking(
+    query_field: str,
+    method: str,
+    query: str,
+    ranking: list[tuple[int, float]],
+    records: tuple[_CaseRecord, ...],
+    *,
+    debug: bool,
+    ranking_callback: RankingCallback | None,
+    skipped_reason: str | None = None,
+) -> None:
+    details = _build_ranking_details(
+        query_field,
+        method,
+        query,
+        ranking,
+        records,
+        skipped_reason=skipped_reason,
+    )
+    if debug:
+        _print_ranking_debug(details)
+    if ranking_callback is not None:
+        ranking_callback(details)
+
+
+def _report_skipped_rankings(
+    query_field: str,
+    query: str,
+    records: tuple[_CaseRecord, ...],
+    reason: str,
+    *,
+    debug: bool,
+    ranking_callback: RankingCallback | None,
+) -> None:
+    for method in ("BM25", "Dense"):
+        _report_ranking(
+            query_field,
+            method,
+            query,
+            [],
+            records,
+            debug=debug,
+            ranking_callback=ranking_callback,
+            skipped_reason=reason,
+        )
 
 
 def _rrf_rank(rankings: list[list[int]], result_count: int) -> list[int]:
@@ -272,6 +374,9 @@ def _rrf_rank(rankings: list[list[int]], result_count: int) -> list[int]:
 
 def retrieve_similar_cases(
     similar_case_queries: SimilarCaseQueries,
+    *,
+    debug: bool = False,
+    ranking_callback: RankingCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
     if SIMILAR_CASE_TOP_K < 1 or SIMILAR_CASE_TOP_K > 10:
         raise ValueError("SIMILAR_CASE_TOP_K must be between 1 and 10.")
@@ -281,10 +386,42 @@ def retrieve_similar_cases(
     clinical_query = _join_query(similar_case_queries.clinical_manifestations)
     examination_query = _join_query(similar_case_queries.examination_results)
     if not clinical_query and not examination_query:
+        _report_skipped_rankings(
+            "clinical_manifestations",
+            clinical_query,
+            (),
+            "The clinical manifestations query is empty.",
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
+        _report_skipped_rankings(
+            "examination_results",
+            examination_query,
+            (),
+            "The examination results query is empty.",
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
         return _empty_retrieval_result()
 
     records = _load_case_records()
     if not records:
+        _report_skipped_rankings(
+            "clinical_manifestations",
+            clinical_query,
+            records,
+            "The similar-case corpus has no usable records.",
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
+        _report_skipped_rankings(
+            "examination_results",
+            examination_query,
+            records,
+            "The similar-case corpus has no usable records.",
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
         return _empty_retrieval_result()
 
     clinical_corpus = [record.clinical_manifestations for record in records]
@@ -296,17 +433,95 @@ def retrieve_similar_cases(
     examination_indices = [index for index, text in enumerate(examination_corpus) if text]
     if clinical_query and clinical_indices:
         bm25_ranking = _bm25_ranking(clinical_query, clinical_corpus)
+        _report_ranking(
+            "clinical_manifestations",
+            "BM25",
+            clinical_query,
+            bm25_ranking,
+            records,
+            debug=debug,
+            ranking_callback=ranking_callback,
+            skipped_reason=(
+                None
+                if bm25_ranking
+                else "The query and corpus have no shared BM25 tokens."
+            ),
+        )
         if bm25_ranking:
-            rankings.append(bm25_ranking)
-        rankings.append(
-            _dense_ranking(clinical_query, clinical_embeddings, clinical_indices)
+            rankings.append([record_index for record_index, _ in bm25_ranking])
+        dense_ranking = _dense_ranking(
+            clinical_query,
+            clinical_embeddings,
+            clinical_indices,
+        )
+        _report_ranking(
+            "clinical_manifestations",
+            "Dense",
+            clinical_query,
+            dense_ranking,
+            records,
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
+        rankings.append([record_index for record_index, _ in dense_ranking])
+    else:
+        _report_skipped_rankings(
+            "clinical_manifestations",
+            clinical_query,
+            records,
+            (
+                "The clinical manifestations query is empty."
+                if not clinical_query
+                else "The corpus has no clinical manifestations."
+            ),
+            debug=debug,
+            ranking_callback=ranking_callback,
         )
     if examination_query and examination_indices:
         bm25_ranking = _bm25_ranking(examination_query, examination_corpus)
+        _report_ranking(
+            "examination_results",
+            "BM25",
+            examination_query,
+            bm25_ranking,
+            records,
+            debug=debug,
+            ranking_callback=ranking_callback,
+            skipped_reason=(
+                None
+                if bm25_ranking
+                else "The query and corpus have no shared BM25 tokens."
+            ),
+        )
         if bm25_ranking:
-            rankings.append(bm25_ranking)
-        rankings.append(
-            _dense_ranking(examination_query, examination_embeddings, examination_indices)
+            rankings.append([record_index for record_index, _ in bm25_ranking])
+        dense_ranking = _dense_ranking(
+            examination_query,
+            examination_embeddings,
+            examination_indices,
+        )
+        _report_ranking(
+            "examination_results",
+            "Dense",
+            examination_query,
+            dense_ranking,
+            records,
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )
+        rankings.append([record_index for record_index, _ in dense_ranking])
+    else:
+        _report_skipped_rankings(
+            "examination_results",
+            examination_query,
+            records,
+            (
+                "The examination results query is empty."
+                if not examination_query
+                else "The corpus has no examination results."
+            ),
+            debug=debug,
+            ranking_callback=ranking_callback,
         )
 
     if not rankings:

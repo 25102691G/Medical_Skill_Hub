@@ -14,7 +14,7 @@ Compare two candidate diagnosis sets against the original patient information:
 1. hypotheses from the search planning stage;
 2. topk_diagnoses from the diagnosis stage.
 
-Use the knowledge search result, similar-case retrieval result, and guideline search result as
+Use the knowledge search result, similar-case retrieval result, and guideline evidence as
 supporting evidence to judge which set is clinically closer to the patient information.
 
 Decision requirements:

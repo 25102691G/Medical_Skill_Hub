@@ -69,6 +69,7 @@ AGENT_DISPLAY_NAMES = {
 STAGE_DISPLAY_NAMES = {
     "Search Planning Result": "Search Planning Result",
     "Knowledge Search Result": "Medical Knowledge Search Result",
+    "Similar Case Retrieval Rankings": "Similar-Case Retrieval Rankings",
     "Similar Case Retrieval Result": "Similar-Case Retrieval Result",
     "Guideline Search Result": "Local Guideline Search Result",
     "Final Diagnosis Result": "Gastroenterology Diagnosis Result",
@@ -84,15 +85,14 @@ FIELD_DISPLAY_NAMES = {
     "skill_names": "Guideline Material Identifiers",
     "guideline_evidence": "Guideline Evidence",
     "summary": "Summary",
+    "evidence": "Evidence",
     "limitations": "Limitations",
     "topk_diagnoses": "Suspected Diagnoses",
     "rank": "Rank",
     "disease": "Disease",
     "confidence": "Support Strength",
     "supporting_evidence": "Supporting Evidence",
-    "missing_information": "Missing Information",
     "recommended_next_steps": "Recommended Next Steps",
-    "safety_note": "Safety Note",
     "closer_result": "Diagnosis Set Closer to the Case",
     "reason": "Judgement Reason",
     "query": "Search Query",
@@ -182,9 +182,6 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
                 "**Supporting Evidence**",
                 *[f"- {evidence}" for evidence in item.supporting_evidence],
                 "",
-                "**Missing Information**",
-                *[f"- {information}" for information in item.missing_information],
-                "",
                 "**Recommended Next Steps**",
                 *[f"- {step}" for step in item.recommended_next_steps],
             ]
@@ -198,9 +195,11 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
                 ]
             )
 
+    if result.evidence:
+        sections.extend(["", "**Evidence**", *[f"- {evidence}" for evidence in result.evidence]])
+
     if result.used_skill:
         sections.extend(["", "Local guideline material was used to support the diagnosis."])
-    sections.extend(["", f"> {result.safety_note}"])
     return "\n".join(sections)
 
 
@@ -230,6 +229,60 @@ def _format_stage_result(title: str, content: str) -> str:
         parsed_content = json.loads(content)
     except json.JSONDecodeError:
         return f"{heading}\n\n{content}"
+
+    if stage_name == "Similar Case Retrieval Rankings":
+        if not isinstance(parsed_content, dict):
+            return f"{heading}\n\nNo retrieval ranking details are available."
+        ranking_groups = parsed_content.get("rankings")
+        if not isinstance(ranking_groups, list) or not ranking_groups:
+            return f"{heading}\n\nNo retrieval ranking details are available."
+
+        field_names = {
+            "clinical_manifestations": "Clinical Manifestations",
+            "examination_results": "Examination Results",
+        }
+        sections = [heading]
+        for group in ranking_groups:
+            if not isinstance(group, dict):
+                continue
+            query_field = field_names.get(
+                str(group.get("query_field", "")),
+                str(group.get("query_field", "Unknown Field")),
+            )
+            method = str(group.get("method", "Unknown Method"))
+            query = str(group.get("query", ""))
+            sections.extend(
+                [
+                    "",
+                    f"### {query_field} · {method}",
+                    "",
+                    f"**Query:** {query or 'Empty'}",
+                ]
+            )
+            if group.get("status") == "skipped":
+                sections.append(
+                    f"**Status:** Skipped — {group.get('skipped_reason') or 'No reason provided.'}"
+                )
+                continue
+
+            ranking = group.get("ranking")
+            if not isinstance(ranking, list) or not ranking:
+                sections.append("**Ranking:** No matching cases.")
+                continue
+            sections.extend(["", "**Ranking:**"])
+            for item in ranking:
+                if not isinstance(item, dict):
+                    continue
+                score = item.get("score")
+                score_text = f"{score:.6f}" if isinstance(score, (int, float)) else str(score)
+                sections.append(
+                    (
+                        f"{item.get('rank', '-')}. Hospital admission ID: "
+                        f"{item.get('hadm_id', '')}; Discharge disease: "
+                        f"{item.get('discharge_disease', '')}; Score: {score_text}"
+                    )
+                )
+        return "\n".join(sections)
 
     if stage_name == "Similar Case Retrieval Result":
         if not isinstance(parsed_content, dict):

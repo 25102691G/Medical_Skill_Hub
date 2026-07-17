@@ -20,14 +20,24 @@ class DiagnosisItem(BaseModel):
     confidence: int = Field(ge=0, le=100, description="Integer confidence percentage from 0 to 100, for example 45 means 45%")
     supporting_evidence: list[str] = Field(
         description=(
-            "Evidence from the current patient case supporting this diagnosis. Each item must end with "
-            "a source suffix in the form [case section-specific examination], for example "
-            "[入院时辅助资料-血常规]."
+            "Evidence from the current patient case supporting this diagnosis. If numbered evidence "
+            "supports the diagnostic interpretation, append the corresponding citation numbers, "
+            "for example [1] or [1][2]."
         )
     )
-    missing_information: list[str] = Field(description="Additional information needed for further confirmation")
-    recommended_next_steps: list[str] = Field(description="Recommended next examinations or clinical management directions")
-    guideline_evidence: list[str] = Field(default_factory=list, description="Guideline evidence if a guideline skill is used")
+    recommended_next_steps: list[str] = Field(
+        description=(
+            "Recommended next examinations or clinical management directions. If a step uses numbered "
+            "evidence, append the corresponding citation numbers, for example [1] or [1][2]."
+        )
+    )
+    guideline_evidence: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Guideline evidence if a guideline skill is used. Preserve each source item in the format "
+            "skill name：guideline evidence."
+        ),
+    )
 
 
 class DiagnosisResult(BaseModel):
@@ -35,23 +45,39 @@ class DiagnosisResult(BaseModel):
     skill_names: list[str] = Field(description="List of skill names actually used")
     topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
     summary: str = Field(description="Brief diagnostic analysis summary")
-    safety_note: str = Field(description="Medical safety note")
+    evidence: list[str] = Field(
+        description=(
+            "Complete numbered evidence list derived from GuidelineSearchResult.guideline_evidence. "
+            "Each item must use the format [number] guideline evidence."
+        )
+    )
 
 
 class GuidelineSearchResult(BaseModel):
     used_skill: bool = Field(description="Whether any guideline skill was used")
     skill_names: list[str] = Field(description="List of guideline skill names actually used")
-    guideline_evidence: list[str] = Field(description="Relevant guideline evidence extracted from loaded skills")
-    summary: str = Field(description="Brief summary of guideline search findings")
-    limitations: list[str] = Field(description="Limitations of the guideline skill search")
+    guideline_evidence: list[str] = Field(
+        description=(
+            "Relevant guideline evidence extracted from loaded skills. Each item must use the format "
+            "skill name：guideline evidence, preserving the original local skill name."
+        )
+    )
 
 
 class SimilarCaseQueries(BaseModel):
     clinical_manifestations: list[str] = Field(
-        description="Present illness history and positive symptoms explicitly documented in the case"
+        description=(
+            "Explicitly documented positive clinical features, including positive symptoms, "
+            "abnormal vital signs, and positive physical examination findings; excludes all "
+            "auxiliary examination results"
+        )
     )
     examination_results: list[str] = Field(
-        description="Explicitly documented examination results, including laboratory, endoscopic, imaging, pathology, and microbiology findings"
+        description=(
+            "Explicitly documented positive auxiliary examination results, including abnormal "
+            "laboratory, endoscopic, imaging, pathology, and microbiology findings; excludes all "
+            "items included in clinical_manifestations"
+        )
     )
 
 

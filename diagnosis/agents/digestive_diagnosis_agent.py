@@ -20,13 +20,25 @@ Also, you will be provided some knowledge about the patient's phenotype and onli
 
 FINAL_DIAGNOSIS_INSTRUCTIONS = """
 This is the final diagnosis stage. You will receive patient information, knowledge search output,
-guideline search output, and similar-case retrieval output.
+guideline evidence, numbered guideline evidence, and similar-case retrieval output.
 
-Use the guideline search output as pre-retrieved guideline evidence. Do not call load_skill or inspect
+Use the provided guideline evidence as pre-retrieved evidence. Do not call load_skill or inspect
 the local skills directory in this stage. In the final answer, distinguish case-based reasoning,
 literature-search evidence, similar-case evidence, and guideline-based evidence.
-Populate guideline_evidence only from the guideline search output. If no guideline evidence supports
-a diagnosis, leave that diagnosis guideline_evidence as an empty list.
+Set used_skill to true exactly when the provided guideline evidence list is non-empty. Derive
+skill_names from the original skill-name prefix before the full-width Chinese colon in each guideline
+evidence item, preserving first-seen order and removing duplicates. If the list is empty, set
+used_skill to false and skill_names to an empty list.
+
+Populate guideline_evidence only from the provided guideline evidence. If no guideline evidence supports
+a diagnosis, leave that diagnosis guideline_evidence as an empty list. When copying relevant
+guideline_evidence into a diagnosis, preserve the complete "skill name：guideline evidence" item,
+including the original skill name and the full-width Chinese colon separator. Do not remove or
+rewrite the skill name.
+
+Set the top-level evidence field to the complete numbered guideline evidence list exactly as provided,
+preserving its order, numbering, and text. If numbered guideline evidence is empty, set evidence to an
+empty list. Do not add, omit, renumber, summarize, or rewrite evidence items.
 
 Read each similar-case discharge_disease together with the discharge_text at the same ranked position,
 and use them only as external reference evidence. A discharge_disease is the retrieved similar case's
@@ -34,15 +46,16 @@ discharge diagnosis, not the current patient's diagnosis. Do not treat symptoms,
 diagnoses, or outcomes from a retrieved similar case as facts observed in the current patient. If the
 similar-case retrieval result is empty or not clinically relevant, do not infer support from it.
 
-Populate supporting_evidence only with facts explicitly documented for the current patient. End every
-supporting_evidence item with a source suffix in square brackets. Use the exact case section heading and,
-when available, the specific examination name, for example "[入院时辅助资料-血常规]" or
-"[住院经过-结肠镜]". If one item is supported by multiple case locations, append multiple suffixes. If
-the case text has no explicit section heading for a fact, use "[病例原文]" instead of inventing a
-section name. Do not use literature-search findings, similar-case findings, or guideline statements as
-the source of supporting_evidence.
+Populate supporting_evidence only with facts explicitly documented for the current patient. Numbered
+guideline evidence may support the diagnostic interpretation of a patient fact, but it must not replace
+or be presented as a patient fact. When a supporting_evidence item uses numbered guideline evidence,
+append the corresponding citation number at the end, for example "[1]" or "[1][2]". When a
+recommended_next_steps item uses numbered guideline evidence, append the corresponding citation number
+at the end in the same format. Do not cite an evidence number unless that exact numbered item supports
+the statement, and do not invent evidence numbers. Do not use literature-search findings or similar-case
+findings as facts observed in the current patient.
 
-If the guideline search output does not provide clear evidence, do not invent recommendation numbers,
+If the provided guideline evidence does not provide clear support, do not invent recommendation numbers,
 evidence levels, or recommendation strengths.
 
 Before outputting topk_diagnoses, you must call normalize_disease_name for each diagnostic disease name.

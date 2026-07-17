@@ -29,10 +29,19 @@ or differential-diagnosis clue pointing to a disease:
 4. Extract guideline evidence relevant to differential diagnosis, diagnostic criteria,
    confirmation tests, and recommended next steps.
 
+For every guideline_evidence item, identify the exact loaded skill that supports the evidence and
+format the item as:
+skill name：guideline evidence
+Preserve the original local skill name, use the full-width Chinese colon "：" as the separator, and
+do not add quotation marks around either part. If evidence comes from different skills, output it as
+separate items with the corresponding skill name. Do not combine evidence from multiple skills into
+one item.
+
 If the skill materials do not provide clear evidence, do not invent recommendation numbers,
 evidence levels, recommendation strengths, or guideline statements.
 
 Keep skill_names as the original local skill identifiers.
+Return only used_skill, skill_names, and guideline_evidence in the structured output.
 """.strip()
 
 

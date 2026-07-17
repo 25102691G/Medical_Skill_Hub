@@ -93,6 +93,7 @@ def _run_search_planning(
     previous_search_planning_result: SearchPlanningResult | None = None,
     previous_diagnosis_result: DiagnosisResult | None = None,
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
+    previous_guideline_evidence: list[str] | None = None,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
@@ -107,9 +108,13 @@ def _run_search_planning(
             f"Previous search planning result:\n{_as_json(previous_search_planning_result)}\n\n"
             f"Previous diagnosis result:\n{_as_json(previous_diagnosis_result)}\n\n"
             f"Diagnostic judgement result:\n{_as_json(diagnostic_judgement_result)}\n\n"
+            f"Previous guideline evidence:\n{_as_json(previous_guideline_evidence or [])}\n\n"
             "The diagnostic judgement found that hypotheses were closer to the patient information "
             "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
-            "diagnosis round while using only information present in the patient record. "
+            "diagnosis round. Return the complete SearchPlanningResult required by the schema, but "
+            "preserve the previous hypotheses and similar_case_queries unless they violate the agent "
+            "instructions. Use the previous artifacts, including previous guideline evidence, only to "
+            "improve the retrieval strategy, and do not treat their contents as new patient facts. "
         )
 
     _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
@@ -157,7 +162,22 @@ def _run_similar_case_retrieval(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
     _notify_agent_started(progress_callback, "Similar Case Retrieval Agent", round_index)
-    result = retrieve_similar_cases(similar_case_queries)
+    ranking_details: list[dict[str, object]] = []
+    result = retrieve_similar_cases(
+        similar_case_queries,
+        debug=debug,
+        ranking_callback=(
+            ranking_details.append
+            if progress_callback is not None
+            else None
+        ),
+    )
+    if progress_callback is not None:
+        progress_callback(
+            "stage_completed",
+            f"Similar Case Retrieval Rankings - Round {round_index}",
+            _as_json({"rankings": ranking_details}),
+        )
     _publish_stage_result(
         f"Similar Case Retrieval Result - Round {round_index}",
         result,
@@ -204,7 +224,7 @@ def _run_guideline_search(
 def _run_final_diagnosis(
     case_text: str,
     knowledge_search_result: object,
-    guideline_search_result: GuidelineSearchResult,
+    guideline_evidence: list[str],
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     debug: bool = False,
@@ -219,21 +239,27 @@ def _run_final_diagnosis(
         "discharge_disease": similar_case_retrieval_result.discharge_disease,
         "discharge_texts": similar_case_retrieval_result.discharge_texts,
     }
+    numbered_guideline_evidence = [
+        f"[{index}] {evidence}"
+        for index, evidence in enumerate(guideline_evidence, start=1)
+    ]
     diagnosis_prompt = (
         f"Case information:\n{case_text}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
+        f"Guideline evidence:\n{_as_json(guideline_evidence)}\n\n"
+        f"Numbered guideline evidence:\n{_as_json(numbered_guideline_evidence)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_diagnosis_evidence)}\n\n"
-        "Set used_skill and skill_names from the guideline search result. "
-        f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses. "
-        "End every supporting evidence item with its case source "
-        "suffix, such as [入院时辅助资料-血常规] or [住院经过-结肠镜]."
+        "Set used_skill to whether guideline evidence is non-empty. Derive skill_names from the "
+        "skill-name prefix before the full-width Chinese colon in each guideline evidence item. "
+        "Copy the complete numbered guideline evidence list into evidence exactly as provided. "
+        f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
     _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
     result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
     ).final_output
+    result = result.model_copy(update={"evidence": numbered_guideline_evidence})
     _publish_stage_result(
         f"Final Diagnosis Result - Round {round_index}",
         result,
@@ -249,7 +275,7 @@ def _run_diagnostic_judgement(
     diagnosis_result: DiagnosisResult,
     knowledge_search_result: object,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
-    guideline_search_result: GuidelineSearchResult,
+    guideline_evidence: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,
@@ -262,7 +288,7 @@ def _run_diagnostic_judgement(
         f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
-        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
+        f"Guideline evidence:\n{_as_json(guideline_evidence)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Keep closer_result as the required enum value."
     )
@@ -319,7 +345,7 @@ def make_diagnosis(
         diagnosis_result = _run_final_diagnosis(
             case_text,
             knowledge_search_result,
-            guideline_search_result,
+            guideline_search_result.guideline_evidence,
             similar_case_retrieval_result,
             debug=debug,
             round_index=round_index,
@@ -332,7 +358,7 @@ def make_diagnosis(
             diagnosis_result,
             knowledge_search_result,
             similar_case_retrieval_result,
-            guideline_search_result,
+            guideline_search_result.guideline_evidence,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -349,6 +375,7 @@ def make_diagnosis(
             previous_search_planning_result=search_planning_result,
             previous_diagnosis_result=diagnosis_result,
             diagnostic_judgement_result=diagnostic_judgement_result,
+            previous_guideline_evidence=guideline_search_result.guideline_evidence,
             debug=debug,
             round_index=round_index + 1,
             progress_callback=progress_callback,
