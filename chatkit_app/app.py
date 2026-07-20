@@ -15,7 +15,7 @@ from chatkit_app.translation import DisplayTranslator, normalize_display_languag
 app = FastAPI(title="Medical Skill Hub ChatKit API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:43179", "http://127.0.0.1:43179"],
     allow_credentials=True,
     allow_methods=["POST", "OPTIONS"],
     allow_headers=["*"],

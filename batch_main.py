@@ -11,7 +11,7 @@ from main import make_diagnosis
 
 
 PROJECT_ROOT = Path(__file__).absolute().parent
-DEFAULT_CSV_PATH = PROJECT_ROOT / "database" / "mimiv_iv_case.csv"
+DEFAULT_CSV_PATH = PROJECT_ROOT / "database" / "mimic_iv_test_case.csv"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
 OUTPUT_COLUMNS = ("subject_id", "hadm_id", "long_title")

@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ## 批量运行
 
-`batch_main.py` 默认读取 `database/mimiv_iv_case.csv`，逐行使用
+`batch_main.py` 默认读取 `database/mimic_iv_test_case.csv`，逐行使用
 `discharge_text_before_disposition` 作为 `case_text` 运行完整诊断流水线。使用
 `--limit` 控制本次处理的病例数量：
 
@@ -31,12 +31,52 @@ pip install -r requirements.txt
 如需读取其他结构相同的 CSV，可通过 `--csv` 指定：
 
 ```bash
-.venv/bin/python batch_main.py --csv database/mimiv_iv_case.csv --limit 10
+.venv/bin/python batch_main.py --csv database/mimic_iv_test_case.csv --limit 10
 ```
 
 结果逐条写入 `output/mimiv_iv_diagnosis_results_<时间戳>.jsonl`。每行对应一个成功完成
 的病例，仅包含 `subject_id`、`hadm_id`、`long_title` 和结构化
 `diagnosis_result`。单个病例失败时，错误会输出到终端，脚本继续处理下一条病例。
+
+## 纯 LLM Baseline
+
+`llm_baseline.py` 与 `batch_main.py` 使用相同的输入 CSV、病例文本列和外层 JSONL
+字段，但每个病例仅执行直接的 LLM 诊断调用，不执行指南检索、PubMed
+检索、相似病例检索或疾病名称标准化。`diagnosis_result` 只保存评估所需的
+`topk_diagnoses`，每项包含 `rank` 和 `disease`。模型调用统一通过
+`interface.py` 中的 `LLM_handler` 完成，目前支持 OpenAI、DeepSeek、Gemini 和
+Claude。
+
+```bash
+./run_llm_baseline.sh
+```
+
+在项目根目录的 `.env` 中配置供应商、API Key 和模型。例如：
+
+```dotenv
+LLM_BASELINE_PROVIDER="deepseek"
+DEEPSEEK_API_KEY="your_deepseek_api_key"
+DEEPSEEK_MODEL="deepseek-chat"
+```
+
+四种供应商对应的配置分别为 `OPENAI_API_KEY` / `OPENAI_MODEL`、
+`DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`、`GEMINI_API_KEY` / `GEMINI_MODEL`
+和 `CLAUDE_API_KEY` / `CLAUDE_MODEL`。`run_llm_baseline.sh` 会加载 `.env`，
+再通过命令行参数传给 `llm_baseline.py`。也可以直接运行 Python 入口：
+
+```bash
+.venv/bin/python llm_baseline.py \
+  --model deepseek \
+  --csv database/mimic_iv_test_case.csv \
+  --limit 10
+```
+
+API Key 和模型参数均为可选参数；未显式传入时，`LLM_handler` 会读取 `.env`
+中的对应配置。Gemini 和 Claude 分别需要可选依赖 `google-generativeai` 和
+`anthropic`，只有选择相应供应商时才会导入。
+
+结果逐条写入 `output/mimiv_iv_llm_baseline_results_<时间戳>.jsonl`，可以直接作为
+`evaluate_diagnosis_results.py` 的输入。
 
 ## 诊断结果评估
 
@@ -96,6 +136,9 @@ cd chatkit_frontend
 npm run dev
 ```
 
+前端开发服务器固定使用 `43179` 端口，启动后访问 `http://localhost:43179`。
+远程使用时，需要同时转发前端 `43179` 端口和后端 `8000` 端口。
+
 前端右上角可选择简体中文或英文作为显示语言。选择结果会同时控制 ChatKit 自带界面、
 页面静态文字以及后端消息的展示翻译。前端通过 `X-Display-Language` 请求头传递目标
 语言；每个 Agent 完成后，ChatKit 服务端会翻译该阶段的字段标签和字符串内容，再立即
@@ -133,7 +176,7 @@ NCBI_TOOL=medical_skill_hub
 检索规划阶段生成 `similar_case_queries` 英文短语列表，其中同时包含病例中明确记录的
 阳性临床表现和阳性辅助检查结果。临床表现包括阳性症状、异常生命体征和体格检查阳性
 体征；辅助检查结果包括实验室、影像、内镜、病理和微生物检查结果。相似病例库使用
-`database/similar_case_100.csv`，并以其中的完整 `discharge_text` 作为检索语料。
+`database/mimic_iv_similar_case.csv`，并以其中的完整 `discharge_text` 作为检索语料。
 BM25 仅对英文和数字分词；统一语料分别执行 BM25 和 Dense Retriever 检索，再通过
 RRF 融合排名。最终按相关性顺序输出最多 10 条病例对应的 `hadm_id`、
 `long_title`（输出字段为 `discharge_disease`）和 `discharge_text`。前端的相似病例
@@ -145,7 +188,7 @@ ChatKit 前端也会在每轮相似病例检索完成后展示同一组两路排
 阶段进度事件传递，不要求后端启用 `debug`。
 
 Dense Retriever 默认使用 `BAAI/bge-m3`，首次运行时由 Transformers 加载模型，并将
-病例库向量缓存到 `database/similar_case_100_embeddings.pt`。模型默认在 CPU 上运行，
+病例库向量缓存到 `database/mimic_iv_similar_case_embeddings.pt`。模型默认在 CPU 上运行，
 可通过 `SIMILAR_CASE_EMBEDDING_DEVICE` 设置为 `cpu`、`cuda` 或 `auto`；其中 `auto`
 会在 CUDA 可用时使用 GPU。其他配置可通过
 `MIMIC_IV_CASE_PATH`、`SIMILAR_CASE_TOP_K`、`SIMILAR_CASE_EMBEDDING_MODEL`、
