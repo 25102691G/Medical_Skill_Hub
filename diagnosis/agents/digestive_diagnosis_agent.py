@@ -20,7 +20,7 @@ Also, you will be provided some knowledge about the patient's phenotype and onli
 
 FINAL_DIAGNOSIS_INSTRUCTIONS = """
 This is the final diagnosis stage. You will receive patient information, knowledge search output,
-guideline evidence, numbered guideline evidence, and similar-case retrieval output.
+guideline evidence, formatted PubMed evidence, numbered evidence, and similar-case retrieval output.
 
 Use the provided guideline evidence as pre-retrieved evidence. Do not call load_skill or inspect
 the local skills directory in this stage. In the final answer, distinguish case-based reasoning,
@@ -30,15 +30,10 @@ skill_names from the original skill-name prefix before the full-width Chinese co
 evidence item, preserving first-seen order and removing duplicates. If the list is empty, set
 used_skill to false and skill_names to an empty list.
 
-Populate guideline_evidence only from the provided guideline evidence. If no guideline evidence supports
-a diagnosis, leave that diagnosis guideline_evidence as an empty list. When copying relevant
-guideline_evidence into a diagnosis, preserve the complete "skill name：guideline evidence" item,
-including the original skill name and the full-width Chinese colon separator. Do not remove or
-rewrite the skill name.
-
-Set the top-level evidence field to the complete numbered guideline evidence list exactly as provided,
-preserving its order, numbering, and text. If numbered guideline evidence is empty, set evidence to an
-empty list. Do not add, omit, renumber, summarize, or rewrite evidence items.
+Set the top-level evidence field to the complete numbered evidence list exactly as provided. This list
+contains guideline evidence followed by PubMed evidence in one continuous numbering sequence. Preserve
+its order, numbering, and text. If numbered evidence is empty, set evidence to an empty list. Do not add,
+omit, renumber, summarize, or rewrite evidence items.
 
 Read each similar-case discharge_disease together with the discharge_text at the same ranked position,
 and use them only as external reference evidence. A discharge_disease is the retrieved similar case's
@@ -47,16 +42,16 @@ diagnoses, or outcomes from a retrieved similar case as facts observed in the cu
 similar-case retrieval result is empty or not clinically relevant, do not infer support from it.
 
 Populate supporting_evidence only with facts explicitly documented for the current patient. Numbered
-guideline evidence may support the diagnostic interpretation of a patient fact, but it must not replace
-or be presented as a patient fact. When a supporting_evidence item uses numbered guideline evidence,
+guideline or PubMed evidence may support the diagnostic interpretation of a patient fact, but it must
+not replace or be presented as a patient fact. When a supporting_evidence item uses numbered evidence,
 append the corresponding citation number at the end, for example "[1]" or "[1][2]". When a
-recommended_next_steps item uses numbered guideline evidence, append the corresponding citation number
-at the end in the same format. Do not cite an evidence number unless that exact numbered item supports
-the statement, and do not invent evidence numbers. Do not use literature-search findings or similar-case
+recommended_next_steps item uses numbered evidence, append the corresponding citation number at the end
+in the same format. Do not cite an evidence number unless that exact numbered item supports the
+statement, and do not invent evidence numbers. Do not use literature-search findings or similar-case
 findings as facts observed in the current patient.
 
-If the provided guideline evidence does not provide clear support, do not invent recommendation numbers,
-evidence levels, or recommendation strengths.
+If the provided evidence does not provide clear support, do not invent recommendation numbers, evidence
+levels, or recommendation strengths.
 
 Before outputting topk_diagnoses, you must call normalize_disease_name for each diagnostic disease name.
 Use the normalized ICD11 result to preserve the standardized diagnosis meaning.

@@ -18,6 +18,51 @@ pip install -r requirements.txt
 ./run_main.sh
 ```
 
+## 批量运行
+
+`batch_main.py` 默认读取 `database/mimiv_iv_case.csv`，逐行使用
+`discharge_text_before_disposition` 作为 `case_text` 运行完整诊断流水线。使用
+`--limit` 控制本次处理的病例数量：
+
+```bash
+.venv/bin/python batch_main.py --limit 10
+```
+
+如需读取其他结构相同的 CSV，可通过 `--csv` 指定：
+
+```bash
+.venv/bin/python batch_main.py --csv database/mimiv_iv_case.csv --limit 10
+```
+
+结果逐条写入 `output/mimiv_iv_diagnosis_results_<时间戳>.jsonl`。每行对应一个成功完成
+的病例，仅包含 `subject_id`、`hadm_id`、`long_title` 和结构化
+`diagnosis_result`。单个病例失败时，错误会输出到终端，脚本继续处理下一条病例。
+
+## 诊断结果评估
+
+`evaluate_diagnosis_results.py` 使用 DeepSeek 对批量诊断结果进行评估。脚本逐行读取
+`long_title` 作为标准诊断，并提取 `diagnosis_result.topk_diagnoses` 中前五项的
+`disease`，让模型判断标准诊断在预测疾病中的排名。运行前需要在 `.env` 中配置
+`DEEPSEEK_API_KEY`；模型、接口地址和重试次数分别由 `DEEPSEEK_MODEL`、
+`DEEPSEEK_BASE_URL` 和 `DEEPSEEK_EVALUATION_RETRIES` 控制。
+
+评估默认的诊断结果文件：
+
+```bash
+.venv/bin/python evaluate_diagnosis_results.py
+```
+
+也可以指定输入和输出 JSONL：
+
+```bash
+.venv/bin/python evaluate_diagnosis_results.py \
+  --input output/mimiv_iv_diagnosis_results_<时间戳>.jsonl \
+  --output output/diagnosis_evaluation.jsonl
+```
+
+每条评估结果会实时写入输出文件。程序结束时在标准输出中给出 `recall1`、`recall3`
+和 `recall5`；模型返回 `No` 时，该病例在三个指标中都记为未命中。
+
 ## ChatKit 聊天界面
 
 项目提供基于 ChatKit 的自托管聊天界面。现有 `make_diagnosis()` 诊断流水线保持不变，FastAPI 适配层位于 `chatkit_app/`，React 前端位于 `chatkit_frontend/`。
@@ -108,10 +153,14 @@ Dense Retriever 默认使用 `BAAI/bge-m3`，首次运行时由 Transformers 加
 
 ## 最终诊断证据引用
 
-最终诊断结果的 `evidence` 按本地指南检索结果的原始顺序保存完整证据，并使用 `[1]`、
-`[2]` 等序号标记。`supporting_evidence` 中的患者事实如果使用指南解释其诊断意义，
-以及 `recommended_next_steps` 使用指南提出后续建议时，会在条目末尾添加对应的
-`[1]` 或 `[1][2]` 引用。患者事实仍必须来自当前病例，指南证据不能替代或冒充患者
+最终诊断结果的 `evidence` 先按本地指南检索结果的原始顺序保存完整指南证据，再追加
+PubMed 证据，并使用 `[1]`、`[2]` 等序号统一连续编号。指南证据保持
+`skill name：guideline evidence` 格式；PubMed 证据保持
+`PubMed PMID <PMID>（<论文标题>）：<相关摘要证据>` 格式。
+
+`supporting_evidence` 中的患者事实如果使用编号后的指南或 PubMed 证据解释其诊断意义，
+以及 `recommended_next_steps` 使用这些证据提出后续建议时，会在条目末尾添加对应的
+`[1]` 或 `[1][2]` 引用。患者事实仍必须来自当前病例，外部证据不能替代或冒充患者
 已经存在的临床事实。
 
 ## 医疗声明

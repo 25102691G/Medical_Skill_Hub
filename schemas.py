@@ -6,12 +6,45 @@ from pydantic import BaseModel, Field
 
 
 class PhenotypeItem(BaseModel):
-    # hpo: str = Field(description="HPO identifier, or an empty string if it cannot be determined")
     phenotype: str = Field(description="English phenotype description")
 
 
 class PhenotypeExtractionResult(BaseModel):
     phenotypes: list[PhenotypeItem] = Field(description="Patient phenotype list extracted from the case text")
+
+
+class PubMedEvidenceItem(BaseModel):
+    pmid: str = Field(
+        min_length=1,
+        pattern=r"^\d+$",
+        description="Exact numeric PubMed PMID copied from a retrieved result",
+    )
+    title: str = Field(
+        min_length=1,
+        description="Exact publication title copied from the retrieved PubMed result",
+    )
+    evidence: str = Field(
+        min_length=1,
+        description=(
+            "Clinically relevant evidence faithfully extracted or summarized from the publication "
+            "abstract, without adding conclusions that are absent from the abstract"
+        ),
+    )
+
+
+class KnowledgeSearchResult(BaseModel):
+    summary: str = Field(
+        description=(
+            "Brief synthesis of what the retrieved PubMed literature supports and any important "
+            "limitations or insufficiency"
+        )
+    )
+    pubmed_evidence: list[PubMedEvidenceItem] = Field(
+        description=(
+            "Relevant PubMed evidence items. Include an item only when its retrieved abstract contains "
+            "clinically relevant evidence and both its PMID and title are available."
+        )
+    )
 
 
 class DiagnosisItem(BaseModel):
@@ -31,13 +64,6 @@ class DiagnosisItem(BaseModel):
             "evidence, append the corresponding citation numbers, for example [1] or [1][2]."
         )
     )
-    guideline_evidence: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Guideline evidence if a guideline skill is used. Preserve each source item in the format "
-            "skill name：guideline evidence."
-        ),
-    )
 
 
 class DiagnosisResult(BaseModel):
@@ -47,8 +73,8 @@ class DiagnosisResult(BaseModel):
     summary: str = Field(description="Brief diagnostic analysis summary")
     evidence: list[str] = Field(
         description=(
-            "Complete numbered evidence list derived from GuidelineSearchResult.guideline_evidence. "
-            "Each item must use the format [number] guideline evidence."
+            "Complete numbered evidence list derived from guideline evidence followed by PubMed "
+            "evidence. Each item must use the format [number] source：evidence text."
         )
     )
 

@@ -82,6 +82,8 @@ FIELD_DISPLAY_NAMES = {
     "used_skill": "Used Local Guideline Material",
     "skill_names": "Guideline Material Identifiers",
     "guideline_evidence": "Guideline Evidence",
+    "pubmed_evidence": "PubMed Evidence",
+    "pmid": "PubMed PMID",
     "summary": "Summary",
     "evidence": "Evidence",
     "limitations": "Limitations",
@@ -184,14 +186,6 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
                 *[f"- {step}" for step in item.recommended_next_steps],
             ]
         )
-        if item.guideline_evidence:
-            sections.extend(
-                [
-                    "",
-                    "**Guideline Evidence**",
-                    *[f"- {evidence}" for evidence in item.guideline_evidence],
-                ]
-            )
 
     if result.evidence:
         sections.extend(["", "**Evidence**", *[f"- {evidence}" for evidence in result.evidence]])

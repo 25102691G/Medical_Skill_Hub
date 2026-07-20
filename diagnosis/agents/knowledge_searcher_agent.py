@@ -23,6 +23,7 @@ from config import (
     NCBI_TOOL,
     OPENAI_MODEL,
 )
+from schemas import KnowledgeSearchResult
 
 
 KNOWLEDGE_SEARCHER_INSTRUCTIONS = """
@@ -33,9 +34,16 @@ Task:
 2. Use pubmed_search when external literature search is useful.
 3. Search only for literature-relevant evidence, mechanisms, differential diagnosis clues, diagnostic methods, and treatment references.
 4. Do not invent papers, titles, authors, URLs, or conclusions.
-5. Summarize what the retrieved literature may support, and state when the retrieved results are insufficient.
-6. The output is for research assistance only and cannot replace clinical diagnosis or treatment decisions.
-7. Keep search queries, publication titles, URLs, and quoted source text in their original language.
+5. Build pubmed_evidence only from retrieved results whose content contains a clinically relevant
+   abstract. Do not create evidence from "No abstract available".
+6. For every pubmed_evidence item, copy the numeric PMID from source or metadata.uid and copy title
+   exactly from the same retrieved result. Faithfully extract or summarize only evidence supported by
+   that result's content. Do not include numbering or a source prefix in the evidence field.
+7. Do not include a result when PMID, title, or clinically relevant abstract evidence is missing.
+8. Remove duplicate publications by PMID while preserving first-seen order.
+9. Summarize what the retrieved literature may support, and state when the retrieved results are insufficient.
+10. The output is for research assistance only and cannot replace clinical diagnosis or treatment decisions.
+11. Keep search queries, publication titles, URLs, and quoted source text in their original language.
 """.strip()
 
 
@@ -217,4 +225,5 @@ def build_knowledge_searcher_agent() -> Agent:
         model=OPENAI_MODEL,
         instructions=KNOWLEDGE_SEARCHER_INSTRUCTIONS,
         tools=[pubmed_search],
+        output_type=KnowledgeSearchResult,
     )

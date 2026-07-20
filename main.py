@@ -20,6 +20,7 @@ from schemas import (
     DiagnosisResult,
     DiagnosticJudgementResult,
     GuidelineSearchResult,
+    KnowledgeSearchResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
 )
@@ -136,7 +137,7 @@ def _run_knowledge_search(
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
-) -> object:
+) -> KnowledgeSearchResult:
     knowledge_agent = build_knowledge_searcher_agent()
     knowledge_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
@@ -151,6 +152,15 @@ def _run_knowledge_search(
         progress_callback=progress_callback,
     )
     return result
+
+
+def _format_pubmed_evidence(
+    knowledge_search_result: KnowledgeSearchResult,
+) -> list[str]:
+    return [
+        f"PubMed PMID {item.pmid}（{item.title}）：{item.evidence}"
+        for item in knowledge_search_result.pubmed_evidence
+    ]
 
 
 def _run_similar_case_retrieval(
@@ -222,7 +232,7 @@ def _run_guideline_search(
 
 def _run_final_diagnosis(
     case_text: str,
-    knowledge_search_result: object,
+    knowledge_search_result: KnowledgeSearchResult,
     guideline_evidence: list[str],
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
@@ -238,19 +248,25 @@ def _run_final_diagnosis(
         "discharge_disease": similar_case_retrieval_result.discharge_disease,
         "discharge_texts": similar_case_retrieval_result.discharge_texts,
     }
-    numbered_guideline_evidence = [
+    pubmed_evidence = _format_pubmed_evidence(knowledge_search_result)
+    combined_evidence = [
+        *guideline_evidence,
+        *pubmed_evidence,
+    ]
+    numbered_evidence = [
         f"[{index}] {evidence}"
-        for index, evidence in enumerate(guideline_evidence, start=1)
+        for index, evidence in enumerate(combined_evidence, start=1)
     ]
     diagnosis_prompt = (
         f"Case information:\n{case_text}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"Guideline evidence:\n{_as_json(guideline_evidence)}\n\n"
-        f"Numbered guideline evidence:\n{_as_json(numbered_guideline_evidence)}\n\n"
+        f"Formatted PubMed evidence:\n{_as_json(pubmed_evidence)}\n\n"
+        f"Numbered evidence:\n{_as_json(numbered_evidence)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_diagnosis_evidence)}\n\n"
         "Set used_skill to whether guideline evidence is non-empty. Derive skill_names from the "
         "skill-name prefix before the full-width Chinese colon in each guideline evidence item. "
-        "Copy the complete numbered guideline evidence list into evidence exactly as provided. "
+        "Copy the complete numbered evidence list into evidence exactly as provided. "
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
     _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
@@ -258,7 +274,7 @@ def _run_final_diagnosis(
         diagnosis_agent,
         diagnosis_prompt,
     ).final_output
-    result = result.model_copy(update={"evidence": numbered_guideline_evidence})
+    result = result.model_copy(update={"evidence": numbered_evidence})
     _publish_stage_result(
         f"Final Diagnosis Result - Round {round_index}",
         result,
@@ -272,7 +288,7 @@ def _run_diagnostic_judgement(
     case_text: str,
     hypotheses: list[str],
     diagnosis_result: DiagnosisResult,
-    knowledge_search_result: object,
+    knowledge_search_result: KnowledgeSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     guideline_evidence: list[str],
     *,
