@@ -21,7 +21,6 @@ from schemas import (
     DiagnosticJudgementResult,
     GuidelineSearchResult,
     SearchPlanningResult,
-    SimilarCaseQueries,
     SimilarCaseRetrievalResult,
 )
 
@@ -155,7 +154,7 @@ def _run_knowledge_search(
 
 
 def _run_similar_case_retrieval(
-    similar_case_queries: SimilarCaseQueries,
+    similar_case_queries: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,

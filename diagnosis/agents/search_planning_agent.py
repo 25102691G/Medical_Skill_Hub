@@ -17,8 +17,8 @@ Return exactly these fields:
 
 - hypotheses: up to 5 major candidate diagnoses;
 - search_queries: up to 5 medical literature search queries;
-- similar_case_queries: an object containing only clinical_manifestations and
-  examination_results.
+- similar_case_queries: a list containing positive clinical manifestations and
+  examination results.
 
 Grounding rules:
 
@@ -30,9 +30,8 @@ Grounding rules:
 3. hypotheses may contain clinical inferences, but similar_case_queries must
    contain only explicitly observed case information.
 4. Do not add items solely to reach a fixed number.
-5. If evidence is insufficient for a field or category, return an empty list for
-   that field or category. Do not use placeholder text such as
-   "insufficient evidence".
+5. If evidence is insufficient for a field, return an empty list for that field.
+   Do not use placeholder text such as "insufficient evidence".
 6. When previous-round artifacts are provided, use previous guideline evidence
    only to improve the next-round retrieval strategy. Do not treat guideline
    statements as facts observed in the current patient, and do not copy them
@@ -64,20 +63,18 @@ Search query rules:
 
 Similar-case query rules:
 
-1. clinical_manifestations must contain explicitly documented positive clinical
-   features in the case record, including positive symptoms, abnormal vital
-   signs, and positive physical examination findings.
-2. examination_results must contain only explicitly documented positive
-   auxiliary examination results, including abnormal laboratory, endoscopic,
-   imaging, pathology, and microbiology findings.
-3. clinical_manifestations and examination_results must be mutually exclusive.
-   If an item is an auxiliary examination result, include it only in
-   examination_results and never repeat it in clinical_manifestations.
-4. Do not include negative or normal findings, past medical history, inferred
+1. similar_case_queries must contain explicitly documented positive clinical
+   features and positive auxiliary examination results from the case record.
+   Clinical features include positive symptoms, abnormal vital signs, and
+   positive physical examination findings. Auxiliary examination results include
+   abnormal laboratory, endoscopic, imaging, pathology, and microbiology findings.
+2. Keep each observed feature or result as a separate list item and do not repeat
+   the same information.
+3. Do not include negative or normal findings, past medical history, inferred
    features, or examinations that are only recommended, planned, or pending.
-5. Write every item as a concise English phrase suitable for matching similar
+4. Write every item as a concise English phrase suitable for matching similar
    cases. Use only English words and numbers.
-6. Do not copy a hypothesis into these fields unless it is explicitly
+5. Do not copy a hypothesis into similar_case_queries unless it is explicitly
    documented as an observed confirmed finding in the case record.
 """.strip()
 

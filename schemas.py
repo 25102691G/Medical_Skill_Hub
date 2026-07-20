@@ -64,28 +64,14 @@ class GuidelineSearchResult(BaseModel):
     )
 
 
-class SimilarCaseQueries(BaseModel):
-    clinical_manifestations: list[str] = Field(
-        description=(
-            "Explicitly documented positive clinical features, including positive symptoms, "
-            "abnormal vital signs, and positive physical examination findings; excludes all "
-            "auxiliary examination results"
-        )
-    )
-    examination_results: list[str] = Field(
-        description=(
-            "Explicitly documented positive auxiliary examination results, including abnormal "
-            "laboratory, endoscopic, imaging, pathology, and microbiology findings; excludes all "
-            "items included in clinical_manifestations"
-        )
-    )
-
-
 class SearchPlanningResult(BaseModel):
     hypotheses: list[str] = Field(max_length=5, description="Up to 5 major candidate diagnoses")
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
-    similar_case_queries: SimilarCaseQueries = Field(
-        description="Structured case features for future similar-case retrieval"
+    similar_case_queries: list[str] = Field(
+        description=(
+            "Explicitly documented positive clinical manifestations and examination results "
+            "for similar-case retrieval"
+        )
     )
 
 

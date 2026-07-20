@@ -79,8 +79,6 @@ FIELD_DISPLAY_NAMES = {
     "hypotheses": "Candidate Diagnoses",
     "search_queries": "Literature Search Queries",
     "similar_case_queries": "Similar-Case Retrieval Features",
-    "clinical_manifestations": "Clinical Manifestations",
-    "examination_results": "Examination Results",
     "used_skill": "Used Local Guideline Material",
     "skill_names": "Guideline Material Identifiers",
     "guideline_evidence": "Guideline Evidence",
@@ -238,8 +236,7 @@ def _format_stage_result(title: str, content: str) -> str:
             return f"{heading}\n\nNo retrieval ranking details are available."
 
         field_names = {
-            "clinical_manifestations": "Clinical Manifestations",
-            "examination_results": "Examination Results",
+            "similar_case_queries": "Similar-Case Queries",
         }
         sections = [heading]
         for group in ranking_groups:

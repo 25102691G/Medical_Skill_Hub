@@ -85,24 +85,22 @@ NCBI_TOOL=medical_skill_hub
 
 ## 相似病例检索
 
-检索规划阶段生成 `similar_case_queries`，其中的 `clinical_manifestations` 和
-`examination_results` 使用英文短语，分别与 `database/mimic_iv_case.csv` 中的同名列
-进行匹配。`clinical_manifestations` 提取病例中明确记录的阳性临床特征，包括阳性
-症状、异常生命体征和体格检查阳性体征；`examination_results` 仅提取明确记录的阳性
-辅助检查结果，包括实验室、影像、内镜、病理和微生物检查结果。两个字段互斥，辅助
-检查结果只归入 `examination_results`，不能在 `clinical_manifestations` 中重复。
-BM25 仅对英文和数字分词；每个字段分别执行 BM25 和 Dense Retriever 检索，
-再通过 RRF 融合各路排名。最终按相关性顺序输出最多 10 条病例对应的 `hadm_id`、
+检索规划阶段生成 `similar_case_queries` 英文短语列表，其中同时包含病例中明确记录的
+阳性临床表现和阳性辅助检查结果。临床表现包括阳性症状、异常生命体征和体格检查阳性
+体征；辅助检查结果包括实验室、影像、内镜、病理和微生物检查结果。相似病例库使用
+`database/similar_case_100.csv`，并以其中的完整 `discharge_text` 作为检索语料。
+BM25 仅对英文和数字分词；统一语料分别执行 BM25 和 Dense Retriever 检索，再通过
+RRF 融合排名。最终按相关性顺序输出最多 10 条病例对应的 `hadm_id`、
 `long_title`（输出字段为 `discharge_disease`）和 `discharge_text`。前端的相似病例
 检索结果只展示住院号和出院疾病，完整出院记录仅作为外部参考证据传入最终诊断和诊断
 判断阶段，不会被视为当前患者已经存在的临床事实。
-启用 `--debug` 时，终端的标准错误流会分别输出两个检索字段的 BM25 和 Dense Top-K
-排名，包括查询文本、住院号、出院疾病和原始分数；未执行的检索分支会输出跳过原因。
-ChatKit 前端也会在每轮相似病例检索完成后展示同一组四路排名及跳过原因，该展示通过
+启用 `--debug` 时，终端的标准错误流会输出统一检索语料的 BM25 和 Dense Top-K 排名，
+包括查询文本、住院号、出院疾病和原始分数；未执行的检索分支会输出跳过原因。
+ChatKit 前端也会在每轮相似病例检索完成后展示同一组两路排名及跳过原因，该展示通过
 阶段进度事件传递，不要求后端启用 `debug`。
 
 Dense Retriever 默认使用 `BAAI/bge-m3`，首次运行时由 Transformers 加载模型，并将
-病例库向量缓存到 `database/mimic_iv_case_embeddings.pt`。模型默认在 CPU 上运行，
+病例库向量缓存到 `database/similar_case_100_embeddings.pt`。模型默认在 CPU 上运行，
 可通过 `SIMILAR_CASE_EMBEDDING_DEVICE` 设置为 `cpu`、`cuda` 或 `auto`；其中 `auto`
 会在 CUDA 可用时使用 GPU。其他配置可通过
 `MIMIC_IV_CASE_PATH`、`SIMILAR_CASE_TOP_K`、`SIMILAR_CASE_EMBEDDING_MODEL`、
