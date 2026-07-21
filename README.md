@@ -240,6 +240,38 @@ RRF 融合排名。最终按相关性顺序输出最多 10 条病例对应的 `h
 ChatKit 前端也会在每轮相似病例检索完成后展示同一组两路排名及跳过原因，该展示通过
 阶段进度事件传递，不要求后端启用 `debug`。
 
+如需单独测试“检索规划 → 相似病例检索”模块，可在 `.env` 中通过 `INPUT` 指定输入
+CSV，然后运行：
+
+```bash
+./run_similar_case_main.sh
+```
+
+脚本从 `.env` 读取 `INPUT`，并通过脚本中的 `LIMIT` 和 `WORKERS` 分别控制尝试处理的
+CSV 数据条数和并行病例数。直接运行 Python 入口时，`--limit` 和 `--workers` 均接受
+大于 0 的整数，其中 `--workers` 默认为 `1`。JSONL 结果仍按输入 CSV 顺序写入；并行
+运行时，终端中的 BM25/Dense 排名调试信息可能交错显示。
+
+输入 CSV 需要包含 `subject_id`、`hadm_id`、`long_title` 和
+`discharge_text_before_disposition`。程序先调用检索规划 Agent 生成
+`similar_case_queries`，再执行 BM25、Dense Retriever 和 RRF 融合检索，结果写入
+`output/similar_case/similar_case_results_<timestamp>.jsonl`。每条成功记录包含原病例标识、
+`search_planning_result.similar_case_queries`、BM25/Dense 排名明细
+`similar_case_retrieval_rankings`，以及 RRF 融合后的 `discharge_disease` 和 `hadm_id`。
+独立模块的输出不保存规划阶段的 `hypotheses`、`search_queries`，也不保存相似病例的
+`discharge_texts`。运行时终端仍会输出 BM25 和 Dense 的查询、住院号、出院疾病、原始
+分数及跳过原因。
+
+可运行以下脚本，使用与 `evaluate.py` 相同的模型判断提示词，分别评估 BM25、Dense 和
+RRF 融合结果相对于 `long_title` 金标准诊断的 Recall@1、Recall@3 和 Recall@5：
+
+```bash
+./run_evaluate_similar_case.sh
+```
+
+评估明细和三组汇总指标写入 `output/evaluate/`。输入文件、评估模型和并发数分别由
+`run_evaluate_similar_case.sh` 中的 `INPUT`、`MODEL` 和 `WORKERS` 指定。
+
 Dense Retriever 默认使用 `BAAI/bge-m3`，首次运行时由 Transformers 加载模型，并将
 病例库向量缓存到 `database/mimic_iv_similar_case_embeddings.pt`。模型默认在 CPU 上运行，
 可通过 `SIMILAR_CASE_EMBEDDING_DEVICE` 设置为 `cpu`、`cuda` 或 `auto`；其中 `auto`
