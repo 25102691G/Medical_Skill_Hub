@@ -4,6 +4,7 @@ import json
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -69,6 +70,7 @@ def main() -> int:
     parser.add_argument("--claude_model")
     parser.add_argument("--input", type=Path)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
 
     output_dir = PROJECT_ROOT / "output" / "baseline"
@@ -100,38 +102,52 @@ def main() -> int:
             if missing:
                 raise ValueError(f"Input CSV is missing columns: {sorted(missing)}")
 
-            for row in reader:
-                if args.limit is not None and attempted >= args.limit:
-                    break
-                attempted += 1
-                patient_info = (row[CASE_TEXT_COLUMN] or "").strip()
-                if not patient_info:
-                    continue
+            with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                cases = []
+                for row in reader:
+                    if args.limit is not None and attempted >= args.limit:
+                        break
+                    attempted += 1
+                    patient_info = (row[CASE_TEXT_COLUMN] or "").strip()
+                    if not patient_info:
+                        continue
 
-                case_label = (
-                    f"subject_id={row['subject_id']}, hadm_id={row['hadm_id']}"
-                )
-                print(f"[{attempted}] Diagnosing {case_label} ...", file=sys.stderr)
-                try:
-                    diseases = generate_diagnoses(llm_handler, patient_info)
-                except Exception as exc:
-                    print(f"[{attempted}] Failed {case_label}: {exc}", file=sys.stderr)
-                    continue
+                    case_label = (
+                        f"subject_id={row['subject_id']}, hadm_id={row['hadm_id']}"
+                    )
+                    print(f"[{attempted}] Queued {case_label}.", file=sys.stderr)
+                    future = executor.submit(
+                        generate_diagnoses,
+                        llm_handler,
+                        patient_info,
+                    )
+                    cases.append((attempted, row, case_label, future))
 
-                record = {
-                    "subject_id": row["subject_id"],
-                    "hadm_id": row["hadm_id"],
-                    "long_title": row["long_title"],
-                    "diagnosis_result": {
-                        "topk_diagnoses": [
-                            {"rank": rank, "disease": disease}
-                            for rank, disease in enumerate(diseases, start=1)
-                        ]
-                    },
-                }
-                output_file.write(json.dumps(record, ensure_ascii=False) + "\n")
-                output_file.flush()
-                succeeded += 1
+                for case_number, row, case_label, future in cases:
+                    try:
+                        diseases = future.result()
+                    except Exception as exc:
+                        print(
+                            f"[{case_number}] Failed {case_label}: {exc}",
+                            file=sys.stderr,
+                        )
+                        continue
+
+                    record = {
+                        "subject_id": row["subject_id"],
+                        "hadm_id": row["hadm_id"],
+                        "long_title": row["long_title"],
+                        "diagnosis_result": {
+                            "topk_diagnoses": [
+                                {"rank": rank, "disease": disease}
+                                for rank, disease in enumerate(diseases, start=1)
+                            ]
+                        },
+                    }
+                    output_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    output_file.flush()
+                    succeeded += 1
+                    print(f"[{case_number}] Completed {case_label}.", file=sys.stderr)
     except (OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

@@ -12,8 +12,9 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 INPUT="${INPUT:-}"
-LIMIT=2
+LIMIT=10000
 MODEL=deepseek
+WORKERS=50
 
 python llm_baseline.py \
     --model "$MODEL" \
@@ -22,4 +23,5 @@ python llm_baseline.py \
     --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
     --deepseek_model "${DEEPSEEK_MODEL:-}" \
     --input "$INPUT" \
-    --limit "$LIMIT"
+    --limit "$LIMIT" \
+    --workers "$WORKERS"

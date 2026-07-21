@@ -1,11 +1,12 @@
 import argparse
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from openai import OpenAI
 
-from config import OPENAI_MODEL
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, OPENAI_MODEL
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -22,7 +23,13 @@ Gold-standard diagnosis: {golden_diagnosis}"""
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate top-5 diagnosis recall with an OpenAI judge."
+        description="Evaluate top-5 diagnosis recall with an LLM judge."
+    )
+    parser.add_argument(
+        "--model",
+        choices=("openai", "deepseek"),
+        default="openai",
+        help="Evaluation model provider. Default: openai.",
     )
     parser.add_argument(
         "--input",
@@ -36,11 +43,13 @@ def _parse_args() -> argparse.Namespace:
             "'_evaluation' to the input file name."
         ),
     )
+    parser.add_argument("--workers", type=int, default=1)
     return parser.parse_args()
 
 
 def _evaluate_rank(
     client: OpenAI,
+    model_name: str,
     predicted_diseases: list[str],
     golden_diagnosis: str,
 ) -> int | None:
@@ -53,16 +62,21 @@ def _evaluate_rank(
         golden_diagnosis=golden_diagnosis,
     )
     response = client.chat.completions.create(
-        model=OPENAI_MODEL,
+        model=model_name,
         messages=[{"role": "user", "content": prompt}],
     )
     result = (response.choices[0].message.content or "").strip()
     if result not in VALID_RESULTS:
-        raise ValueError(f"OpenAI returned an invalid result: {result!r}")
+        raise ValueError(f"The model returned an invalid result: {result!r}")
     return None if result == "No" else int(result)
 
 
-def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
+def evaluate_file(
+    input_path: Path,
+    output_path: Path | None = None,
+    model: str = "openai",
+    workers: int = 1,
+) -> Path:
     input_path = input_path.expanduser().resolve()
 
     if output_path is None:
@@ -71,7 +85,12 @@ def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
         output_path = output_path.expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    client = OpenAI()
+    if model == "deepseek":
+        client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+        model_name = DEEPSEEK_MODEL
+    else:
+        client = OpenAI()
+        model_name = OPENAI_MODEL
     total = 0
     recall1_hits = 0
     recall3_hits = 0
@@ -81,44 +100,71 @@ def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
         input_path.open("r", encoding="utf-8") as input_file,
         output_path.open("w", encoding="utf-8") as output_file,
     ):
-        for line_number, line in enumerate(input_file, start=1):
-            if not line.strip():
-                continue
-            record = json.loads(line)
-            golden_diagnosis = record["long_title"].strip()
-            predicted_diseases = [
-                diagnosis["disease"].strip()
-                for diagnosis in record["diagnosis_result"]["topk_diagnoses"][:5]
-            ]
-            print(
-                f"[{line_number}] Evaluating {golden_diagnosis!r} ...",
-                file=sys.stderr,
-            )
-            evaluated_rank = _evaluate_rank(
-                client,
-                predicted_diseases,
-                golden_diagnosis,
-            )
-            evaluation_record = {
-                "subject_id": record.get("subject_id"),
-                "hadm_id": record.get("hadm_id"),
-                "golden_diagnosis": golden_diagnosis,
-                "predicted_diseases": predicted_diseases,
-                "evaluated_rank": evaluated_rank,
-            }
-            output_file.write(
-                json.dumps(evaluation_record, ensure_ascii=False) + "\n"
-            )
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            cases = []
+            for line_number, line in enumerate(input_file, start=1):
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                golden_diagnosis = record["long_title"].strip()
+                predicted_diseases = [
+                    diagnosis["disease"].strip()
+                    for diagnosis in record["diagnosis_result"]["topk_diagnoses"][:5]
+                ]
+                print(
+                    f"[{line_number}] Queued "
+                    f"subject_id={record.get('subject_id')}, "
+                    f"hadm_id={record.get('hadm_id')}.",
+                    file=sys.stderr,
+                )
+                future = executor.submit(
+                    _evaluate_rank,
+                    client,
+                    model_name,
+                    predicted_diseases,
+                    golden_diagnosis,
+                )
+                cases.append(
+                    (
+                        line_number,
+                        record,
+                        golden_diagnosis,
+                        predicted_diseases,
+                        future,
+                    )
+                )
 
-            total += 1
-            if evaluated_rank is not None:
-                recall1_hits += evaluated_rank <= 1
-                recall3_hits += evaluated_rank <= 3
-                recall5_hits += evaluated_rank <= 5
-            print(
-                f"[{line_number}] Completed: rank={evaluated_rank or 'No'}.",
-                file=sys.stderr,
-            )
+            for (
+                line_number,
+                record,
+                golden_diagnosis,
+                predicted_diseases,
+                future,
+            ) in cases:
+                evaluated_rank = future.result()
+                evaluation_record = {
+                    "subject_id": record.get("subject_id"),
+                    "hadm_id": record.get("hadm_id"),
+                    "golden_diagnosis": golden_diagnosis,
+                    "predicted_diseases": predicted_diseases,
+                    "evaluated_rank": evaluated_rank,
+                }
+                output_file.write(
+                    json.dumps(evaluation_record, ensure_ascii=False) + "\n"
+                )
+
+                total += 1
+                if evaluated_rank is not None:
+                    recall1_hits += evaluated_rank <= 1
+                    recall3_hits += evaluated_rank <= 3
+                    recall5_hits += evaluated_rank <= 5
+                print(
+                    f"[{line_number}] Completed "
+                    f"subject_id={record.get('subject_id')}, "
+                    f"hadm_id={record.get('hadm_id')}: "
+                    f"rank={evaluated_rank or 'No'}.",
+                    file=sys.stderr,
+                )
 
         recall1 = recall1_hits / total
         recall3 = recall3_hits / total
@@ -142,7 +188,7 @@ def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
 def main() -> int:
     args = _parse_args()
     try:
-        evaluate_file(args.input, args.output)
+        evaluate_file(args.input, args.output, args.model, args.workers)
     except (OSError, RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
