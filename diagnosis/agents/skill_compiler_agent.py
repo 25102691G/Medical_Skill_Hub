@@ -49,7 +49,7 @@ class SkillCompilerResult(SkillCompilerMetadata):
     recommendations_index_md: str = Field(
         description=(
             "Complete Markdown content for references/recommendations-index.md, "
-            "generated from important source text with PDF pages, printed pages, and line numbers when available"
+            "generated from important source text"
         )
     )
 
@@ -62,9 +62,6 @@ You are a clinical guideline skill compiler.
 
 Input:
 - A Markdown full text extracted from a clinical PDF.
-- Every source line is prefixed with a stable line number.
-- When MinerU page metadata is available, HTML comments mark page boundaries in the form
-  `<!-- pdf_page: 1, printed_page: 177 -->`.
 
 Task:
 1. Identify the official title of the guideline, consensus, or expert document.
@@ -75,9 +72,7 @@ Task:
    activity assessment, differential diagnosis, examination suggestions, treatment principles,
    monitoring, follow-up, contraindications, cautions, and other clinically important guidance.
 5. Organize the Markdown with useful headings and tables or bullet lists as appropriate for the
-   source document. Every important item should include source line numbers whenever possible.
-   When page-boundary comments are present, also include the PDF physical page and printed page
-   for each important item. Keep PDF physical pages and printed pages clearly distinguished.
+   source document.
 6. Do not invent recommendation numbers, evidence levels, recommendation strengths, diseases,
    drugs, doses, thresholds, or follow-up intervals.
 7. If OCR line breaks or missing context make an item unclear, explicitly mark that uncertainty in
@@ -86,10 +81,6 @@ Task:
 
 The output must be valid structured data matching the requested schema.
 """.strip()
-
-
-def _number_guideline_text(full_text: str) -> str:
-    return "\n".join(f"{index}: {line}" for index, line in enumerate(full_text.splitlines(), start=1))
 
 
 def build_skill_compiler_agent() -> Agent:
@@ -104,8 +95,8 @@ def build_skill_compiler_agent() -> Agent:
 def _build_compile_prompt(full_text: str) -> str:
     return (
         "Compile the following clinical document into a guideline skill metadata and "
-        "recommendation index. Use only the numbered source text and its page-boundary comments.\n\n"
-        f"{_number_guideline_text(full_text)}"
+        "recommendation index. Use only the supplied source text.\n\n"
+        f"{full_text}"
     )
 
 
@@ -136,16 +127,14 @@ def _build_deepseek_index_system_prompt() -> str:
 You generate one source-backed Markdown fragment for a clinical guideline index.
 
 Rules:
-1. Use only the supplied numbered source chunk and its page-boundary comments.
+1. Use only the supplied source chunk.
 2. Extract clinically important recommendations, diagnostic criteria, classifications, differential
    diagnoses, examinations, treatments, monitoring, follow-up, contraindications, and cautions.
 3. Preserve recommendation numbers, evidence levels, strengths, drugs, doses, thresholds, and intervals
    exactly when present. Never invent missing information.
-4. Include source line numbers for every important item whenever possible. When page metadata is present,
-   distinguish PDF physical pages from printed pages.
-5. Be concise while retaining the important source-backed information in this chunk.
-6. Return Markdown only, without a document-level H1 heading, JSON, code fences, or commentary.
-7. Use useful H2/H3 headings and keep the source order.
+4. Be concise while retaining the important source-backed information in this chunk.
+5. Return Markdown only, without a document-level H1 heading, JSON, code fences, or commentary.
+6. Use useful H2/H3 headings and keep the source order.
 """.strip()
 
 
@@ -162,7 +151,7 @@ def _extract_json_object(content: str) -> str:
     return stripped[start : end + 1]
 
 
-def _chunk_numbered_guideline_text(
+def _chunk_guideline_text(
     full_text: str,
     *,
     max_chars: int = DEEPSEEK_INDEX_CHUNK_CHARS,
@@ -170,24 +159,16 @@ def _chunk_numbered_guideline_text(
     chunks: list[str] = []
     current_lines: list[str] = []
     current_chars = 0
-    latest_page_marker: str | None = None
 
-    for line_number, line in enumerate(full_text.splitlines(), start=1):
-        numbered_line = f"{line_number}: {line}"
-        if "<!-- pdf_page:" in line:
-            latest_page_marker = numbered_line
-
-        added_chars = len(numbered_line) + (1 if current_lines else 0)
+    for line in full_text.splitlines():
+        added_chars = len(line) + (1 if current_lines else 0)
         if current_lines and current_chars + added_chars > max_chars:
             chunks.append("\n".join(current_lines))
             current_lines = []
             current_chars = 0
-            if latest_page_marker and latest_page_marker != numbered_line:
-                current_lines.append(latest_page_marker)
-                current_chars = len(latest_page_marker)
 
-        current_lines.append(numbered_line)
-        current_chars += len(numbered_line) + (1 if len(current_lines) > 1 else 0)
+        current_lines.append(line)
+        current_chars += len(line) + (1 if len(current_lines) > 1 else 0)
 
     if current_lines:
         chunks.append("\n".join(current_lines))
@@ -244,19 +225,18 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
         api_key=DEEPSEEK_API_KEY,
         base_url=DEEPSEEK_BASE_URL,
     )
-    numbered_text = _number_guideline_text(full_text)
     metadata_content = _request_deepseek_text(
         client,
         system_prompt=_build_deepseek_metadata_system_prompt(),
         user_prompt=(
-            "Generate skill metadata from the following complete numbered clinical document.\n\n"
-            f"{numbered_text}"
+            "Generate skill metadata from the following complete clinical document.\n\n"
+            f"{full_text}"
         ),
         purpose="skill metadata",
     )
     metadata = _parse_deepseek_metadata(metadata_content)
 
-    chunks = _chunk_numbered_guideline_text(full_text)
+    chunks = _chunk_guideline_text(full_text)
     index_fragments: list[str] = []
     for chunk_number, chunk in enumerate(chunks, start=1):
         print(f"Generating DeepSeek index chunk {chunk_number}/{len(chunks)}", flush=True)

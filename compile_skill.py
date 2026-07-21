@@ -6,9 +6,7 @@ import os
 import shlex
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from diagnosis.agents.skill_compiler_agent import (
     SkillCompilerAbbreviation,
@@ -20,12 +18,6 @@ from diagnosis.agents.skill_compiler_agent import (
 ROOT_DIR = Path(__file__).resolve().parent
 SKILLS_DIR = ROOT_DIR / "skills"
 DEFAULT_MINERU_COMMAND = "mineru -p {input} -o {output} -b pipeline -m auto -l ch"
-
-
-@dataclass
-class GuidelineSource:
-    full_text: str
-    page_map: dict[str, Any] | None = None
 
 
 SEARCH_GUIDELINE_SCRIPT = '''#!/usr/bin/env python3
@@ -85,7 +77,7 @@ def main() -> int:
     for index in sorted(hit_lines):
         if index != previous + 1:
             print("\\n---")
-        print(f"{index + 1}: {lines[index]}")
+        print(lines[index])
         previous = index
     return 0
 
@@ -124,13 +116,13 @@ def _validate_inputs(args: argparse.Namespace) -> None:
         raise SystemExit(f"Error: Markdown file does not exist: {args.full_text_md}")
 
 
-def _run_mineru(pdf_path: Path, command_template: str) -> GuidelineSource:
+def _run_mineru(pdf_path: Path, command_template: str) -> str:
     output_dir = ROOT_DIR / "mineru"
     document_output_dir = output_dir / pdf_path.stem
     if document_output_dir.is_dir():
         markdown_path = _find_mineru_markdown(document_output_dir, pdf_path.stem)
         print(f"Using existing MinerU Markdown: {markdown_path}", flush=True)
-        return _load_guideline_source(markdown_path, output_dir=document_output_dir)
+        return markdown_path.read_text(encoding="utf-8")
 
     command_parts = shlex.split(command_template)
     if not command_parts:
@@ -159,7 +151,7 @@ def _run_mineru(pdf_path: Path, command_template: str) -> GuidelineSource:
         )
 
     markdown_path = _find_mineru_markdown(document_output_dir, pdf_path.stem)
-    return _load_guideline_source(markdown_path, output_dir=document_output_dir)
+    return markdown_path.read_text(encoding="utf-8")
 
 
 def _find_mineru_markdown(output_dir: Path, pdf_stem: str) -> Path:
@@ -172,186 +164,6 @@ def _find_mineru_markdown(output_dir: Path, pdf_stem: str) -> Path:
         return name_score, path.stat().st_size
 
     return max(candidates, key=score)
-
-
-def _find_mineru_content_list(markdown_path: Path, search_dir: Path) -> Path | None:
-    exact_path = markdown_path.with_name(f"{markdown_path.stem}_content_list.json")
-    if exact_path.is_file():
-        return exact_path
-
-    candidates = [
-        path
-        for path in search_dir.rglob("*_content_list.json")
-        if path.is_file()
-        and not path.name.endswith("_content_list_v2.json")
-        and markdown_path.stem.lower() in path.stem.lower()
-    ]
-    if not candidates:
-        return None
-
-    return max(candidates, key=lambda path: path.stat().st_size)
-
-
-def _normalize_source_text(value: str) -> str:
-    markdown_prefixes = ("#", "-", "*", ">", "|")
-    normalized = value.strip()
-    while normalized.startswith(markdown_prefixes):
-        normalized = normalized[1:].lstrip()
-    return "".join(normalized.replace("\\", "").split())
-
-
-def _block_texts(block: dict[str, Any]) -> list[str]:
-    texts: list[str] = []
-    if isinstance(block.get("text"), str):
-        texts.append(block["text"])
-    if isinstance(block.get("list_items"), list):
-        texts.extend(item for item in block["list_items"] if isinstance(item, str))
-    for field in ("table_caption", "table_footnote", "image_caption", "image_footnote"):
-        value = block.get(field)
-        if isinstance(value, str):
-            texts.append(value)
-        elif isinstance(value, list):
-            texts.extend(item for item in value if isinstance(item, str))
-    if isinstance(block.get("table_body"), str):
-        texts.append(block["table_body"])
-    return [text for text in texts if text.strip()]
-
-
-def _find_markdown_line_range(
-    markdown_lines: list[str],
-    source_text: str,
-    start_index: int,
-) -> tuple[int, int] | None:
-    target = _normalize_source_text(source_text)
-    if not target:
-        return None
-
-    for line_index in range(start_index, len(markdown_lines)):
-        combined = ""
-        for end_index in range(line_index, min(len(markdown_lines), line_index + 12)):
-            combined += _normalize_source_text(markdown_lines[end_index])
-            if combined == target:
-                return line_index + 1, end_index + 1
-            if len(target) >= 20 and (
-                target in combined or (combined in target and len(combined) >= 20)
-            ):
-                return line_index + 1, end_index + 1
-            if len(combined) > len(target) * 2:
-                break
-    return None
-
-
-def _build_page_map(
-    full_text: str,
-    content_list: list[dict[str, Any]],
-    source_name: str,
-) -> tuple[str, dict[str, Any]]:
-    markdown_lines = full_text.splitlines()
-    pages: dict[int, dict[str, Any]] = {}
-    cursor = 0
-
-    for block in content_list:
-        page_idx = block.get("page_idx")
-        if not isinstance(page_idx, int):
-            continue
-        page = pages.setdefault(
-            page_idx,
-            {
-                "page_idx": page_idx,
-                "pdf_page": page_idx + 1,
-                "printed_page": None,
-                "blocks": [],
-            },
-        )
-        if block.get("type") == "page_number" and isinstance(block.get("text"), str):
-            page["printed_page"] = block["text"].strip() or None
-            continue
-        if block.get("type") in {"header", "page_header", "page_footnote"}:
-            continue
-
-        line_ranges: list[tuple[int, int]] = []
-        for text in _block_texts(block):
-            matched_range = _find_markdown_line_range(markdown_lines, text, cursor)
-            if matched_range is None:
-                continue
-            line_ranges.append(matched_range)
-            cursor = matched_range[1]
-
-        mapped_block: dict[str, Any] = {
-            key: block[key]
-            for key in ("type", "sub_type", "text_level", "bbox", "text", "list_items")
-            if key in block
-        }
-        if line_ranges:
-            mapped_block["original_markdown_line_start"] = min(item[0] for item in line_ranges)
-            mapped_block["original_markdown_line_end"] = max(item[1] for item in line_ranges)
-        page["blocks"].append(mapped_block)
-
-    ordered_pages = [pages[index] for index in sorted(pages)]
-    page_starts: dict[int, int] = {}
-    for page in ordered_pages:
-        starts = [
-            block["original_markdown_line_start"]
-            for block in page["blocks"]
-            if "original_markdown_line_start" in block
-        ]
-        if starts:
-            page_starts[min(starts)] = page["page_idx"]
-
-    annotated_lines: list[str] = []
-    original_to_annotated: dict[int, int] = {}
-    page_marker_lines: dict[int, int] = {}
-    for original_line, line in enumerate(markdown_lines, start=1):
-        if original_line in page_starts:
-            page = pages[page_starts[original_line]]
-            marker = f"<!-- pdf_page: {page['pdf_page']}"
-            if page["printed_page"]:
-                marker += f", printed_page: {page['printed_page']}"
-            marker += " -->"
-            annotated_lines.append(marker)
-            page_marker_lines[page["page_idx"]] = len(annotated_lines)
-        annotated_lines.append(line)
-        original_to_annotated[original_line] = len(annotated_lines)
-
-    for page_index, page in enumerate(ordered_pages):
-        marker_line = page_marker_lines.get(page["page_idx"])
-        page["markdown_line_start"] = marker_line
-        next_marker = None
-        if page_index + 1 < len(ordered_pages):
-            next_marker = page_marker_lines.get(ordered_pages[page_index + 1]["page_idx"])
-        page["markdown_line_end"] = next_marker - 1 if next_marker else len(annotated_lines)
-        for block in page["blocks"]:
-            start = block.pop("original_markdown_line_start", None)
-            end = block.pop("original_markdown_line_end", None)
-            if start is not None:
-                block["markdown_line_start"] = original_to_annotated[start]
-                block["markdown_line_end"] = original_to_annotated[end]
-
-    page_map = {
-        "source_content_list": source_name,
-        "page_idx_base": 0,
-        "page_count": len(ordered_pages),
-        "pages": ordered_pages,
-    }
-    return "\n".join(annotated_lines), page_map
-
-
-def _load_guideline_source(markdown_path: Path, *, output_dir: Path | None = None) -> GuidelineSource:
-    full_text = markdown_path.read_text(encoding="utf-8")
-    content_list_path = _find_mineru_content_list(markdown_path, output_dir or markdown_path.parent)
-    if content_list_path is None:
-        return GuidelineSource(full_text=full_text)
-
-    try:
-        content_list = json.loads(content_list_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise SystemExit(f"Error: cannot read MinerU content list: {content_list_path}: {exc}") from exc
-    if not isinstance(content_list, list) or not all(isinstance(item, dict) for item in content_list):
-        raise SystemExit(f"Error: MinerU content list must be a JSON array of objects: {content_list_path}")
-
-    annotated_text, page_map = _build_page_map(full_text, content_list, content_list_path.name)
-    print(f"MinerU page metadata loaded: {content_list_path}", flush=True)
-    return GuidelineSource(full_text=annotated_text, page_map=page_map)
 
 
 def _write_text(path: Path, content: str, *, executable: bool = False) -> None:
@@ -368,29 +180,16 @@ def _yaml_value(value: str) -> str:
 def _render_openai_yaml(result: SkillCompilerResult) -> str:
     return "\n".join(
         [
-            f"display_name: {_yaml_value(result.display_name)}",
-            f"short_description: {_yaml_value(result.short_description)}",
-            f"default_prompt: {_yaml_value(result.default_prompt)}",
+            "interface:",
+            f"  display_name: {_yaml_value(result.display_name)}",
+            f"  short_description: {_yaml_value(result.short_description)}",
+            f"  default_prompt: {_yaml_value(result.default_prompt)}",
         ]
     )
 
 
-def _render_skill_md(skill_name: str, result: SkillCompilerResult, *, has_page_map: bool) -> str:
+def _render_skill_md(skill_name: str, result: SkillCompilerResult) -> str:
     abbreviations = _render_abbreviations(result.common_abbreviations)
-    page_map_workflow = (
-        "3. 如需核对 PDF 物理页码、期刊印刷页码或版面位置，读取 "
-        "`references/guideline-page-map.json`。\n"
-        if has_page_map
-        else ""
-    )
-    search_step = 4 if has_page_map else 3
-    verification_step = 5 if has_page_map else 4
-    page_map_resource = (
-        "- `references/guideline-page-map.json`：从 MinerU `content_list.json` 提取的 PDF 页码、"
-        "印刷页码、Markdown 行号和文本块坐标映射。\n"
-        if has_page_map
-        else ""
-    )
     return f"""---
 name: {skill_name}
 description: {_yaml_value(result.skill_description)}
@@ -402,10 +201,10 @@ description: {_yaml_value(result.skill_description)}
 
 使用本 skill 回答与《{result.guideline_title}》相关的问题时，以 `references/guideline-full-text.md` 为原文依据。
 
-1. 先读取 `references/recommendations-index.md`，定位相关{result.recommendations_label}、诊断标准、鉴别诊断、检查、治疗、监测、随访等重要信息和原文行号。
-2. 再读取 `references/guideline-full-text.md` 中对应行号附近内容，补充适用人群、限制条件、解释依据和上下文。
-{page_map_workflow}{search_step}. 如果问题没有明显对应{result.recommendations_label}，使用 `scripts/search_guideline.py` 进行关键词搜索。
-{verification_step}. 如用户询问该文件之外的最新证据、药品获批状态、医保或现实可及性，应使用当前权威来源另行核实。
+1. 先读取 `references/recommendations-index.md`，定位相关{result.recommendations_label}、诊断标准、鉴别诊断、检查、治疗、监测、随访等重要信息。
+2. 再读取 `references/guideline-full-text.md` 中的相关内容，补充适用人群、限制条件、解释依据和上下文。
+3. 如果问题没有明显对应{result.recommendations_label}，使用 `scripts/search_guideline.py` 进行关键词搜索。
+4. 如用户询问该文件之外的最新证据、药品获批状态、医保或现实可及性，应使用当前权威来源另行核实。
 
 ## 回答规则
 
@@ -421,7 +220,7 @@ description: {_yaml_value(result.skill_description)}
 
 - `references/recommendations-index.md`：LLM 根据全文自动生成的重要信息索引，用于定位{result.recommendations_label}、诊断标准、鉴别诊断、检查、治疗、监测和随访等关键内容。
 - `references/guideline-full-text.md`：MinerU 解析得到的指南 Markdown 全文。
-{page_map_resource}- `scripts/search_guideline.py`：关键词/正则搜索脚本。
+- `scripts/search_guideline.py`：关键词/正则搜索脚本。
 
 {abbreviations}
 """
@@ -441,18 +240,12 @@ def _write_skill_directory(
     skill_name: str,
     full_text: str,
     result: SkillCompilerResult,
-    page_map: dict[str, Any] | None,
 ) -> None:
     _write_text(skill_dir / "references" / "guideline-full-text.md", full_text)
     _write_text(skill_dir / "references" / "recommendations-index.md", result.recommendations_index_md)
-    if page_map is not None:
-        _write_text(
-            skill_dir / "references" / "guideline-page-map.json",
-            json.dumps(page_map, ensure_ascii=False, indent=2),
-        )
     _write_text(
         skill_dir / "SKILL.md",
-        _render_skill_md(skill_name, result, has_page_map=page_map is not None),
+        _render_skill_md(skill_name, result),
     )
     _write_text(skill_dir / "agents" / "openai.yaml", _render_openai_yaml(result))
     _write_text(skill_dir / "scripts" / "search_guideline.py", SEARCH_GUIDELINE_SCRIPT, executable=True)
@@ -486,23 +279,20 @@ def main() -> int:
 
         print(f"Compiling guideline: {input_path}", flush=True)
         if args.full_text_md:
-            source = _load_guideline_source(input_path)
+            full_text = input_path.read_text(encoding="utf-8")
         else:
-            source = _run_mineru(input_path, args.mineru_command)
+            full_text = _run_mineru(input_path, args.mineru_command)
 
-        result = compile_guideline_text(source.full_text)
+        result = compile_guideline_text(full_text)
         _write_skill_directory(
             skill_dir,
             skill_name,
-            source.full_text,
+            full_text,
             result,
-            source.page_map,
         )
 
         print(f"Skill compiled: {skill_dir}")
         print("Recommendations index generated: references/recommendations-index.md")
-        if source.page_map is not None:
-            print("Page map generated: references/guideline-page-map.json")
 
     return 0
 

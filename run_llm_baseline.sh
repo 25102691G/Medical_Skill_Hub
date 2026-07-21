@@ -12,7 +12,7 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 INPUT="${INPUT:-}"
-LIMIT=10000
+LIMIT=2
 MODEL=deepseek
 
 python llm_baseline.py \

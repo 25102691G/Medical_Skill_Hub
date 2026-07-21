@@ -10,12 +10,6 @@ from config import OPENAI_MODEL
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
-DEFAULT_INPUT_PATH = (
-    PROJECT_ROOT
-    / "output"
-    / "batch"
-    / "mimic_iv_diagnosis_results_20260720_132958_713012.jsonl"
-)
 VALID_RESULTS = {"No", "1", "2", "3", "4", "5"}
 
 PROMPT = """You are a specialist in gastroenterology. Identify the rank of the gold-standard diagnosis among the five predicted diseases. If a predicted disease contains multiple conditions, use its highest matching rank. Output only "No" or one number from 1 to 5.
@@ -33,8 +27,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=DEFAULT_INPUT_PATH,
-        help=f"Diagnosis JSONL path. Default: {DEFAULT_INPUT_PATH}",
     )
     parser.add_argument(
         "--output",
@@ -63,7 +55,6 @@ def _evaluate_rank(
     response = client.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0,
     )
     result = (response.choices[0].message.content or "").strip()
     if result not in VALID_RESULTS:
@@ -129,10 +120,21 @@ def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
                 file=sys.stderr,
             )
 
+        recall1 = recall1_hits / total
+        recall3 = recall3_hits / total
+        recall5 = recall5_hits / total
+        summary_record = {
+            "total": total,
+            "recall1": recall1,
+            "recall3": recall3,
+            "recall5": recall5,
+        }
+        output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
+
     print(f"total: {total}")
-    print(f"recall1: {recall1_hits / total:.6f}")
-    print(f"recall3: {recall3_hits / total:.6f}")
-    print(f"recall5: {recall5_hits / total:.6f}")
+    print(f"recall1: {recall1:.6f}")
+    print(f"recall3: {recall3:.6f}")
+    print(f"recall5: {recall5:.6f}")
     print(f"Evaluation details: {output_path}", file=sys.stderr)
     return output_path
 
