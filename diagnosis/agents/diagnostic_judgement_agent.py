@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from agents import Agent
+from agents import Agent, Model
 
-from config import OPENAI_MODEL
 from schemas import DiagnosticJudgementResult
 
 
@@ -28,10 +27,14 @@ Decision requirements:
 """.strip()
 
 
-def build_diagnostic_judgement_agent() -> Agent:
+def build_diagnostic_judgement_agent(
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
     return Agent(
         name="Diagnostic Judgement Agent",
-        model=OPENAI_MODEL,
+        model=model,
         instructions=DIAGNOSTIC_JUDGEMENT_INSTRUCTIONS,
-        output_type=DiagnosticJudgementResult,
+        output_type=DiagnosticJudgementResult if native_structured_output else None,
     )

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from agents import Agent
+from agents import Agent, Model
 
-from config import OPENAI_MODEL
 from schemas import SearchPlanningResult
 
 
@@ -79,10 +78,14 @@ Similar-case query rules:
 """.strip()
 
 
-def build_search_planning_agent() -> Agent:
+def build_search_planning_agent(
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
     return Agent(
         name="Gastroenterology Search Planning Agent",
-        model=OPENAI_MODEL,
+        model=model,
         instructions=SEARCH_PLANNING_INSTRUCTIONS,
-        output_type=SearchPlanningResult,
+        output_type=SearchPlanningResult if native_structured_output else None,
     )

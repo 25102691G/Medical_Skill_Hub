@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Any
 
+from agents import Model
 from chatkit.server import ChatKitServer
 from chatkit.types import (
     AssistantMessageContent,
@@ -118,10 +119,10 @@ STATIC_TEXT = {
         "no_case": "当前还没有病例资料。请先发送患者病史、体征和检查结果。",
         "progress": "第 {round_index} 轮：正在进行{agent_name}…",
         "quota": (
-            "OpenAI API 额度不足。请检查 API Key 所属项目的余额、"
+            "模型 API 额度不足。请检查 API Key 所属项目的余额、"
             "Billing 和使用预算，更新后重启后端。"
         ),
-        "rate_limit": "OpenAI API 当前达到速率限制，请稍后重试。",
+        "rate_limit": "模型 API 当前达到速率限制，请稍后重试。",
         "pipeline_error": "诊断流水线运行失败，请检查服务端日志后重试。",
     },
     "en": {
@@ -137,10 +138,10 @@ STATIC_TEXT = {
         ),
         "progress": "Round {round_index}: running {agent_name}…",
         "quota": (
-            "The OpenAI API quota is insufficient. Check the balance, billing status, and usage "
+            "The model API quota is insufficient. Check the balance, billing status, and usage "
             "budget for the API key's project, then restart the backend."
         ),
-        "rate_limit": "The OpenAI API rate limit has been reached. Please try again later.",
+        "rate_limit": "The model API rate limit has been reached. Please try again later.",
         "pipeline_error": "The diagnosis pipeline failed. Check the server logs and try again.",
     },
 }
@@ -314,10 +315,12 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         self,
         store: InMemoryChatKitStore,
         translator: DisplayTranslator,
+        diagnosis_model: str | Model,
     ) -> None:
         super().__init__(store=store)
         self.store = store
         self.translator = translator
+        self.diagnosis_model = diagnosis_model
 
     def _assistant_event(
         self,
@@ -409,6 +412,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
             try:
                 return make_diagnosis(
                     case_text,
+                    model=self.diagnosis_model,
                     debug=False,
                     progress_callback=report_progress,
                 )
@@ -454,7 +458,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         except RateLimitError as exc:
             error_code = _rate_limit_error_code(exc)
             logger.warning(
-                "OpenAI API request failed for thread %s: code=%s request_id=%s",
+                "Model API request failed for thread %s: code=%s request_id=%s",
                 thread.id,
                 error_code or "rate_limit_exceeded",
                 exc.request_id,

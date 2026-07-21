@@ -10,7 +10,7 @@ import urllib.request
 from collections.abc import Iterator
 from typing import Any
 
-from agents import Agent, function_tool
+from agents import Agent, Model, function_tool
 from langchain_community.retrievers import PubMedRetriever
 
 from config import (
@@ -21,7 +21,6 @@ from config import (
     NCBI_RETRY_BASE_SECONDS,
     NCBI_TIMEOUT_SECONDS,
     NCBI_TOOL,
-    OPENAI_MODEL,
 )
 from schemas import KnowledgeSearchResult
 
@@ -219,11 +218,15 @@ def pubmed_search(case_info: str, max_docs: int = 5) -> dict[str, Any]:
     }
 
 
-def build_knowledge_searcher_agent() -> Agent:
+def build_knowledge_searcher_agent(
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
     return Agent(
         name="Knowledge Searcher Agent",
-        model=OPENAI_MODEL,
+        model=model,
         instructions=KNOWLEDGE_SEARCHER_INSTRUCTIONS,
         tools=[pubmed_search],
-        output_type=KnowledgeSearchResult,
+        output_type=KnowledgeSearchResult if native_structured_output else None,
     )

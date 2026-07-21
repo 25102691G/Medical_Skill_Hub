@@ -3,11 +3,17 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 
-from agents import Agent, Runner
+from agents import Agent, OpenAIChatCompletionsModel, Runner
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
-from config import CHATKIT_TRANSLATION_MODEL
+from config import (
+    CHATKIT_TRANSLATION_MODEL,
+    DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -45,7 +51,8 @@ Requirements:
 4. Translate human-readable text inside brackets while preserving the brackets.
 5. Use clinically accurate terminology and keep standard abbreviations when translation would reduce
    precision.
-6. Return only the translated display text through the required structured output.
+6. Return only one valid JSON object with the field translated_text. Do not wrap the JSON in
+   Markdown fences or add explanatory text.
 """.strip()
 
 
@@ -62,11 +69,17 @@ def get_context_display_language(context: dict[str, object]) -> str:
 
 class DisplayTranslator:
     def __init__(self) -> None:
+        translation_model = OpenAIChatCompletionsModel(
+            model=CHATKIT_TRANSLATION_MODEL,
+            openai_client=AsyncOpenAI(
+                api_key=DEEPSEEK_API_KEY,
+                base_url=DEEPSEEK_BASE_URL,
+            ),
+        )
         self._agent = Agent(
             name="ChatKit Display Translation Agent",
-            model=CHATKIT_TRANSLATION_MODEL,
+            model=translation_model,
             instructions=TRANSLATION_INSTRUCTIONS,
-            output_type=TranslationResult,
         )
         self._cache: dict[tuple[str, str], str] = {}
         self._lock = asyncio.Lock()
@@ -84,7 +97,23 @@ class DisplayTranslator:
         )
         try:
             result = await Runner.run(self._agent, prompt)
-            translated_text = result.final_output.translated_text
+            content = str(result.final_output).strip()
+            fenced_match = re.search(
+                r"```(?:json)?\s*(\{.*?\})\s*```",
+                content,
+                flags=re.DOTALL,
+            )
+            if fenced_match:
+                content = fenced_match.group(1).strip()
+            else:
+                start = content.find("{")
+                end = content.rfind("}")
+                if start == -1 or end == -1 or end <= start:
+                    raise ValueError("No JSON object found in translation output.")
+                content = content[start : end + 1]
+            translated_text = TranslationResult.model_validate_json(
+                content
+            ).translated_text
         except Exception:
             logger.exception(
                 "Display translation failed; returning untranslated content for language %s",

@@ -11,9 +11,15 @@ load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
+
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
+
 DIAGNOSIS_TOPK = int(os.getenv("DIAGNOSIS_TOPK", "5"))
-CHATKIT_TRANSLATION_MODEL = os.getenv("CHATKIT_TRANSLATION_MODEL", OPENAI_MODEL)
+DIAGNOSIS_PROVIDER = os.getenv("DIAGNOSIS_PROVIDER", "deepseek").strip().lower()
+CHATKIT_TRANSLATION_MODEL = os.getenv("CHATKIT_TRANSLATION_MODEL", DEEPSEEK_MODEL)
 
 NCBI_API_KEY = os.getenv("NCBI_API_KEY", "")
 NCBI_EMAIL = os.getenv("NCBI_EMAIL", "")
@@ -52,7 +58,3 @@ SIMILAR_CASE_EMBEDDING_BATCH_SIZE = int(
 
 SKILL_COMPILER_PROVIDER = os.getenv("SKILL_COMPILER_PROVIDER", "openai").lower()
 SKILL_COMPILER_MODEL = os.getenv("SKILL_COMPILER_MODEL", OPENAI_MODEL)
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")

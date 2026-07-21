@@ -10,6 +10,8 @@ from fastapi.responses import StreamingResponse
 from chatkit_app.server import MedicalDiagnosisChatKitServer
 from chatkit_app.store import InMemoryChatKitStore
 from chatkit_app.translation import DisplayTranslator, normalize_display_language
+from config import DIAGNOSIS_PROVIDER
+from main import build_diagnosis_model
 
 
 app = FastAPI(title="Medical Skill Hub ChatKit API")
@@ -23,7 +25,12 @@ app.add_middleware(
 
 translator = DisplayTranslator()
 store = InMemoryChatKitStore(translator=translator)
-server = MedicalDiagnosisChatKitServer(store=store, translator=translator)
+diagnosis_model = build_diagnosis_model(DIAGNOSIS_PROVIDER)
+server = MedicalDiagnosisChatKitServer(
+    store=store,
+    translator=translator,
+    diagnosis_model=diagnosis_model,
+)
 
 
 @app.get("/health")

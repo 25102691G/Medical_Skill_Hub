@@ -2,14 +2,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import sys
 from collections.abc import Callable
+from typing import TypeVar
 
-from agents import RunConfig, Runner
+from agents import (
+    Model,
+    OpenAIChatCompletionsModel,
+    OpenAIResponsesModel,
+    RunConfig,
+    Runner,
+)
 from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
+from openai import AsyncOpenAI
+from pydantic import BaseModel
 
-from config import DIAGNOSIS_TOPK
+from config import (
+    DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL,
+    DIAGNOSIS_TOPK,
+    OPENAI_MODEL,
+)
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
 from diagnosis.agents.guideline_searcher_agent import SKILLS_DIR, build_guideline_searcher_agent
@@ -27,6 +43,7 @@ from schemas import (
 
 
 DiagnosisProgressCallback = Callable[[str, str, str | None], None]
+StructuredResultT = TypeVar("StructuredResultT", bound=BaseModel)
 
 
 def _read_case_text(args: argparse.Namespace) -> str:
@@ -54,6 +71,49 @@ def _to_jsonable(value: object) -> object:
 
 def _as_json(model_object: object) -> str:
     return json.dumps(_to_jsonable(model_object), ensure_ascii=False, indent=2)
+
+
+def _uses_native_structured_output(model: str | Model) -> bool:
+    return not isinstance(model, OpenAIChatCompletionsModel)
+
+
+def _prepare_structured_prompt(
+    prompt: str,
+    output_type: type[BaseModel],
+    *,
+    native_structured_output: bool,
+) -> str:
+    if native_structured_output:
+        return prompt
+    return (
+        f"{prompt}\n\n"
+        "Return only one valid JSON object matching this JSON Schema. "
+        "Do not wrap the JSON in Markdown fences or add explanatory text:\n"
+        f"{json.dumps(output_type.model_json_schema(), ensure_ascii=False)}"
+    )
+
+
+def _parse_structured_result(
+    result: object,
+    output_type: type[StructuredResultT],
+) -> StructuredResultT:
+    if isinstance(result, output_type):
+        return result
+    stripped = str(result).strip()
+    fenced_match = re.search(
+        r"```(?:json)?\s*(\{.*?\})\s*```",
+        stripped,
+        flags=re.DOTALL,
+    )
+    if fenced_match:
+        stripped = fenced_match.group(1).strip()
+    else:
+        start = stripped.find("{")
+        end = stripped.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise ValueError("No JSON object found in model output.")
+        stripped = stripped[start : end + 1]
+    return output_type.model_validate_json(stripped)
 
 
 def _print_debug_section(title: str, model_object: object) -> None:
@@ -90,6 +150,7 @@ def _publish_stage_result(
 def _run_search_planning(
     case_text: str,
     *,
+    model: str | Model,
     previous_search_planning_result: SearchPlanningResult | None = None,
     previous_diagnosis_result: DiagnosisResult | None = None,
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
@@ -98,7 +159,11 @@ def _run_search_planning(
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SearchPlanningResult:
-    search_planning_agent = build_search_planning_agent()
+    native_structured_output = _uses_native_structured_output(model)
+    search_planning_agent = build_search_planning_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
     search_planning_prompt = (
         f"Patient information:\n{case_text}\n\n"
     )
@@ -117,11 +182,18 @@ def _run_search_planning(
             "improve the retrieval strategy, and do not treat their contents as new patient facts. "
         )
 
+    search_planning_prompt = _prepare_structured_prompt(
+        search_planning_prompt,
+        SearchPlanningResult,
+        native_structured_output=native_structured_output,
+    )
+
     _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
-    result = Runner.run_sync(
+    raw_result = Runner.run_sync(
         search_planning_agent,
         search_planning_prompt,
     ).final_output
+    result = _parse_structured_result(raw_result, SearchPlanningResult)
     _publish_stage_result(
         f"Search Planning Result - Round {round_index}",
         result,
@@ -134,17 +206,28 @@ def _run_search_planning(
 def _run_knowledge_search(
     search_queries: list[str],
     *,
+    model: str | Model,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> KnowledgeSearchResult:
-    knowledge_agent = build_knowledge_searcher_agent()
+    native_structured_output = _uses_native_structured_output(model)
+    knowledge_agent = build_knowledge_searcher_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
     knowledge_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         "Keep search queries, publication titles, URLs, and quoted source text in their original language."
     )
+    knowledge_prompt = _prepare_structured_prompt(
+        knowledge_prompt,
+        KnowledgeSearchResult,
+        native_structured_output=native_structured_output,
+    )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
-    result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    raw_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    result = _parse_structured_result(raw_result, KnowledgeSearchResult)
     _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
         result,
@@ -199,28 +282,46 @@ def _run_similar_case_retrieval(
 def _run_guideline_search(
     search_queries: list[str],
     *,
+    model: str | Model,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> GuidelineSearchResult:
-    guideline_agent = build_guideline_searcher_agent(GuidelineSearchResult)
+    native_structured_output = _uses_native_structured_output(model)
+    guideline_agent = build_guideline_searcher_agent(
+        GuidelineSearchResult,
+        model,
+        native_structured_output=native_structured_output,
+    )
     guideline_prompt = (
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         "Search the local guideline skills for clinically relevant guideline evidence. "
         "Keep skill_names unchanged."
     )
-    run_config = RunConfig(
-        sandbox=SandboxRunConfig(
-            client=UnixLocalSandboxClient(),
-        ),
+    guideline_prompt = _prepare_structured_prompt(
+        guideline_prompt,
+        GuidelineSearchResult,
+        native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
-    result = Runner.run_sync(
-        guideline_agent,
-        guideline_prompt,
-        run_config=run_config,
-    ).final_output
+    if native_structured_output:
+        raw_result = Runner.run_sync(
+            guideline_agent,
+            guideline_prompt,
+            run_config=RunConfig(
+                sandbox=SandboxRunConfig(
+                    client=UnixLocalSandboxClient(),
+                ),
+            ),
+        ).final_output
+    else:
+        raw_result = Runner.run_sync(
+            guideline_agent,
+            guideline_prompt,
+            max_turns=100,
+        ).final_output
+    result = _parse_structured_result(raw_result, GuidelineSearchResult)
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -236,13 +337,17 @@ def _run_final_diagnosis(
     guideline_evidence: list[str],
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
+    model: str | Model,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
+    native_structured_output = _uses_native_structured_output(model)
     diagnosis_agent = build_digestive_diagnosis_agent(
         DiagnosisResult,
         phase="final_diagnosis",
+        model=model,
+        native_structured_output=native_structured_output,
     )
     similar_case_diagnosis_evidence = {
         "discharge_disease": similar_case_retrieval_result.discharge_disease,
@@ -269,11 +374,17 @@ def _run_final_diagnosis(
         "Copy the complete numbered evidence list into evidence exactly as provided. "
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
+    diagnosis_prompt = _prepare_structured_prompt(
+        diagnosis_prompt,
+        DiagnosisResult,
+        native_structured_output=native_structured_output,
+    )
     _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
-    result = Runner.run_sync(
+    raw_result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
     ).final_output
+    result = _parse_structured_result(raw_result, DiagnosisResult)
     result = result.model_copy(update={"evidence": numbered_evidence})
     _publish_stage_result(
         f"Final Diagnosis Result - Round {round_index}",
@@ -292,11 +403,16 @@ def _run_diagnostic_judgement(
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     guideline_evidence: list[str],
     *,
+    model: str | Model,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosticJudgementResult:
-    diagnostic_judgement_agent = build_diagnostic_judgement_agent()
+    native_structured_output = _uses_native_structured_output(model)
+    diagnostic_judgement_agent = build_diagnostic_judgement_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
     diagnostic_judgement_prompt = (
         f"Patient information:\n{case_text}\n\n"
         f"Hypotheses from search planning:\n{_as_json(hypotheses)}\n\n"
@@ -307,11 +423,17 @@ def _run_diagnostic_judgement(
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Keep closer_result as the required enum value."
     )
+    diagnostic_judgement_prompt = _prepare_structured_prompt(
+        diagnostic_judgement_prompt,
+        DiagnosticJudgementResult,
+        native_structured_output=native_structured_output,
+    )
     _notify_agent_started(progress_callback, "Diagnostic Judgement Agent", round_index)
-    result = Runner.run_sync(
+    raw_result = Runner.run_sync(
         diagnostic_judgement_agent,
         diagnostic_judgement_prompt,
     ).final_output
+    result = _parse_structured_result(raw_result, DiagnosticJudgementResult)
     _publish_stage_result(
         f"Diagnostic Judgement Result - Round {round_index}",
         result,
@@ -324,12 +446,15 @@ def _run_diagnostic_judgement(
 def make_diagnosis(
     case_text: str,
     *,
+    model: str | Model | None = None,
     debug: bool = False,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
+    diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
     search_planning_result = _run_search_planning(
         case_text,
+        model=diagnosis_model,
         debug=debug,
         round_index=1,
         progress_callback=progress_callback,
@@ -338,6 +463,7 @@ def make_diagnosis(
     for round_index in range(1, max_diagnosis_rounds + 1):
         knowledge_search_result = _run_knowledge_search(
             search_planning_result.search_queries,
+            model=diagnosis_model,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -352,6 +478,7 @@ def make_diagnosis(
 
         guideline_search_result = _run_guideline_search(
             search_planning_result.search_queries,
+            model=diagnosis_model,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -362,6 +489,7 @@ def make_diagnosis(
             knowledge_search_result,
             guideline_search_result.guideline_evidence,
             similar_case_retrieval_result,
+            model=diagnosis_model,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -374,6 +502,7 @@ def make_diagnosis(
             knowledge_search_result,
             similar_case_retrieval_result,
             guideline_search_result.guideline_evidence,
+            model=diagnosis_model,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -387,6 +516,7 @@ def make_diagnosis(
 
         search_planning_result = _run_search_planning(
             case_text,
+            model=diagnosis_model,
             previous_search_planning_result=search_planning_result,
             previous_diagnosis_result=diagnosis_result,
             diagnostic_judgement_result=diagnostic_judgement_result,
@@ -399,8 +529,59 @@ def make_diagnosis(
     raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
 
 
+def build_diagnosis_model(
+    provider: str,
+    *,
+    openai_api_key: str = "",
+    openai_model: str = "",
+    deepseek_api_key: str = "",
+    deepseek_model: str = "",
+) -> Model:
+    normalized_provider = provider.strip().lower()
+    if normalized_provider == "openai":
+        api_key = openai_api_key or os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            raise ValueError("OPENAI API key is required.")
+        return OpenAIResponsesModel(
+            model=openai_model or OPENAI_MODEL,
+            openai_client=AsyncOpenAI(api_key=api_key),
+        )
+    if normalized_provider == "deepseek":
+        api_key = deepseek_api_key or os.getenv("DEEPSEEK_API_KEY", "")
+        if not api_key:
+            raise ValueError("DEEPSEEK API key is required.")
+        return OpenAIChatCompletionsModel(
+            model=deepseek_model or DEEPSEEK_MODEL,
+            openai_client=AsyncOpenAI(
+                api_key=api_key,
+                base_url=DEEPSEEK_BASE_URL,
+            ),
+        )
+    raise ValueError("Model provider must be openai or deepseek.")
+
+
+def _configure_cli_model(args: argparse.Namespace) -> Model:
+    return build_diagnosis_model(
+        args.model,
+        openai_api_key=args.openai_apikey or "",
+        openai_model=args.openai_model or "",
+        deepseek_api_key=args.deepseek_apikey or "",
+        deepseek_model=args.deepseek_model or "",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Gastroenterology medical diagnosis Agent demo")
+    parser.add_argument(
+        "--model",
+        choices=("openai", "deepseek"),
+        default="openai",
+        help="LLM provider. Default: openai.",
+    )
+    parser.add_argument("--openai_apikey")
+    parser.add_argument("--openai_model")
+    parser.add_argument("--deepseek_apikey")
+    parser.add_argument("--deepseek_model")
     parser.add_argument("--case", help="Case text. If omitted, input is read from standard input.")
     parser.add_argument(
         "--debug",
@@ -414,7 +595,13 @@ def main() -> int:
         print("Error: case information cannot be empty.", file=sys.stderr)
         return 1
 
-    result = make_diagnosis(case_text, debug=args.debug)
+    try:
+        diagnosis_model = _configure_cli_model(args)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    result = make_diagnosis(case_text, model=diagnosis_model, debug=args.debug)
     # print(_as_json(result))
     return 0
 

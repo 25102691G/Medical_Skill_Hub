@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import Type
 
-from agents import Agent
+from agents import Agent, Model
 from pydantic import BaseModel
 
-from config import OPENAI_MODEL
 from diagnosis.tools.disease_normalization_tool import normalize_disease_name
 
 
@@ -62,6 +61,8 @@ def build_digestive_diagnosis_agent(
     output_type: Type[BaseModel],
     *,
     phase: str,
+    model: str | Model,
+    native_structured_output: bool = True,
 ) -> Agent:
     if phase != "final_diagnosis":
         raise ValueError(f"Unsupported digestive diagnosis phase: {phase}")
@@ -75,8 +76,8 @@ def build_digestive_diagnosis_agent(
     tools.append(normalize_disease_name)
     return Agent(
         name="Gastroenterology Diagnosis Agent",
-        model=OPENAI_MODEL,
+        model=model,
         instructions="\n\n".join(instructions),
         tools=tools,
-        output_type=output_type,
+        output_type=output_type if native_structured_output else None,
     )

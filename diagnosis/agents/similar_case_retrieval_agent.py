@@ -364,10 +364,6 @@ def retrieve_similar_cases(
     debug: bool = False,
     ranking_callback: RankingCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
-    if SIMILAR_CASE_TOP_K < 1 or SIMILAR_CASE_TOP_K > 10:
-        raise ValueError("SIMILAR_CASE_TOP_K must be between 1 and 10.")
-    if SIMILAR_CASE_EMBEDDING_BATCH_SIZE < 1:
-        raise ValueError("SIMILAR_CASE_EMBEDDING_BATCH_SIZE must be at least 1.")
 
     query = _join_query(similar_case_queries)
     if not query:

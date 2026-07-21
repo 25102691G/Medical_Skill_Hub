@@ -12,10 +12,32 @@ pip install -r requirements.txt
 
 ## 运行方式
 
-在 `run_main.sh` 顶部配置病例文本、模型和诊断数量后运行：
+在 `run_main.sh` 中配置病例文本和诊断数量、在 `.env` 中配置模型供应商后运行：
 
 ```bash
 ./run_main.sh
+```
+
+`run_main.sh` 和 `run_chatkit.sh` 共用项目根目录 `.env` 中的
+`DIAGNOSIS_PROVIDER`，可设置为 `openai` 或 `deepseek`。
+两个入口也共用对应的 API Key 和模型名称：OpenAI 使用 `OPENAI_API_KEY` 和
+`OPENAI_MODEL`，DeepSeek 使用 `DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL` 和
+`DEEPSEEK_BASE_URL`。例如：
+
+```dotenv
+DIAGNOSIS_PROVIDER=deepseek
+DEEPSEEK_MODEL=deepseek-v4-pro
+```
+
+也可以直接调用 Python 入口：
+
+```bash
+.venv/bin/python main.py \
+  --model deepseek \
+  --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
+  --deepseek_model "${DEEPSEEK_MODEL:-}" \
+  --case "病例文本" \
+  --debug
 ```
 
 ## 批量运行
@@ -137,6 +159,20 @@ cd ..
 ./run_chatkit.sh
 ```
 
+诊断供应商和模型与 `run_main.sh` 共用 `.env` 配置。例如：
+
+```dotenv
+DIAGNOSIS_PROVIDER=openai
+OPENAI_MODEL=gpt-5.5
+```
+
+修改 `.env` 后需要重新启动两个入口。所选供应商用于搜索规划、知识检索、指南检索、
+最终诊断和诊断结果判断等完整诊断流程。
+OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 返回普通 JSON，并在本地按相同的
+Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
+指南检索阶段中，OpenAI 使用 Sandbox Skills 读取本地指南，DeepSeek 使用标准 function
+tools 搜索和读取同一套 `skills/` 资源；两条路径生成相同的 `GuidelineSearchResult`。
+
 如果脚本没有执行权限，也可以运行：
 
 ```bash
@@ -160,12 +196,15 @@ npm run dev
 
 展示翻译不会修改 `make_diagnosis()` 的原始结构化结果。URL、数值、计量单位、医学
 编码、枚举值、住院号和 `skill_names` 等机器标识保持不变，其余可见内容按目标语言
-翻译。翻译失败时会回退到未翻译内容，不会中断诊断流水线。翻译默认使用
-`OPENAI_MODEL`，可在 `.env` 中单独设置：
+翻译。翻译失败时会回退到未翻译内容，不会中断诊断流水线。翻译固定使用 DeepSeek，
+不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env` 单独设置模型：
 
 ```dotenv
-CHATKIT_TRANSLATION_MODEL=your_translation_model
+CHATKIT_TRANSLATION_MODEL=deepseek-v4-pro
 ```
+
+翻译使用 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL`。因此即使诊断切换为 OpenAI，
+ChatKit 展示翻译仍然使用 DeepSeek。
 
 当前实时粒度为阶段级：`main.py` 产生 `stage_completed` 事件后翻译并展示完整阶段结果，
 不进行逐 token 翻译。
