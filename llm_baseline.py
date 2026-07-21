@@ -67,23 +67,27 @@ def main() -> int:
     parser.add_argument("--gemini_model")
     parser.add_argument("--claude_apikey")
     parser.add_argument("--claude_model")
-    parser.add_argument("--csv", type=Path)
+    parser.add_argument("--input", type=Path)
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
 
-    output_dir = PROJECT_ROOT / "output"
+    output_dir = PROJECT_ROOT / "output" / "baseline"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / (
-        f"mimiv_iv_llm_baseline_results_"
-        f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.jsonl"
-    )
 
     attempted = 0
     succeeded = 0
     try:
         llm_handler = LLM_handler(args)
+        handler_model = llm_handler.handler.model
+        model_name = str(getattr(handler_model, "model_name", handler_model)).removeprefix(
+            "models/"
+        )
+        output_path = output_dir / (
+            f"mimic_iv_llm_baseline_results_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}_{model_name}.jsonl"
+        )
         with (
-            args.csv.expanduser().resolve().open(
+            args.input.expanduser().resolve().open(
                 "r",
                 encoding="utf-8-sig",
                 newline="",

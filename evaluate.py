@@ -5,14 +5,16 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from config import OPENAI_MODEL
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
 DEFAULT_INPUT_PATH = (
     PROJECT_ROOT
     / "output"
-    / "mimiv_iv_diagnosis_results_20260720_132958_713012.jsonl"
+    / "batch"
+    / "mimic_iv_diagnosis_results_20260720_132958_713012.jsonl"
 )
 VALID_RESULTS = {"No", "1", "2", "3", "4", "5"}
 
@@ -26,7 +28,7 @@ Gold-standard diagnosis: {golden_diagnosis}"""
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate top-5 diagnosis recall with a DeepSeek judge."
+        description="Evaluate top-5 diagnosis recall with an OpenAI judge."
     )
     parser.add_argument(
         "--input",
@@ -38,8 +40,8 @@ def _parse_args() -> argparse.Namespace:
         "--output",
         type=Path,
         help=(
-            "Evaluation JSONL path. By default, append '_evaluation' to the input "
-            "file name."
+            "Evaluation JSONL path. By default, write to output/evaluate and append "
+            "'_evaluation' to the input file name."
         ),
     )
     return parser.parse_args()
@@ -59,13 +61,13 @@ def _evaluate_rank(
         golden_diagnosis=golden_diagnosis,
     )
     response = client.chat.completions.create(
-        model=DEEPSEEK_MODEL,
+        model=OPENAI_MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
     )
     result = (response.choices[0].message.content or "").strip()
     if result not in VALID_RESULTS:
-        raise ValueError(f"DeepSeek returned an invalid result: {result!r}")
+        raise ValueError(f"OpenAI returned an invalid result: {result!r}")
     return None if result == "No" else int(result)
 
 
@@ -73,15 +75,12 @@ def evaluate_file(input_path: Path, output_path: Path | None = None) -> Path:
     input_path = input_path.expanduser().resolve()
 
     if output_path is None:
-        output_path = input_path.with_name(f"{input_path.stem}_evaluation.jsonl")
+        output_path = DEFAULT_OUTPUT_DIR / f"{input_path.stem}_evaluation.jsonl"
     else:
         output_path = output_path.expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    client = OpenAI(
-        api_key=DEEPSEEK_API_KEY,
-        base_url=DEEPSEEK_BASE_URL,
-    )
+    client = OpenAI()
     total = 0
     recall1_hits = 0
     recall3_hits = 0

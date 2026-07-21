@@ -98,7 +98,7 @@ class deepseek_api:
             api_key=api_key,
             base_url="https://api.deepseek.com",
         )
-        self.model = "deepseek-v4-pro"
+        self.model = model
 
     def get_completion(
         self,

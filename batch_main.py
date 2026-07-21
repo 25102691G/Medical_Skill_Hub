@@ -12,7 +12,7 @@ from main import make_diagnosis
 
 PROJECT_ROOT = Path(__file__).absolute().parent
 DEFAULT_CSV_PATH = PROJECT_ROOT / "database" / "mimic_iv_test_case.csv"
-OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "batch"
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
 OUTPUT_COLUMNS = ("subject_id", "hadm_id", "long_title")
 
@@ -29,7 +29,7 @@ def _parse_args() -> argparse.Namespace:
         description="Run the diagnosis pipeline for cases in a MIMIC-IV CSV file."
     )
     parser.add_argument(
-        "--csv",
+        "--input",
         type=Path,
         default=DEFAULT_CSV_PATH,
         help=f"Input CSV path. Default: {DEFAULT_CSV_PATH}",
@@ -57,7 +57,7 @@ def run_batch(csv_path: Path, limit: int | None) -> Path:
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    output_path = OUTPUT_DIR / f"mimiv_iv_diagnosis_results_{timestamp}.jsonl"
+    output_path = OUTPUT_DIR / f"mimic_iv_diagnosis_results_{timestamp}.jsonl"
 
     attempted_count = 0
     success_count = 0
@@ -117,7 +117,7 @@ def run_batch(csv_path: Path, limit: int | None) -> Path:
 def main() -> int:
     args = _parse_args()
     try:
-        run_batch(args.csv, args.limit)
+        run_batch(args.input, args.limit)
     except (FileNotFoundError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

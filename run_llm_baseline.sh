@@ -11,8 +11,8 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
     set +a
 fi
 
-INPUT_CSV="${INPUT_CSV:-}"
-LIMIT=10
+INPUT="${INPUT:-}"
+LIMIT=10000
 MODEL=deepseek
 
 python llm_baseline.py \
@@ -21,5 +21,5 @@ python llm_baseline.py \
     --openai_model "${OPENAI_MODEL:-}" \
     --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
     --deepseek_model "${DEEPSEEK_MODEL:-}" \
-    --csv "$INPUT_CSV" \
+    --input "$INPUT" \
     --limit "$LIMIT"
