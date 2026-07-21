@@ -12,13 +12,15 @@ from interface import LLM_handler
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
+SYSTEM_PROMPT = (
+    "You are a specialist in gastroenterology. "
+    "Return exactly five distinct differential diagnoses, "
+    "one diagnosis per line, without numbering or explanations."
+)
 PROMPT = (
-    "You are a specialist in the field of gastroenterology. You will be provided "
-    "and asked about a complicated clinical case; read it carefully and then "
-    "provide a diverse and comprehensive differential diagnosis.  Patient’s "
-    "discharge information before disposition: {patient_info} Enumerate the top "
-    "5 most likely diagnoses. Be precise, listing one diagnosis per line, and "
-    "try to cover many unique possibilities (at least 5). The top 5 diagnoses are:"
+    "Patient discharge information before disposition:\n"
+    "{patient_info}\n\n"
+    "Provide the five most likely differential diagnoses."
 )
 
 
@@ -42,13 +44,9 @@ def parse_diagnoses(text: str) -> list[str]:
 
 
 def generate_diagnoses(llm_handler: LLM_handler, patient_info: str) -> list[str]:
-    prompt = PROMPT.format(patient_info=patient_info)
     response = llm_handler.handler.get_completion(
-        (
-            "You are a specialist in gastroenterology. Return exactly five "
-            "distinct differential diagnoses, one diagnosis per line."
-        ),
-        prompt,
+        SYSTEM_PROMPT,
+        PROMPT.format(patient_info=patient_info),
     )
     return parse_diagnoses(response)
 
