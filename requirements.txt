@@ -5,7 +5,9 @@ uvicorn[standard]
 pydantic
 python-dotenv
 langchain-community
+httpx[socks]
 rank-bm25
+scispacy==0.6.2
 xmltodict
 torch
 transformers

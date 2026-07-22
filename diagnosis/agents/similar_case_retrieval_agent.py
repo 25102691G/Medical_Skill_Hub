@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-import re
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
@@ -27,7 +26,6 @@ REQUIRED_COLUMNS = {
     "discharge_text",
 }
 RRF_K = 60
-_TEXT_PART_PATTERN = re.compile(r"[a-z0-9]+")
 RankingDetails = dict[str, object]
 RankingCallback = Callable[[RankingDetails], None]
 
@@ -113,8 +111,29 @@ def _join_query(items: list[str]) -> str:
     return " ".join(item.strip() for item in items if item.strip())
 
 
+@lru_cache(maxsize=1)
+def _load_scispacy_nlp() -> Any:
+    try:
+        import spacy
+        from scispacy.custom_tokenizer import combined_rule_tokenizer
+    except ImportError as exc:
+        raise RuntimeError(
+            "BM25 similar-case retrieval requires spaCy and scispaCy. "
+            "Install the dependencies from requirements.txt in the project virtual environment."
+        ) from exc
+
+    nlp = spacy.blank("en")
+    nlp.tokenizer = combined_rule_tokenizer(nlp)
+    return nlp
+
+
 def _tokenize(text: str) -> list[str]:
-    return _TEXT_PART_PATTERN.findall(text.lower())
+    doc = _load_scispacy_nlp().make_doc(text)
+    return [
+        token.lower_
+        for token in doc
+        if not token.is_space and not token.is_punct
+    ]
 
 
 def _empty_retrieval_result() -> SimilarCaseRetrievalResult:

@@ -2,7 +2,7 @@
 
 ## 环境准备
 
-优先使用项目内虚拟环境：
+优先使用 Python 3.10–3.12 创建项目内虚拟环境（scispaCy 暂不支持 Python 3.13）：
 
 ```bash
 python -m venv .venv
