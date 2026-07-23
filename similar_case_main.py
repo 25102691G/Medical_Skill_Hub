@@ -68,7 +68,10 @@ def _process_case(case_text: str, diagnosis_model: Model) -> dict[str, object]:
         },
         "similar_case_retrieval_result": {
             "discharge_disease": similar_case_retrieval_result.discharge_disease,
-            "hadm_id": similar_case_retrieval_result.hadm_id,
+            "Sections": [
+                [section.model_dump() for section in case_sections]
+                for case_sections in similar_case_retrieval_result.Sections
+            ],
         },
     }
 

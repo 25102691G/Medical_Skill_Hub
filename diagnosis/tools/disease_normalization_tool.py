@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,10 @@ from agents import function_tool
 
 
 MODEL_NAME = "FremyCompany/BioLORD-2023-C"
+MODEL_SOURCE = os.getenv(
+    "DISEASE_NORMALIZATION_MODEL",
+    MODEL_NAME,
+)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ICD11_MAPPING_PATH = PROJECT_ROOT / "database" / "icd11_id2diagnose.json"
 ICD11_EMBEDDINGS_PATH = PROJECT_ROOT / "database" / "icd11_diagnose_embeddings.pt"
@@ -21,20 +26,34 @@ _TOKENIZER = None
 _ICD11_CODES: list[str] | None = None
 _ICD11_NAMES: list[str] | None = None
 _ICD11_EMBEDDINGS = None
+_DEPENDENCIES = None
+_DEPENDENCIES_LOCK = threading.Lock()
+_MODEL_LOCK = threading.Lock()
+_EMBEDDINGS_LOCK = threading.Lock()
 
 
 def _require_torch_and_transformers() -> tuple[Any, Any, Any, Any]:
-    try:
-        import torch
-        import torch.nn.functional as F
-        from transformers import AutoModel, AutoTokenizer
-    except ImportError as exc:
-        raise RuntimeError(
-            "Disease normalization requires torch and transformers. "
-            "Install the project dependencies with: pip install -r requirements.txt"
-        ) from exc
+    global _DEPENDENCIES
 
-    return torch, F, AutoModel, AutoTokenizer
+    if _DEPENDENCIES is not None:
+        return _DEPENDENCIES
+
+    with _DEPENDENCIES_LOCK:
+        if _DEPENDENCIES is not None:
+            return _DEPENDENCIES
+
+        try:
+            import torch
+            import torch.nn.functional as F
+            from transformers import AutoModel, AutoTokenizer
+        except ImportError as exc:
+            raise RuntimeError(
+                "Disease normalization requires torch and transformers. "
+                "Install the project dependencies with: pip install -r requirements.txt"
+            ) from exc
+
+        _DEPENDENCIES = (torch, F, AutoModel, AutoTokenizer)
+        return _DEPENDENCIES
 
 
 def _get_device(torch: Any) -> str:
@@ -68,13 +87,17 @@ def _load_model_and_tokenizer() -> tuple[Any, Any]:
     if _MODEL is not None and _TOKENIZER is not None:
         return _MODEL, _TOKENIZER
 
-    torch, _, AutoModel, AutoTokenizer = _require_torch_and_transformers()
-    device = _get_device(torch)
-    _TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
-    _MODEL = AutoModel.from_pretrained(MODEL_NAME)
-    _MODEL.to(device)
-    _MODEL.eval()
-    return _MODEL, _TOKENIZER
+    with _MODEL_LOCK:
+        if _MODEL is not None and _TOKENIZER is not None:
+            return _MODEL, _TOKENIZER
+
+        torch, _, AutoModel, AutoTokenizer = _require_torch_and_transformers()
+        device = _get_device(torch)
+        _TOKENIZER = AutoTokenizer.from_pretrained(MODEL_SOURCE)
+        _MODEL = AutoModel.from_pretrained(MODEL_SOURCE)
+        _MODEL.to(device)
+        _MODEL.eval()
+        return _MODEL, _TOKENIZER
 
 
 def _encode_texts(texts: list[str], *, batch_size: int | None = None) -> Any:
@@ -108,19 +131,35 @@ def _load_or_build_icd11_embeddings() -> tuple[list[str], Any]:
     if _ICD11_CODES is not None and _ICD11_NAMES is not None and _ICD11_EMBEDDINGS is not None:
         return _ICD11_NAMES, _ICD11_EMBEDDINGS
 
-    torch, _, _, _ = _require_torch_and_transformers()
-    codes, names = _load_icd11_mapping()
+    with _EMBEDDINGS_LOCK:
+        if _ICD11_CODES is not None and _ICD11_NAMES is not None and _ICD11_EMBEDDINGS is not None:
+            return _ICD11_NAMES, _ICD11_EMBEDDINGS
 
-    if ICD11_EMBEDDINGS_PATH.exists():
-        checkpoint = torch.load(ICD11_EMBEDDINGS_PATH, map_location="cpu", weights_only=False)
-        if (
-            isinstance(checkpoint, dict)
-            and checkpoint.get("model_name") == MODEL_NAME
-            and checkpoint.get("max_length") == DEFAULT_MAX_LENGTH
-            and checkpoint.get("codes") == codes
-            and checkpoint.get("names") == names
-        ):
-            embeddings = checkpoint["embeddings"]
+        torch, _, _, _ = _require_torch_and_transformers()
+        codes, names = _load_icd11_mapping()
+
+        if ICD11_EMBEDDINGS_PATH.exists():
+            checkpoint = torch.load(ICD11_EMBEDDINGS_PATH, map_location="cpu", weights_only=False)
+            if (
+                isinstance(checkpoint, dict)
+                and checkpoint.get("model_name") == MODEL_NAME
+                and checkpoint.get("max_length") == DEFAULT_MAX_LENGTH
+                and checkpoint.get("codes") == codes
+                and checkpoint.get("names") == names
+            ):
+                embeddings = checkpoint["embeddings"]
+            else:
+                embeddings = _encode_texts(names)
+                torch.save(
+                    {
+                        "model_name": MODEL_NAME,
+                        "max_length": DEFAULT_MAX_LENGTH,
+                        "codes": codes,
+                        "names": names,
+                        "embeddings": embeddings,
+                    },
+                    ICD11_EMBEDDINGS_PATH,
+                )
         else:
             embeddings = _encode_texts(names)
             torch.save(
@@ -133,23 +172,11 @@ def _load_or_build_icd11_embeddings() -> tuple[list[str], Any]:
                 },
                 ICD11_EMBEDDINGS_PATH,
             )
-    else:
-        embeddings = _encode_texts(names)
-        torch.save(
-            {
-                "model_name": MODEL_NAME,
-                "max_length": DEFAULT_MAX_LENGTH,
-                "codes": codes,
-                "names": names,
-                "embeddings": embeddings,
-            },
-            ICD11_EMBEDDINGS_PATH,
-        )
 
-    _ICD11_CODES = codes
-    _ICD11_NAMES = names
-    _ICD11_EMBEDDINGS = embeddings
-    return names, embeddings
+        _ICD11_CODES = codes
+        _ICD11_NAMES = names
+        _ICD11_EMBEDDINGS = embeddings
+        return names, embeddings
 
 
 def normalize_disease_name_text(disease_name: str, *, debug: bool = False) -> str:

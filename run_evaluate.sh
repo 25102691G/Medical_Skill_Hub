@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-INPUT="output/baseline/mimic_iv_llm_baseline_results_20260721_133355_701343_deepseek-v4-pro.jsonl"
+if [[ $# -ne 1 ]]; then
+    echo "Usage: bash run_evaluate.sh <batch-results.jsonl>" >&2
+    exit 1
+fi
+
+INPUT="$1"
 MODEL=deepseek
 WORKERS=50
 

@@ -71,7 +71,6 @@ STAGE_DISPLAY_NAMES = {
     "Search Planning Result": "Search Planning Result",
     "Knowledge Search Result": "Medical Knowledge Search Result",
     "Similar Case Retrieval Rankings": "Similar-Case Retrieval Rankings",
-    "Similar Case Retrieval Result": "Similar-Case Retrieval Result",
     "Guideline Search Result": "Local Guideline Search Result",
     "Final Diagnosis Result": "Gastroenterology Diagnosis Result",
     "Diagnostic Judgement Result": "Diagnostic Result Assessment",
@@ -266,6 +265,8 @@ def _format_stage_result(title: str, content: str) -> str:
                 if not isinstance(item, dict):
                     continue
                 score = item.get("score")
+                if score is None:
+                    score = item.get("rrf_score", item.get("reranker_score"))
                 score_text = f"{score:.6f}" if isinstance(score, (int, float)) else str(score)
                 sections.append(
                     (
@@ -274,32 +275,27 @@ def _format_stage_result(title: str, content: str) -> str:
                         f"{item.get('discharge_disease', '')}; Score: {score_text}"
                     )
                 )
+                if method == "RRF":
+                    hit_groups = (
+                        ("BM25", item.get("bm25_top_sections")),
+                        ("Dense", item.get("dense_top_sections")),
+                    )
+                elif method == "Reranker":
+                    hit_groups = (
+                        ("Reranker Used", item.get("reranker_sections")),
+                    )
+                else:
+                    hit_groups = ((method, item.get("top_sections")),)
+                for hit_method, hits in hit_groups:
+                    if not isinstance(hits, list) or not hits:
+                        continue
+                    hit_names = ", ".join(
+                        str(hit.get("section", ""))
+                        for hit in hits
+                        if isinstance(hit, dict)
+                    )
+                    sections.append(f"   {hit_method} Top Sections: {hit_names}")
         return "\n".join(sections)
-
-    if stage_name == "Similar Case Retrieval Result":
-        if not isinstance(parsed_content, dict):
-            return f"{heading}\n\nNo displayable similar cases were retrieved."
-        hadm_ids = parsed_content.get("hadm_id")
-        discharge_diseases = parsed_content.get("discharge_disease")
-        if not isinstance(hadm_ids, list) or not isinstance(discharge_diseases, list):
-            return f"{heading}\n\nNo displayable similar cases were retrieved."
-        case_items = [
-            (
-                str(hadm_id),
-                str(discharge_disease),
-            )
-            for hadm_id, discharge_disease in zip(hadm_ids, discharge_diseases)
-        ]
-        if not case_items:
-            return f"{heading}\n\nNo similar cases were retrieved."
-        formatted_cases = "\n".join(
-            (
-                f"{index}. Hospital admission ID: {hadm_id}\n"
-                f"   Discharge disease: {discharge_disease}"
-            )
-            for index, (hadm_id, discharge_disease) in enumerate(case_items, start=1)
-        )
-        return f"{heading}\n\n{formatted_cases}"
 
     prepared_content = _prepare_stage_value(parsed_content)
     if isinstance(prepared_content, str):
@@ -403,6 +399,11 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         loop = asyncio.get_running_loop()
 
         def report_progress(event_type: str, title: str, content: str | None) -> None:
+            if (
+                event_type == "stage_completed"
+                and title.partition(" - Round ")[0] == "Similar Case Retrieval Result"
+            ):
+                return
             loop.call_soon_threadsafe(
                 progress_queue.put_nowait,
                 (event_type, title, content),

@@ -12,6 +12,11 @@ from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, OPENAI_M
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
 VALID_RESULTS = {"No", "1", "2", "3", "4", "5"}
+METHODS = (
+    "search_planning",
+    "similar_case_retrieval",
+    "final_diagnosis",
+)
 
 PROMPT = """You are a specialist in gastroenterology. Identify the rank of the gold-standard diagnosis among the five predicted diseases. If a predicted disease contains multiple conditions, use its highest matching rank. Output only "No" or one number from 1 to 5.
 
@@ -23,7 +28,7 @@ Gold-standard diagnosis: {golden_diagnosis}"""
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate top-5 diagnosis recall with an LLM judge."
+        description="Evaluate three sets of top-5 diagnosis results with an LLM judge."
     )
     parser.add_argument(
         "--model",
@@ -92,9 +97,10 @@ def evaluate_file(
         client = OpenAI()
         model_name = OPENAI_MODEL
     total = 0
-    recall1_hits = 0
-    recall3_hits = 0
-    recall5_hits = 0
+    recall_hits = {
+        method: {1: 0, 3: 0, 5: 0}
+        for method in METHODS
+    }
 
     with (
         input_path.open("r", encoding="utf-8") as input_file,
@@ -107,30 +113,45 @@ def evaluate_file(
                     continue
                 record = json.loads(line)
                 golden_diagnosis = record["long_title"].strip()
-                predicted_diseases = [
-                    diagnosis["disease"].strip()
-                    for diagnosis in record["diagnosis_result"]["topk_diagnoses"][:5]
-                ]
+                predicted_diseases = {
+                    "search_planning": [
+                        disease.strip()
+                        for disease in record["search_planning_result"]["hypotheses"][:5]
+                    ],
+                    "similar_case_retrieval": [
+                        disease.strip()
+                        for disease in record["similar_case_retrieval_result"][
+                            "discharge_disease"
+                        ][:5]
+                    ],
+                    "final_diagnosis": [
+                        diagnosis["disease"].strip()
+                        for diagnosis in record["diagnosis_result"]["topk_diagnoses"][:5]
+                    ],
+                }
                 print(
                     f"[{line_number}] Queued "
                     f"subject_id={record.get('subject_id')}, "
                     f"hadm_id={record.get('hadm_id')}.",
                     file=sys.stderr,
                 )
-                future = executor.submit(
-                    _evaluate_rank,
-                    client,
-                    model_name,
-                    predicted_diseases,
-                    golden_diagnosis,
-                )
+                futures = {
+                    method: executor.submit(
+                        _evaluate_rank,
+                        client,
+                        model_name,
+                        predicted_diseases[method],
+                        golden_diagnosis,
+                    )
+                    for method in METHODS
+                }
                 cases.append(
                     (
                         line_number,
                         record,
                         golden_diagnosis,
                         predicted_diseases,
-                        future,
+                        futures,
                     )
                 )
 
@@ -139,48 +160,64 @@ def evaluate_file(
                 record,
                 golden_diagnosis,
                 predicted_diseases,
-                future,
+                futures,
             ) in cases:
-                evaluated_rank = future.result()
+                evaluated_ranks = {
+                    method: futures[method].result()
+                    for method in METHODS
+                }
                 evaluation_record = {
                     "subject_id": record.get("subject_id"),
                     "hadm_id": record.get("hadm_id"),
                     "golden_diagnosis": golden_diagnosis,
-                    "predicted_diseases": predicted_diseases,
-                    "evaluated_rank": evaluated_rank,
+                    **{
+                        method: {
+                            "predicted_diseases": predicted_diseases[method],
+                            "evaluated_rank": evaluated_ranks[method],
+                        }
+                        for method in METHODS
+                    },
                 }
                 output_file.write(
                     json.dumps(evaluation_record, ensure_ascii=False) + "\n"
                 )
 
                 total += 1
-                if evaluated_rank is not None:
-                    recall1_hits += evaluated_rank <= 1
-                    recall3_hits += evaluated_rank <= 3
-                    recall5_hits += evaluated_rank <= 5
+                for method in METHODS:
+                    evaluated_rank = evaluated_ranks[method]
+                    if evaluated_rank is not None:
+                        for cutoff in (1, 3, 5):
+                            recall_hits[method][cutoff] += evaluated_rank <= cutoff
                 print(
                     f"[{line_number}] Completed "
                     f"subject_id={record.get('subject_id')}, "
                     f"hadm_id={record.get('hadm_id')}: "
-                    f"rank={evaluated_rank or 'No'}.",
+                    + ", ".join(
+                        f"{method}={evaluated_ranks[method] or 'No'}"
+                        for method in METHODS
+                    )
+                    + ".",
                     file=sys.stderr,
                 )
 
-        recall1 = recall1_hits / total
-        recall3 = recall3_hits / total
-        recall5 = recall5_hits / total
+        summary = {
+            method: {
+                f"recall{cutoff}": recall_hits[method][cutoff] / total
+                for cutoff in (1, 3, 5)
+            }
+            for method in METHODS
+        }
         summary_record = {
             "total": total,
-            "recall1": recall1,
-            "recall3": recall3,
-            "recall5": recall5,
+            **summary,
         }
         output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
 
     print(f"total: {total}")
-    print(f"recall1: {recall1:.6f}")
-    print(f"recall3: {recall3:.6f}")
-    print(f"recall5: {recall5:.6f}")
+    for method in METHODS:
+        print(f"{method} recall1: {summary[method]['recall1']:.6f}")
+        print(f"{method} recall3: {summary[method]['recall3']:.6f}")
+        print(f"{method} recall5: {summary[method]['recall5']:.6f}")
     print(f"Evaluation details: {output_path}", file=sys.stderr)
     return output_path
 

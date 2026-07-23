@@ -123,10 +123,8 @@ def evaluate_file(
                         for item in ranking_groups["dense"][:5]
                     ],
                     "rrf": [
-                        disease.strip()
-                        for disease in record["similar_case_retrieval_result"][
-                            "discharge_disease"
-                        ][:5]
+                        item["discharge_disease"].strip()
+                        for item in ranking_groups["rrf"][:5]
                     ],
                 }
                 print(

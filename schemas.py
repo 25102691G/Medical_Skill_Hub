@@ -72,6 +72,7 @@ class DiagnosisResult(BaseModel):
     topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
     summary: str = Field(description="Brief diagnostic analysis summary")
     evidence: list[str] = Field(
+        default_factory=list,
         description=(
             "Complete numbered evidence list derived from guideline evidence followed by PubMed "
             "evidence. Each item must use the format [number] source：evidence text."
@@ -101,19 +102,28 @@ class SearchPlanningResult(BaseModel):
     )
 
 
+class SimilarCaseSection(BaseModel):
+    section: str = Field(description="Matched discharge summary section name")
+    content: str = Field(description="Matched discharge summary section content")
+
+
 class SimilarCaseRetrievalResult(BaseModel):
     discharge_disease: list[str] = Field(
         max_length=10,
         description="Discharge diseases from the top 10 similar cases in retrieval rank order",
     )
-    hadm_id: list[str] = Field(
+    Sections: list[list[SimilarCaseSection]] = Field(
         max_length=10,
-        description="Hospital admission IDs from the top 10 similar cases in retrieval rank order",
+        description=(
+            "Matched discharge summary sections for each similar case in retrieval rank order"
+        ),
     )
-    discharge_texts: list[str] = Field(
-        max_length=10,
-        description="Discharge texts from the top 10 similar cases in retrieval rank order",
-    )
+
+
+class DiagnosisPipelineResult(BaseModel):
+    search_planning_result: SearchPlanningResult
+    similar_case_retrieval_result: SimilarCaseRetrievalResult
+    diagnosis_result: DiagnosisResult
 
 
 class DiagnosticJudgementResult(BaseModel):

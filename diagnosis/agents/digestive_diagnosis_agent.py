@@ -34,7 +34,7 @@ contains guideline evidence followed by PubMed evidence in one continuous number
 its order, numbering, and text. If numbered evidence is empty, set evidence to an empty list. Do not add,
 omit, renumber, summarize, or rewrite evidence items.
 
-Read each similar-case discharge_disease together with the discharge_text at the same ranked position,
+Read each similar-case discharge_disease together with the Sections at the same ranked position,
 and use them only as external reference evidence. A discharge_disease is the retrieved similar case's
 discharge diagnosis, not the current patient's diagnosis. Do not treat symptoms, examination findings,
 diagnoses, or outcomes from a retrieved similar case as facts observed in the current patient. If the

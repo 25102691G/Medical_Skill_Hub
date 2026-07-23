@@ -10,6 +10,7 @@ from typing import TypeVar
 
 from agents import (
     Model,
+    ModelSettings,
     OpenAIChatCompletionsModel,
     OpenAIResponsesModel,
     RunConfig,
@@ -23,16 +24,21 @@ from pydantic import BaseModel
 from config import (
     DEEPSEEK_BASE_URL,
     DEEPSEEK_MODEL,
+    DEEPSEEK_THINKING,
     DIAGNOSIS_TOPK,
     OPENAI_MODEL,
 )
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
 from diagnosis.agents.guideline_searcher_agent import SKILLS_DIR, build_guideline_searcher_agent
-from diagnosis.agents.knowledge_searcher_agent import build_knowledge_searcher_agent
+from diagnosis.agents.knowledge_searcher_agent import (
+    build_knowledge_searcher_agent,
+    search_pubmed_queries,
+)
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
 from schemas import (
+    DiagnosisPipelineResult,
     DiagnosisResult,
     DiagnosticJudgementResult,
     GuidelineSearchResult,
@@ -75,6 +81,13 @@ def _as_json(model_object: object) -> str:
 
 def _uses_native_structured_output(model: str | Model) -> bool:
     return not isinstance(model, OpenAIChatCompletionsModel)
+
+
+def _deepseek_model_settings(model: str | Model) -> ModelSettings | None:
+    if not isinstance(model, OpenAIChatCompletionsModel):
+        return None
+    thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
+    return ModelSettings(extra_body={"thinking": {"type": thinking_type}})
 
 
 def _prepare_structured_prompt(
@@ -192,6 +205,7 @@ def _run_search_planning(
     raw_result = Runner.run_sync(
         search_planning_agent,
         search_planning_prompt,
+        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
     ).final_output
     result = _parse_structured_result(raw_result, SearchPlanningResult)
     _publish_stage_result(
@@ -211,13 +225,16 @@ def _run_knowledge_search(
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> KnowledgeSearchResult:
+    selected_queries = search_queries[:3]
+    pubmed_results = search_pubmed_queries(selected_queries)
     native_structured_output = _uses_native_structured_output(model)
     knowledge_agent = build_knowledge_searcher_agent(
         model,
         native_structured_output=native_structured_output,
     )
     knowledge_prompt = (
-        f"Search queries:\n{_as_json(search_queries)}\n\n"
+        f"Search queries:\n{_as_json(selected_queries)}\n\n"
+        f"PubMed search results:\n{_as_json(pubmed_results)}\n\n"
         "Keep search queries, publication titles, URLs, and quoted source text in their original language."
     )
     knowledge_prompt = _prepare_structured_prompt(
@@ -226,7 +243,11 @@ def _run_knowledge_search(
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
-    raw_result = Runner.run_sync(knowledge_agent, knowledge_prompt).final_output
+    raw_result = Runner.run_sync(
+        knowledge_agent,
+        knowledge_prompt,
+        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+    ).final_output
     result = _parse_structured_result(raw_result, KnowledgeSearchResult)
     _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
@@ -310,6 +331,7 @@ def _run_guideline_search(
             guideline_agent,
             guideline_prompt,
             run_config=RunConfig(
+                model_settings=_deepseek_model_settings(model),
                 sandbox=SandboxRunConfig(
                     client=UnixLocalSandboxClient(),
                 ),
@@ -320,6 +342,7 @@ def _run_guideline_search(
             guideline_agent,
             guideline_prompt,
             max_turns=100,
+            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
         ).final_output
     result = _parse_structured_result(raw_result, GuidelineSearchResult)
     _publish_stage_result(
@@ -351,7 +374,7 @@ def _run_final_diagnosis(
     )
     similar_case_diagnosis_evidence = {
         "discharge_disease": similar_case_retrieval_result.discharge_disease,
-        "discharge_texts": similar_case_retrieval_result.discharge_texts,
+        "Sections": similar_case_retrieval_result.Sections,
     }
     pubmed_evidence = _format_pubmed_evidence(knowledge_search_result)
     combined_evidence = [
@@ -383,6 +406,7 @@ def _run_final_diagnosis(
     raw_result = Runner.run_sync(
         diagnosis_agent,
         diagnosis_prompt,
+        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosisResult)
     result = result.model_copy(update={"evidence": numbered_evidence})
@@ -432,6 +456,7 @@ def _run_diagnostic_judgement(
     raw_result = Runner.run_sync(
         diagnostic_judgement_agent,
         diagnostic_judgement_prompt,
+        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosticJudgementResult)
     _publish_stage_result(
@@ -443,13 +468,13 @@ def _run_diagnostic_judgement(
     return result
 
 
-def make_diagnosis(
+def make_diagnosis_pipeline(
     case_text: str,
     *,
     model: str | Model | None = None,
     debug: bool = False,
     progress_callback: DiagnosisProgressCallback | None = None,
-) -> DiagnosisResult:
+) -> DiagnosisPipelineResult:
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
     search_planning_result = _run_search_planning(
@@ -512,7 +537,11 @@ def make_diagnosis(
             diagnostic_judgement_result.closer_result == "topk_diagnoses"
             or round_index == max_diagnosis_rounds
         ):
-            return diagnosis_result
+            return DiagnosisPipelineResult(
+                search_planning_result=search_planning_result,
+                similar_case_retrieval_result=similar_case_retrieval_result,
+                diagnosis_result=diagnosis_result,
+            )
 
         search_planning_result = _run_search_planning(
             case_text,
@@ -527,6 +556,21 @@ def make_diagnosis(
         )
 
     raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
+
+
+def make_diagnosis(
+    case_text: str,
+    *,
+    model: str | Model | None = None,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> DiagnosisResult:
+    return make_diagnosis_pipeline(
+        case_text,
+        model=model,
+        debug=debug,
+        progress_callback=progress_callback,
+    ).diagnosis_result
 
 
 def build_diagnosis_model(

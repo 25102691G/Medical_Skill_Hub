@@ -7,7 +7,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from main import make_diagnosis
+from agents import Model
+
+from main import build_diagnosis_model, make_diagnosis_pipeline
 
 
 PROJECT_ROOT = Path(__file__).absolute().parent
@@ -39,6 +41,16 @@ def _parse_args() -> argparse.Namespace:
         type=_positive_int,
         help="Maximum number of cases to process. If omitted, process all rows.",
     )
+    parser.add_argument(
+        "--model",
+        choices=("openai", "deepseek"),
+        default="openai",
+        help="LLM provider. Default: openai.",
+    )
+    parser.add_argument("--openai_apikey")
+    parser.add_argument("--openai_model")
+    parser.add_argument("--deepseek_apikey")
+    parser.add_argument("--deepseek_model")
     return parser.parse_args()
 
 
@@ -50,7 +62,7 @@ def _validate_columns(fieldnames: list[str] | None) -> None:
         raise ValueError(f"Input CSV is missing required columns: {missing_text}")
 
 
-def run_batch(csv_path: Path, limit: int | None) -> Path:
+def run_batch(csv_path: Path, limit: int | None, diagnosis_model: Model) -> Path:
     resolved_csv_path = csv_path.expanduser().resolve()
     if not resolved_csv_path.is_file():
         raise FileNotFoundError(f"Input CSV does not exist: {resolved_csv_path}")
@@ -86,7 +98,10 @@ def run_batch(csv_path: Path, limit: int | None) -> Path:
 
             print(f"[{attempted_count}] Diagnosing {case_label} ...", file=sys.stderr)
             try:
-                diagnosis_result = make_diagnosis(case_text)
+                pipeline_result = make_diagnosis_pipeline(
+                    case_text,
+                    model=diagnosis_model,
+                )
             except Exception as exc:
                 print(
                     f"[{attempted_count}] Failed CSV row {row_number} ({case_label}): "
@@ -99,7 +114,7 @@ def run_batch(csv_path: Path, limit: int | None) -> Path:
                 "subject_id": row["subject_id"],
                 "hadm_id": row["hadm_id"],
                 "long_title": row["long_title"],
-                "diagnosis_result": diagnosis_result.model_dump(mode="json"),
+                **pipeline_result.model_dump(mode="json"),
             }
             output_file.write(json.dumps(output_record, ensure_ascii=False) + "\n")
             output_file.flush()
@@ -117,7 +132,14 @@ def run_batch(csv_path: Path, limit: int | None) -> Path:
 def main() -> int:
     args = _parse_args()
     try:
-        run_batch(args.input, args.limit)
+        diagnosis_model = build_diagnosis_model(
+            args.model,
+            openai_api_key=args.openai_apikey or "",
+            openai_model=args.openai_model or "",
+            deepseek_api_key=args.deepseek_apikey or "",
+            deepseek_model=args.deepseek_model or "",
+        )
+        run_batch(args.input, args.limit, diagnosis_model)
     except (FileNotFoundError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
