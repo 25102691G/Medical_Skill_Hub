@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import re
@@ -160,7 +161,7 @@ def _publish_stage_result(
         progress_callback("stage_completed", title, _as_json(model_object))
 
 
-def _run_search_planning(
+async def _run_search_planning_async(
     case_text: str,
     *,
     model: str | Model,
@@ -202,10 +203,12 @@ def _run_search_planning(
     )
 
     _notify_agent_started(progress_callback, "Search Planning Agent", round_index)
-    raw_result = Runner.run_sync(
-        search_planning_agent,
-        search_planning_prompt,
-        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+    raw_result = (
+        await Runner.run(
+            search_planning_agent,
+            search_planning_prompt,
+            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+        )
     ).final_output
     result = _parse_structured_result(raw_result, SearchPlanningResult)
     _publish_stage_result(
@@ -217,7 +220,34 @@ def _run_search_planning(
     return result
 
 
-def _run_knowledge_search(
+def _run_search_planning(
+    case_text: str,
+    *,
+    model: str | Model,
+    previous_search_planning_result: SearchPlanningResult | None = None,
+    previous_diagnosis_result: DiagnosisResult | None = None,
+    diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
+    previous_guideline_evidence: list[str] | None = None,
+    debug: bool = False,
+    round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> SearchPlanningResult:
+    return asyncio.run(
+        _run_search_planning_async(
+            case_text,
+            model=model,
+            previous_search_planning_result=previous_search_planning_result,
+            previous_diagnosis_result=previous_diagnosis_result,
+            diagnostic_judgement_result=diagnostic_judgement_result,
+            previous_guideline_evidence=previous_guideline_evidence,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
+    )
+
+
+async def _run_knowledge_search_async(
     search_queries: list[str],
     *,
     model: str | Model,
@@ -226,7 +256,10 @@ def _run_knowledge_search(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> KnowledgeSearchResult:
     selected_queries = search_queries[:3]
-    pubmed_results = search_pubmed_queries(selected_queries)
+    pubmed_results = await asyncio.to_thread(
+        search_pubmed_queries,
+        selected_queries,
+    )
     native_structured_output = _uses_native_structured_output(model)
     knowledge_agent = build_knowledge_searcher_agent(
         model,
@@ -243,10 +276,12 @@ def _run_knowledge_search(
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
-    raw_result = Runner.run_sync(
-        knowledge_agent,
-        knowledge_prompt,
-        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+    raw_result = (
+        await Runner.run(
+            knowledge_agent,
+            knowledge_prompt,
+            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+        )
     ).final_output
     result = _parse_structured_result(raw_result, KnowledgeSearchResult)
     _publish_stage_result(
@@ -300,7 +335,7 @@ def _run_similar_case_retrieval(
     return result
 
 
-def _run_guideline_search(
+async def _run_guideline_search_async(
     search_queries: list[str],
     *,
     model: str | Model,
@@ -327,22 +362,26 @@ def _run_guideline_search(
     )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
     if native_structured_output:
-        raw_result = Runner.run_sync(
-            guideline_agent,
-            guideline_prompt,
-            run_config=RunConfig(
-                model_settings=_deepseek_model_settings(model),
-                sandbox=SandboxRunConfig(
-                    client=UnixLocalSandboxClient(),
+        raw_result = (
+            await Runner.run(
+                guideline_agent,
+                guideline_prompt,
+                run_config=RunConfig(
+                    model_settings=_deepseek_model_settings(model),
+                    sandbox=SandboxRunConfig(
+                        client=UnixLocalSandboxClient(),
+                    ),
                 ),
-            ),
+            )
         ).final_output
     else:
-        raw_result = Runner.run_sync(
-            guideline_agent,
-            guideline_prompt,
-            max_turns=100,
-            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+        raw_result = (
+            await Runner.run(
+                guideline_agent,
+                guideline_prompt,
+                max_turns=100,
+                run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+            )
         ).final_output
     result = _parse_structured_result(raw_result, GuidelineSearchResult)
     _publish_stage_result(
@@ -354,7 +393,7 @@ def _run_guideline_search(
     return result
 
 
-def _run_final_diagnosis(
+async def _run_final_diagnosis_async(
     case_text: str,
     knowledge_search_result: KnowledgeSearchResult,
     guideline_evidence: list[str],
@@ -403,10 +442,12 @@ def _run_final_diagnosis(
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
-    raw_result = Runner.run_sync(
-        diagnosis_agent,
-        diagnosis_prompt,
-        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+    raw_result = (
+        await Runner.run(
+            diagnosis_agent,
+            diagnosis_prompt,
+            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+        )
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosisResult)
     result = result.model_copy(update={"evidence": numbered_evidence})
@@ -419,7 +460,7 @@ def _run_final_diagnosis(
     return result
 
 
-def _run_diagnostic_judgement(
+async def _run_diagnostic_judgement_async(
     case_text: str,
     hypotheses: list[str],
     diagnosis_result: DiagnosisResult,
@@ -453,10 +494,12 @@ def _run_diagnostic_judgement(
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Diagnostic Judgement Agent", round_index)
-    raw_result = Runner.run_sync(
-        diagnostic_judgement_agent,
-        diagnostic_judgement_prompt,
-        run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+    raw_result = (
+        await Runner.run(
+            diagnostic_judgement_agent,
+            diagnostic_judgement_prompt,
+            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+        )
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosticJudgementResult)
     _publish_stage_result(
@@ -468,7 +511,7 @@ def _run_diagnostic_judgement(
     return result
 
 
-def make_diagnosis_pipeline(
+async def make_diagnosis_pipeline_async(
     case_text: str,
     *,
     model: str | Model | None = None,
@@ -477,7 +520,7 @@ def make_diagnosis_pipeline(
 ) -> DiagnosisPipelineResult:
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
-    search_planning_result = _run_search_planning(
+    search_planning_result = await _run_search_planning_async(
         case_text,
         model=diagnosis_model,
         debug=debug,
@@ -486,30 +529,35 @@ def make_diagnosis_pipeline(
     )
 
     for round_index in range(1, max_diagnosis_rounds + 1):
-        knowledge_search_result = _run_knowledge_search(
-            search_planning_result.search_queries,
-            model=diagnosis_model,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
+        (
+            knowledge_search_result,
+            similar_case_retrieval_result,
+            guideline_search_result,
+        ) = await asyncio.gather(
+            _run_knowledge_search_async(
+                search_planning_result.search_queries,
+                model=diagnosis_model,
+                debug=debug,
+                round_index=round_index,
+                progress_callback=progress_callback,
+            ),
+            asyncio.to_thread(
+                _run_similar_case_retrieval,
+                search_planning_result.similar_case_queries,
+                debug=debug,
+                round_index=round_index,
+                progress_callback=progress_callback,
+            ),
+            _run_guideline_search_async(
+                search_planning_result.search_queries,
+                model=diagnosis_model,
+                debug=debug,
+                round_index=round_index,
+                progress_callback=progress_callback,
+            ),
         )
 
-        similar_case_retrieval_result = _run_similar_case_retrieval(
-            search_planning_result.similar_case_queries,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
-        )
-
-        guideline_search_result = _run_guideline_search(
-            search_planning_result.search_queries,
-            model=diagnosis_model,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
-        )
-
-        diagnosis_result = _run_final_diagnosis(
+        diagnosis_result = await _run_final_diagnosis_async(
             case_text,
             knowledge_search_result,
             guideline_search_result.guideline_evidence,
@@ -520,7 +568,7 @@ def make_diagnosis_pipeline(
             progress_callback=progress_callback,
         )
 
-        diagnostic_judgement_result = _run_diagnostic_judgement(
+        diagnostic_judgement_result = await _run_diagnostic_judgement_async(
             case_text,
             search_planning_result.hypotheses,
             diagnosis_result,
@@ -543,7 +591,7 @@ def make_diagnosis_pipeline(
                 diagnosis_result=diagnosis_result,
             )
 
-        search_planning_result = _run_search_planning(
+        search_planning_result = await _run_search_planning_async(
             case_text,
             model=diagnosis_model,
             previous_search_planning_result=search_planning_result,
@@ -556,6 +604,40 @@ def make_diagnosis_pipeline(
         )
 
     raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
+
+
+def make_diagnosis_pipeline(
+    case_text: str,
+    *,
+    model: str | Model | None = None,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> DiagnosisPipelineResult:
+    return asyncio.run(
+        make_diagnosis_pipeline_async(
+            case_text,
+            model=model,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+    )
+
+
+async def make_diagnosis_async(
+    case_text: str,
+    *,
+    model: str | Model | None = None,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> DiagnosisResult:
+    return (
+        await make_diagnosis_pipeline_async(
+            case_text,
+            model=model,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+    ).diagnosis_result
 
 
 def make_diagnosis(

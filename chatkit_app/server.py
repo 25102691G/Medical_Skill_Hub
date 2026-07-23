@@ -27,7 +27,7 @@ from chatkit_app.translation import (
     DisplayTranslator,
     get_context_display_language,
 )
-from main import make_diagnosis
+from main import make_diagnosis_async
 from schemas import DiagnosisResult
 
 
@@ -74,6 +74,14 @@ STAGE_DISPLAY_NAMES = {
     "Guideline Search Result": "Local Guideline Search Result",
     "Final Diagnosis Result": "Gastroenterology Diagnosis Result",
     "Diagnostic Judgement Result": "Diagnostic Result Assessment",
+}
+STAGE_OUTPUT_ORDER = {
+    "Search Planning Result": 0,
+    "Knowledge Search Result": 1,
+    "Similar Case Retrieval Rankings": 2,
+    "Guideline Search Result": 3,
+    "Final Diagnosis Result": 4,
+    "Diagnostic Judgement Result": 5,
 }
 FIELD_DISPLAY_NAMES = {
     "hypotheses": "Candidate Diagnoses",
@@ -409,18 +417,21 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                 (event_type, title, content),
             )
 
-        def run_diagnosis() -> DiagnosisResult:
+        async def run_diagnosis() -> DiagnosisResult:
             try:
-                return make_diagnosis(
+                return await make_diagnosis_async(
                     case_text,
                     model=self.diagnosis_model,
                     debug=False,
                     progress_callback=report_progress,
                 )
             finally:
-                loop.call_soon_threadsafe(progress_queue.put_nowait, None)
+                loop.call_soon(progress_queue.put_nowait, None)
 
-        diagnosis_task = asyncio.create_task(asyncio.to_thread(run_diagnosis))
+        diagnosis_task = asyncio.create_task(run_diagnosis())
+        stage_translation_tasks: list[
+            tuple[tuple[int, int, int], str, asyncio.Task[str]]
+        ] = []
         try:
             while True:
                 progress_event = await progress_queue.get()
@@ -444,19 +455,44 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                     )
                 elif event_type == "stage_completed" and content is not None:
                     raw_stage_text = _format_stage_result(title, content)
-                    translated_stage_text = await self.translator.translate(
-                        raw_stage_text,
-                        display_language,
+                    stage_name, _, round_text = title.partition(" - Round ")
+                    output_order = (
+                        int(round_text) if round_text.isdigit() else 0,
+                        STAGE_OUTPUT_ORDER.get(stage_name, len(STAGE_OUTPUT_ORDER)),
+                        len(stage_translation_tasks),
                     )
-                    yield self._assistant_event(
-                        thread,
-                        translated_stage_text,
-                        context,
-                        raw_text=raw_stage_text,
+                    stage_translation_tasks.append(
+                        (
+                            output_order,
+                            raw_stage_text,
+                            asyncio.create_task(
+                                self.translator.translate(
+                                    raw_stage_text,
+                                    display_language,
+                                )
+                            ),
+                        )
                     )
 
             result = await diagnosis_task
+            for _, raw_stage_text, translation_task in sorted(
+                stage_translation_tasks,
+                key=lambda item: item[0],
+            ):
+                translated_stage_text = await translation_task
+                yield self._assistant_event(
+                    thread,
+                    translated_stage_text,
+                    context,
+                    raw_text=raw_stage_text,
+                )
         except RateLimitError as exc:
+            for _, _, translation_task in stage_translation_tasks:
+                translation_task.cancel()
+            await asyncio.gather(
+                *(task for _, _, task in stage_translation_tasks),
+                return_exceptions=True,
+            )
             error_code = _rate_limit_error_code(exc)
             logger.warning(
                 "Model API request failed for thread %s: code=%s request_id=%s",
@@ -476,6 +512,12 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                 )
             return
         except Exception:
+            for _, _, translation_task in stage_translation_tasks:
+                translation_task.cancel()
+            await asyncio.gather(
+                *(task for _, _, task in stage_translation_tasks),
+                return_exceptions=True,
+            )
             logger.exception("Diagnosis pipeline failed for thread %s", thread.id)
             yield ErrorEvent(
                 message=_static_text(display_language, "pipeline_error"),

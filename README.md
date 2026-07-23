@@ -54,19 +54,19 @@ DEEPSEEK_THINKING=true
 
 ## 批量运行
 
-`batch_main.py` 默认读取 `database/mimic_iv_test_case.csv`，逐行使用
+`batch_main.py` 读取通过 `--input` 指定的 CSV，使用
 `discharge_text_before_disposition` 作为 `case_text` 运行完整诊断流水线。使用
-`--limit` 控制本次处理的病例数量：
+`--limit` 控制本次处理的病例数量，使用 `--workers` 控制同时诊断的病例数：
 
 ```bash
-.venv/bin/python batch_main.py --limit 10
+.venv/bin/python batch_main.py \
+  --input database/mimic_test_case.csv \
+  --limit 10 \
+  --workers 4
 ```
 
-如需读取其他结构相同的 CSV，可通过 `--input` 指定：
-
-```bash
-.venv/bin/python batch_main.py --input database/mimic_iv_test_case.csv --limit 10
-```
+`--workers` 默认为 `1`。并发运行时各病例可以交错完成，但成功结果仍按输入 CSV
+顺序写入 JSONL。
 
 `run_batch_main.sh` 会读取 `.env` 中的 `DIAGNOSIS_PROVIDER`，支持 `openai` 和
 `deepseek`。对应的 API Key、模型名称和 DeepSeek 地址与 `run_main.sh` 使用相同配置。

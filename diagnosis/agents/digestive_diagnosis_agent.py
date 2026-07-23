@@ -34,6 +34,10 @@ contains guideline evidence followed by PubMed evidence in one continuous number
 its order, numbering, and text. If numbered evidence is empty, set evidence to an empty list. Do not add,
 omit, renumber, summarize, or rewrite evidence items.
 
+Write all generated diagnosis_result content in English, including disease names, supporting evidence,
+recommended next steps, and the summary. Preserve skill_names in their original language, and preserve
+the top-level evidence list exactly as provided, including the original language of guideline evidence.
+
 Read each similar-case discharge_disease together with the Sections at the same ranked position,
 and use them only as external reference evidence. A discharge_disease is the retrieved similar case's
 discharge diagnosis, not the current patient's diagnosis. Do not treat symptoms, examination findings,
@@ -52,8 +56,8 @@ findings as facts observed in the current patient.
 If the provided evidence does not provide clear support, do not invent recommendation numbers, evidence
 levels, or recommendation strengths.
 
-Before outputting topk_diagnoses, you must call normalize_disease_name for each diagnostic disease name.
-Use the normalized ICD11 result to preserve the standardized diagnosis meaning.
+Before outputting topk_diagnoses, call normalize_disease_name for each candidate disease name and set
+the disease field to the normalized ICD11 diagnosis name returned by the tool.
 """.strip()
 
 
@@ -68,16 +72,12 @@ def build_digestive_diagnosis_agent(
         raise ValueError(f"Unsupported digestive diagnosis phase: {phase}")
 
     instructions = [BASE_INSTRUCTIONS]
-    tools = []
 
-    instructions.append(
-        FINAL_DIAGNOSIS_INSTRUCTIONS
-    )
-    tools.append(normalize_disease_name)
+    instructions.append(FINAL_DIAGNOSIS_INSTRUCTIONS)
     return Agent(
         name="Gastroenterology Diagnosis Agent",
         model=model,
         instructions="\n\n".join(instructions),
-        tools=tools,
+        tools=[normalize_disease_name],
         output_type=output_type if native_structured_output else None,
     )

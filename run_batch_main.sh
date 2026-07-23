@@ -15,7 +15,8 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 INPUT="database/mimic_test_case.csv"
-LIMIT=1
+LIMIT=10
+WORKERS=4
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 DIAGNOSIS_TOPK=5
 
@@ -29,4 +30,5 @@ python batch_main.py \
     --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
     --deepseek_model "${DEEPSEEK_MODEL:-}" \
     --input "$INPUT" \
-    --limit "$LIMIT"
+    --limit "$LIMIT" \
+    --workers "$WORKERS"
