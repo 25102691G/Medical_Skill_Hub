@@ -38,13 +38,19 @@ MIMIC_IV_CASE_PATH = Path(
     )
 ).expanduser()
 SIMILAR_CASE_TOP_K = int(os.getenv("SIMILAR_CASE_TOP_K", "5"))
+SIMILAR_CASE_BM25_CANDIDATE_K = int(
+    os.getenv("SIMILAR_CASE_BM25_CANDIDATE_K", "50")
+)
+SIMILAR_CASE_DENSE_CANDIDATE_K = int(
+    os.getenv("SIMILAR_CASE_DENSE_CANDIDATE_K", "50")
+)
 SIMILAR_CASE_EMBEDDING_MODEL = os.getenv(
     "SIMILAR_CASE_EMBEDDING_MODEL",
     "BAAI/bge-m3",
 )
 SIMILAR_CASE_EMBEDDING_DEVICE = os.getenv(
     "SIMILAR_CASE_EMBEDDING_DEVICE",
-    "cpu",
+    "cuda",
 ).strip().lower()
 SIMILAR_CASE_EMBEDDING_CACHE_PATH = Path(
     os.getenv(
