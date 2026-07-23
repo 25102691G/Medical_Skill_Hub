@@ -103,6 +103,8 @@ def evaluate_file(
         method: {1: 0, 3: 0, 5: 0}
         for method in METHODS
     }
+    used_skill_count = 0
+    skill_counts: dict[str, int] = {}
 
     with (
         input_path.open("r", encoding="utf-8") as input_file,
@@ -185,6 +187,10 @@ def evaluate_file(
                 )
 
                 total += 1
+                if record["diagnosis_result"]["used_skill"]:
+                    used_skill_count += 1
+                for skill_name in record["diagnosis_result"]["skill_names"]:
+                    skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
                 for method in METHODS:
                     evaluated_rank = evaluated_ranks[method]
                     if evaluated_rank is not None:
@@ -212,6 +218,12 @@ def evaluate_file(
         summary_record = {
             "total": total,
             **summary,
+            "skill_usage": {
+                "used_count": used_skill_count,
+                "unused_count": total - used_skill_count,
+                "usage_rate": used_skill_count / total,
+                "skill_counts": skill_counts,
+            },
         }
         output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
 
@@ -220,6 +232,11 @@ def evaluate_file(
         print(f"{method} recall1: {summary[method]['recall1']:.6f}")
         print(f"{method} recall3: {summary[method]['recall3']:.6f}")
         print(f"{method} recall5: {summary[method]['recall5']:.6f}")
+    print(f"skill used: {used_skill_count}")
+    print(f"skill unused: {total - used_skill_count}")
+    print(f"skill usage rate: {used_skill_count / total:.6f}")
+    for skill_name, count in skill_counts.items():
+        print(f"skill {skill_name}: {count}")
     print(f"Evaluation details: {output_path}", file=sys.stderr)
     return output_path
 

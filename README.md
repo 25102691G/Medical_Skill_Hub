@@ -170,8 +170,9 @@ bash run_evaluate.sh output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
 程序结束时会在输出文件末尾写入 `total`，以及 `search_planning`、
 `similar_case_retrieval`、`final_diagnosis` 三组各自的 `recall1`、`recall3` 和
-`recall5`，并在标准输出中打印相同统计结果；模型返回 `No` 时，该病例在对应诊断组的
-三个指标中都记为未命中。
+`recall5`。汇总记录的最后还会写入 `skill_usage`，包括使用和未使用 skill 的病例数、
+使用率，以及各 skill 的使用次数，并在标准输出最后打印相同统计结果；模型返回 `No`
+时，该病例在对应诊断组的三个指标中都记为未命中。
 
 ## ChatKit 聊天界面
 

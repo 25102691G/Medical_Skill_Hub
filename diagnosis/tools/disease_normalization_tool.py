@@ -16,16 +16,16 @@ MODEL_SOURCE = os.getenv(
     MODEL_NAME,
 )
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ICD11_MAPPING_PATH = PROJECT_ROOT / "database" / "icd11_id2diagnose.json"
-ICD11_EMBEDDINGS_PATH = PROJECT_ROOT / "database" / "icd11_diagnose_embeddings.pt"
+ICD10_MAPPING_PATH = PROJECT_ROOT / "database" / "icd10_id2diagnose.json"
+ICD10_EMBEDDINGS_PATH = PROJECT_ROOT / "database" / "icd10_diagnose_embeddings.pt"
 DEFAULT_BATCH_SIZE = 8
 DEFAULT_MAX_LENGTH = 36
 
 _MODEL = None
 _TOKENIZER = None
-_ICD11_CODES: list[str] | None = None
-_ICD11_NAMES: list[str] | None = None
-_ICD11_EMBEDDINGS = None
+_ICD10_CODES: list[str] | None = None
+_ICD10_NAMES: list[str] | None = None
+_ICD10_EMBEDDINGS = None
 _DEPENDENCIES = None
 _DEPENDENCIES_LOCK = threading.Lock()
 _MODEL_LOCK = threading.Lock()
@@ -63,11 +63,11 @@ def _get_device(torch: Any) -> str:
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def _load_icd11_mapping() -> tuple[list[str], list[str]]:
-    if not ICD11_MAPPING_PATH.exists():
-        raise FileNotFoundError(f"ICD11 mapping file not found: {ICD11_MAPPING_PATH}")
+def _load_icd10_mapping() -> tuple[list[str], list[str]]:
+    if not ICD10_MAPPING_PATH.exists():
+        raise FileNotFoundError(f"ICD10 mapping file not found: {ICD10_MAPPING_PATH}")
 
-    with ICD11_MAPPING_PATH.open(encoding="utf-8") as f:
+    with ICD10_MAPPING_PATH.open(encoding="utf-8") as f:
         mapping = json.load(f)
 
     codes: list[str] = []
@@ -125,21 +125,21 @@ def _encode_texts(texts: list[str], *, batch_size: int | None = None) -> Any:
     return torch.cat(embeddings, dim=0)
 
 
-def _load_or_build_icd11_embeddings() -> tuple[list[str], Any]:
-    global _ICD11_CODES, _ICD11_NAMES, _ICD11_EMBEDDINGS
+def _load_or_build_icd10_embeddings() -> tuple[list[str], Any]:
+    global _ICD10_CODES, _ICD10_NAMES, _ICD10_EMBEDDINGS
 
-    if _ICD11_CODES is not None and _ICD11_NAMES is not None and _ICD11_EMBEDDINGS is not None:
-        return _ICD11_NAMES, _ICD11_EMBEDDINGS
+    if _ICD10_CODES is not None and _ICD10_NAMES is not None and _ICD10_EMBEDDINGS is not None:
+        return _ICD10_NAMES, _ICD10_EMBEDDINGS
 
     with _EMBEDDINGS_LOCK:
-        if _ICD11_CODES is not None and _ICD11_NAMES is not None and _ICD11_EMBEDDINGS is not None:
-            return _ICD11_NAMES, _ICD11_EMBEDDINGS
+        if _ICD10_CODES is not None and _ICD10_NAMES is not None and _ICD10_EMBEDDINGS is not None:
+            return _ICD10_NAMES, _ICD10_EMBEDDINGS
 
         torch, _, _, _ = _require_torch_and_transformers()
-        codes, names = _load_icd11_mapping()
+        codes, names = _load_icd10_mapping()
 
-        if ICD11_EMBEDDINGS_PATH.exists():
-            checkpoint = torch.load(ICD11_EMBEDDINGS_PATH, map_location="cpu", weights_only=False)
+        if ICD10_EMBEDDINGS_PATH.exists():
+            checkpoint = torch.load(ICD10_EMBEDDINGS_PATH, map_location="cpu", weights_only=False)
             if (
                 isinstance(checkpoint, dict)
                 and checkpoint.get("model_name") == MODEL_NAME
@@ -158,7 +158,7 @@ def _load_or_build_icd11_embeddings() -> tuple[list[str], Any]:
                         "names": names,
                         "embeddings": embeddings,
                     },
-                    ICD11_EMBEDDINGS_PATH,
+                    ICD10_EMBEDDINGS_PATH,
                 )
         else:
             embeddings = _encode_texts(names)
@@ -170,17 +170,17 @@ def _load_or_build_icd11_embeddings() -> tuple[list[str], Any]:
                     "names": names,
                     "embeddings": embeddings,
                 },
-                ICD11_EMBEDDINGS_PATH,
+                ICD10_EMBEDDINGS_PATH,
             )
 
-        _ICD11_CODES = codes
-        _ICD11_NAMES = names
-        _ICD11_EMBEDDINGS = embeddings
+        _ICD10_CODES = codes
+        _ICD10_NAMES = names
+        _ICD10_EMBEDDINGS = embeddings
         return names, embeddings
 
 
 def normalize_disease_name_text(disease_name: str, *, debug: bool = False) -> str:
-    """Normalize a disease name to the closest ICD11 diagnosis name."""
+    """Normalize a disease name to the closest ICD10 diagnosis name."""
     query = disease_name.strip()
     if not query:
         if debug:
@@ -192,7 +192,7 @@ def normalize_disease_name_text(disease_name: str, *, debug: bool = False) -> st
         return ""
 
     torch, F, _, _ = _require_torch_and_transformers()
-    names, disease_embeddings = _load_or_build_icd11_embeddings()
+    names, disease_embeddings = _load_or_build_icd10_embeddings()
 
     query_embedding = _encode_texts([query])
     normalized_query_embedding = F.normalize(query_embedding, p=2, dim=1)
@@ -212,7 +212,7 @@ def normalize_disease_name_text(disease_name: str, *, debug: bool = False) -> st
 @function_tool
 def normalize_disease_name(disease_name: str) -> str:
     """
-    Normalize a disease name to the closest ICD11 diagnosis name.
+    Normalize a disease name to the closest ICD10 diagnosis name.
 
     Args:
         disease_name: Disease name or diagnosis text to normalize.

@@ -57,7 +57,7 @@ If the provided evidence does not provide clear support, do not invent recommend
 levels, or recommendation strengths.
 
 Before outputting topk_diagnoses, call normalize_disease_name for each candidate disease name and set
-the disease field to the normalized ICD11 diagnosis name returned by the tool.
+the disease field to the normalized ICD10 diagnosis name returned by the tool.
 """.strip()
 
 
