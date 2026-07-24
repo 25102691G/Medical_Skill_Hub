@@ -18,7 +18,11 @@ METHODS = (
     "final_diagnosis",
 )
 
-PROMPT = """You are a specialist in gastroenterology. Identify the rank of the gold-standard diagnosis among the five predicted diseases. If a predicted disease contains multiple conditions, use its highest matching rank. Output only "No" or one number from 1 to 5.
+PROMPT = """You are a specialist in gastroenterology. Identify the rank of the gold-standard diagnosis among the five predicted diseases based only on the underlying ICD-10-CM disease subcategory or disease type.
+
+Ignore all complication information, including whether a diagnosis is with or without complications and any specific complication type. Diagnoses that differ only in complication status or complication type must be treated as a match. Accept synonymous clinical wording and differences in word order when the underlying disease subcategory or disease type is equivalent. A broad disease family, symptom, or related condition does not match a more specific disease subcategory. If a predicted disease contains multiple conditions, use its highest matching rank.
+
+Output only "No" or one number from 1 to 5.
 
 Predicted diseases:
 {predict_diagnosis}
@@ -99,10 +103,12 @@ def evaluate_file(
         client = OpenAI()
         model_name = OPENAI_MODEL
     total = 0
-    recall_hits = {
+    final_recall_hits = {
         method: {1: 0, 3: 0, 5: 0}
         for method in METHODS
     }
+    round_totals: dict[int, int] = {}
+    round_recall_hits: dict[int, dict[str, dict[int, int]]] = {}
     used_skill_count = 0
     skill_counts: dict[str, int] = {}
 
@@ -117,45 +123,59 @@ def evaluate_file(
                     continue
                 record = json.loads(line)
                 golden_diagnosis = record["long_title"].strip()
-                predicted_diseases = {
-                    "search_planning": [
-                        disease.strip()
-                        for disease in record["search_planning_result"]["hypotheses"][:5]
-                    ],
-                    "similar_case_retrieval": [
-                        disease.strip()
-                        for disease in record["similar_case_retrieval_result"][
-                            "discharge_disease"
-                        ][:5]
-                    ],
-                    "final_diagnosis": [
-                        diagnosis["disease"].strip()
-                        for diagnosis in record["diagnosis_result"]["topk_diagnoses"][:5]
-                    ],
-                }
+                multi_round_diagnosis = record["multi_round_diagnosis"]
                 print(
                     f"[{line_number}] Queued "
                     f"subject_id={record.get('subject_id')}, "
                     f"hadm_id={record.get('hadm_id')}.",
                     file=sys.stderr,
                 )
-                futures = {
-                    method: executor.submit(
-                        _evaluate_rank,
-                        client,
-                        model_name,
-                        predicted_diseases[method],
-                        golden_diagnosis,
+                round_jobs = []
+                for round_result in multi_round_diagnosis["rounds"]:
+                    predicted_diseases = {
+                        "search_planning": [
+                            disease.strip()
+                            for disease in round_result["search_planning_result"][
+                                "hypotheses"
+                            ][:5]
+                        ],
+                        "similar_case_retrieval": [
+                            disease.strip()
+                            for disease in round_result[
+                                "similar_case_retrieval_result"
+                            ]["discharge_disease"][:5]
+                        ],
+                        "final_diagnosis": [
+                            diagnosis["disease"].strip()
+                            for diagnosis in round_result["diagnosis_result"][
+                                "topk_diagnoses"
+                            ][:5]
+                        ],
+                    }
+                    futures = {
+                        method: executor.submit(
+                            _evaluate_rank,
+                            client,
+                            model_name,
+                            predicted_diseases[method],
+                            golden_diagnosis,
+                        )
+                        for method in METHODS
+                    }
+                    round_jobs.append(
+                        (
+                            round_result["round"],
+                            predicted_diseases,
+                            futures,
+                        )
                     )
-                    for method in METHODS
-                }
                 cases.append(
                     (
                         line_number,
                         record,
                         golden_diagnosis,
-                        predicted_diseases,
-                        futures,
+                        multi_round_diagnosis,
+                        round_jobs,
                     )
                 )
 
@@ -163,61 +183,114 @@ def evaluate_file(
                 line_number,
                 record,
                 golden_diagnosis,
-                predicted_diseases,
-                futures,
+                multi_round_diagnosis,
+                round_jobs,
             ) in cases:
-                evaluated_ranks = {
-                    method: futures[method].result()
-                    for method in METHODS
-                }
+                round_evaluations = []
+                for round_number, predicted_diseases, futures in round_jobs:
+                    evaluated_ranks = {
+                        method: futures[method].result()
+                        for method in METHODS
+                    }
+                    round_evaluations.append(
+                        {
+                            "round": round_number,
+                            **{
+                                method: {
+                                    "predicted_diseases": predicted_diseases[method],
+                                    "evaluated_rank": evaluated_ranks[method],
+                                }
+                                for method in METHODS
+                            },
+                        }
+                    )
+                    round_totals[round_number] = round_totals.get(round_number, 0) + 1
+                    round_hits = round_recall_hits.setdefault(
+                        round_number,
+                        {
+                            method: {1: 0, 3: 0, 5: 0}
+                            for method in METHODS
+                        },
+                    )
+                    for method in METHODS:
+                        evaluated_rank = evaluated_ranks[method]
+                        if evaluated_rank is not None:
+                            for cutoff in (1, 3, 5):
+                                round_hits[method][cutoff] += evaluated_rank <= cutoff
+
                 evaluation_record = {
                     "subject_id": record.get("subject_id"),
                     "hadm_id": record.get("hadm_id"),
                     "golden_diagnosis": golden_diagnosis,
-                    **{
-                        method: {
-                            "predicted_diseases": predicted_diseases[method],
-                            "evaluated_rank": evaluated_ranks[method],
-                        }
-                        for method in METHODS
-                    },
+                    "is_multi_round": multi_round_diagnosis["is_multi_round"],
+                    "round_evaluations": round_evaluations,
                 }
                 output_file.write(
                     json.dumps(evaluation_record, ensure_ascii=False) + "\n"
                 )
 
                 total += 1
-                if record["diagnosis_result"]["used_skill"]:
+                final_round = multi_round_diagnosis["rounds"][-1]
+                if final_round["diagnosis_result"]["used_skill"]:
                     used_skill_count += 1
-                for skill_name in record["diagnosis_result"]["skill_names"]:
+                for skill_name in final_round["diagnosis_result"]["skill_names"]:
                     skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
+                final_evaluated_ranks = {
+                    method: round_evaluations[-1][method]["evaluated_rank"]
+                    for method in METHODS
+                }
                 for method in METHODS:
-                    evaluated_rank = evaluated_ranks[method]
+                    evaluated_rank = final_evaluated_ranks[method]
                     if evaluated_rank is not None:
                         for cutoff in (1, 3, 5):
-                            recall_hits[method][cutoff] += evaluated_rank <= cutoff
+                            final_recall_hits[method][cutoff] += (
+                                evaluated_rank <= cutoff
+                            )
                 print(
                     f"[{line_number}] Completed "
                     f"subject_id={record.get('subject_id')}, "
                     f"hadm_id={record.get('hadm_id')}: "
-                    + ", ".join(
-                        f"{method}={evaluated_ranks[method] or 'No'}"
-                        for method in METHODS
+                    + "; ".join(
+                        f"round {round_evaluation['round']} "
+                        + ", ".join(
+                            f"{method}="
+                            f"{round_evaluation[method]['evaluated_rank'] or 'No'}"
+                            for method in METHODS
+                        )
+                        for round_evaluation in round_evaluations
                     )
                     + ".",
                     file=sys.stderr,
                 )
 
-        summary = {
+        final_summary = {
             method: {
-                f"recall{cutoff}": recall_hits[method][cutoff] / total
+                f"recall{cutoff}": final_recall_hits[method][cutoff] / total
                 for cutoff in (1, 3, 5)
             }
             for method in METHODS
         }
+        round_summaries = [
+            {
+                "round": round_number,
+                "total": round_totals[round_number],
+                **{
+                    method: {
+                        f"recall{cutoff}": (
+                            round_recall_hits[round_number][method][cutoff]
+                            / round_totals[round_number]
+                        )
+                        for cutoff in (1, 3, 5)
+                    }
+                    for method in METHODS
+                },
+            }
+            for round_number in sorted(round_totals)
+        ]
         summary_record = {
             "total": total,
-            **summary,
+            "final_result": final_summary,
+            "rounds": round_summaries,
             "skill_usage": {
                 "used_count": used_skill_count,
                 "unused_count": total - used_skill_count,
@@ -229,9 +302,24 @@ def evaluate_file(
 
     print(f"total: {total}")
     for method in METHODS:
-        print(f"{method} recall1: {summary[method]['recall1']:.6f}")
-        print(f"{method} recall3: {summary[method]['recall3']:.6f}")
-        print(f"{method} recall5: {summary[method]['recall5']:.6f}")
+        print(f"final {method} recall1: {final_summary[method]['recall1']:.6f}")
+        print(f"final {method} recall3: {final_summary[method]['recall3']:.6f}")
+        print(f"final {method} recall5: {final_summary[method]['recall5']:.6f}")
+    for round_summary in round_summaries:
+        print(f"round {round_summary['round']} total: {round_summary['total']}")
+        for method in METHODS:
+            print(
+                f"round {round_summary['round']} {method} recall1: "
+                f"{round_summary[method]['recall1']:.6f}"
+            )
+            print(
+                f"round {round_summary['round']} {method} recall3: "
+                f"{round_summary[method]['recall3']:.6f}"
+            )
+            print(
+                f"round {round_summary['round']} {method} recall5: "
+                f"{round_summary[method]['recall5']:.6f}"
+            )
     print(f"skill used: {used_skill_count}")
     print(f"skill unused: {total - used_skill_count}")
     print(f"skill usage rate: {used_skill_count / total:.6f}")

@@ -42,6 +42,7 @@ SECTION_COLUMNS = (
 )
 REQUIRED_COLUMNS = {"hadm_id", "long_title", *SECTION_COLUMNS}
 RRF_K = 60
+SECTION_CHUNK_TOKEN_COUNT = 510
 logger = logging.getLogger(__name__)
 BM25_CACHE_PATH = MIMIC_IV_CASE_PATH.with_name(
     f"{MIMIC_IV_CASE_PATH.stem}_bm25.pkl"
@@ -118,6 +119,7 @@ def _load_case_records(
     if not path.is_file():
         raise FileNotFoundError(f"Similar-case database does not exist: {path}")
 
+    tokenizer, _, _ = _load_dense_model()
     with path.open("r", encoding="utf-8-sig", newline="") as csv_file:
         reader = csv.DictReader(csv_file)
         if reader.fieldnames is None:
@@ -160,14 +162,31 @@ def _load_case_records(
                     )
                 )
             case_index = case_indices[hadm_id]
-            sections.extend(
-                _SectionRecord(
-                    case_index=case_index,
-                    name=section_name,
-                    content=content,
-                )
-                for section_name, content in section_values
-            )
+            for section_name, content in section_values:
+                offsets = tokenizer(
+                    content,
+                    add_special_tokens=False,
+                    truncation=False,
+                    return_offsets_mapping=True,
+                )["offset_mapping"]
+                for chunk_start in range(
+                    0,
+                    len(offsets),
+                    SECTION_CHUNK_TOKEN_COUNT,
+                ):
+                    chunk_offsets = offsets[
+                        chunk_start : chunk_start + SECTION_CHUNK_TOKEN_COUNT
+                    ]
+                    chunk_content = content[
+                        chunk_offsets[0][0] : chunk_offsets[-1][1]
+                    ].strip()
+                    sections.append(
+                        _SectionRecord(
+                            case_index=case_index,
+                            name=section_name,
+                            content=chunk_content,
+                        )
+                    )
         return tuple(cases), tuple(sections)
 
 
@@ -225,7 +244,10 @@ def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
                 cache.get("database_fingerprint") == fingerprint
                 and cache.get("case_count") == len(cases)
                 and cache.get("section_count") == len(sections)
-                and cache.get("content_schema") == "section_text_scispacy_v1"
+                and cache.get("content_schema")
+                == "section_chunk_510_scispacy_v1"
+                and cache.get("chunk_tokenizer_model")
+                == SIMILAR_CASE_EMBEDDING_MODEL
             ):
                 _bm25_index = (cache["bm25"], cache["eligible_indices"])
                 return _bm25_index
@@ -246,7 +268,8 @@ def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
                     "database_fingerprint": fingerprint,
                     "case_count": len(cases),
                     "section_count": len(sections),
-                    "content_schema": "section_text_scispacy_v1",
+                    "content_schema": "section_chunk_510_scispacy_v1",
+                    "chunk_tokenizer_model": SIMILAR_CASE_EMBEDDING_MODEL,
                     "eligible_indices": eligible_indices,
                     "bm25": bm25,
                 },
@@ -395,7 +418,7 @@ def _load_or_build_corpus_embeddings(
                 and cache.get("model_name") == SIMILAR_CASE_EMBEDDING_MODEL
                 and cache.get("case_count") == len(cases)
                 and cache.get("section_count") == len(sections)
-                and cache.get("content_schema") == "section_text_v1"
+                and cache.get("content_schema") == "section_chunk_510_v1"
             ):
                 _corpus_embeddings = cache["section_embeddings"]
                 return _corpus_embeddings
@@ -410,7 +433,7 @@ def _load_or_build_corpus_embeddings(
                 "model_name": SIMILAR_CASE_EMBEDDING_MODEL,
                 "case_count": len(cases),
                 "section_count": len(sections),
-                "content_schema": "section_text_v1",
+                "content_schema": "section_chunk_510_v1",
                 "section_embeddings": section_embeddings.cpu(),
             },
             cache_path,
@@ -561,7 +584,7 @@ def _rerank_candidates(
         for (case_index, _), score in zip(candidate_ranking, scores)
     ]
     reranked.sort(key=lambda item: (-item[1], rrf_ranks[item[0]]))
-    return reranked[:SIMILAR_CASE_TOP_K]
+    return reranked
 
 
 def _build_ranking_details(
@@ -883,8 +906,9 @@ def retrieve_similar_cases(
         dense_section_ranking,
         sections,
     )
+    reranker_completed = True
     try:
-        final_ranking = _rerank_candidates(
+        ranked_cases = _rerank_candidates(
             query,
             rrf_ranking,
             reranker_hits,
@@ -910,8 +934,28 @@ def retrieve_similar_cases(
                 f"{exc}"
             ),
         )
-        final_ranking = rrf_ranking[:SIMILAR_CASE_TOP_K]
-    else:
+        ranked_cases = rrf_ranking
+        reranker_completed = False
+
+    disease_representatives: dict[str, tuple[int, float, int]] = {}
+    for case_rank, (case_index, score) in enumerate(ranked_cases, start=1):
+        discharge_disease = cases[case_index].discharge_disease
+        representative = disease_representatives.get(discharge_disease)
+        if representative is None or score > representative[1]:
+            disease_representatives[discharge_disease] = (
+                case_index,
+                score,
+                case_rank,
+            )
+    final_ranking = [
+        (case_index, score)
+        for case_index, score, _ in sorted(
+            disease_representatives.values(),
+            key=lambda item: (-item[1], item[2]),
+        )[:SIMILAR_CASE_TOP_K]
+    ]
+
+    if reranker_completed:
         _report_ranking(
             "similar_case_queries",
             "Reranker",
@@ -927,20 +971,15 @@ def retrieve_similar_cases(
     top_indices = [record_index for record_index, _ in final_ranking]
     result_sections: list[list[dict[str, str]]] = []
     for case_index in top_indices:
-        seen_section_indices: set[int] = set()
-        case_sections: list[dict[str, str]] = []
-        for hits in (bm25_hits, dense_hits):
-            for section_index, _ in hits.get(case_index, []):
-                if section_index in seen_section_indices:
-                    continue
-                seen_section_indices.add(section_index)
-                case_sections.append(
-                    {
-                        "section": sections[section_index].name,
-                        "content": sections[section_index].content,
-                    }
-                )
-        result_sections.append(case_sections)
+        result_sections.append(
+            [
+                {
+                    "section": sections[section_index].name,
+                    "content": sections[section_index].content,
+                }
+                for section_index, _ in reranker_hits[case_index]
+            ]
+        )
     return SimilarCaseRetrievalResult(
         discharge_disease=[
             cases[index].discharge_disease for index in top_indices

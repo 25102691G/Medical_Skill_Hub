@@ -40,10 +40,13 @@ from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
 from schemas import (
     DiagnosisPipelineResult,
+    DiagnosisRoundResult,
     DiagnosisResult,
     DiagnosticJudgementResult,
+    FinalDiagnosisContent,
     GuidelineSearchResult,
     KnowledgeSearchResult,
+    MultiRoundDiagnosisResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
 )
@@ -84,11 +87,12 @@ def _uses_native_structured_output(model: str | Model) -> bool:
     return not isinstance(model, OpenAIChatCompletionsModel)
 
 
-def _deepseek_model_settings(model: str | Model) -> ModelSettings | None:
+def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
     if not isinstance(model, OpenAIChatCompletionsModel):
-        return None
+        return ModelSettings(temperature=0)
     thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
     return ModelSettings(
+        temperature=0,
         extra_body={"thinking": {"type": thinking_type}},
         extra_args={"response_format": {"type": "json_object"}},
     )
@@ -210,7 +214,7 @@ async def _run_search_planning_async(
         await Runner.run(
             search_planning_agent,
             search_planning_prompt,
-            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
     result = _parse_structured_result(raw_result, SearchPlanningResult)
@@ -283,7 +287,7 @@ async def _run_knowledge_search_async(
         await Runner.run(
             knowledge_agent,
             knowledge_prompt,
-            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
     result = _parse_structured_result(raw_result, KnowledgeSearchResult)
@@ -370,7 +374,7 @@ async def _run_guideline_search_async(
                 guideline_agent,
                 guideline_prompt,
                 run_config=RunConfig(
-                    model_settings=_deepseek_model_settings(model),
+                    model_settings=_diagnosis_model_settings(model),
                     sandbox=SandboxRunConfig(
                         client=UnixLocalSandboxClient(),
                     ),
@@ -383,7 +387,7 @@ async def _run_guideline_search_async(
                 guideline_agent,
                 guideline_prompt,
                 max_turns=100,
-                run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+                run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
             )
         ).final_output
     result = _parse_structured_result(raw_result, GuidelineSearchResult)
@@ -398,26 +402,41 @@ async def _run_guideline_search_async(
 
 async def _run_final_diagnosis_async(
     case_text: str,
+    hypotheses: list[str],
     knowledge_search_result: KnowledgeSearchResult,
     guideline_evidence: list[str],
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     model: str | Model,
+    previous_hypotheses: list[str] | None = None,
+    previous_diagnosis_result: DiagnosisResult | None = None,
+    diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
+    corrective: bool = False,
     debug: bool = False,
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
     native_structured_output = _uses_native_structured_output(model)
     diagnosis_agent = build_digestive_diagnosis_agent(
-        DiagnosisResult,
+        FinalDiagnosisContent,
         phase="final_diagnosis",
         model=model,
         native_structured_output=native_structured_output,
     )
-    similar_case_diagnosis_evidence = {
-        "discharge_disease": similar_case_retrieval_result.discharge_disease,
-        "Sections": similar_case_retrieval_result.Sections,
-    }
+    similar_case_summary = [
+        {
+            "rank": rank,
+            "discharge_disease": discharge_disease,
+            "matched_section": sections[0] if sections else None,
+        }
+        for rank, (discharge_disease, sections) in enumerate(
+            zip(
+                similar_case_retrieval_result.discharge_disease,
+                similar_case_retrieval_result.Sections,
+            ),
+            start=1,
+        )
+    ]
     pubmed_evidence = _format_pubmed_evidence(knowledge_search_result)
     combined_evidence = [
         *guideline_evidence,
@@ -427,35 +446,67 @@ async def _run_final_diagnosis_async(
         f"[{index}] {evidence}"
         for index, evidence in enumerate(combined_evidence, start=1)
     ]
+    revision_context = ""
+    if (
+        previous_hypotheses is not None
+        and previous_diagnosis_result is not None
+        and diagnostic_judgement_result is not None
+    ):
+        revision_context = (
+            f"Previous hypotheses:\n{_as_json(previous_hypotheses)}\n\n"
+            f"Previous top-K diagnoses:\n"
+            f"{_as_json(previous_diagnosis_result.topk_diagnoses)}\n\n"
+            f"Diagnostic judgement:\n{_as_json(diagnostic_judgement_result)}\n\n"
+            "Revise the diagnosis specifically to correct the candidate omissions and ranking "
+            "problems identified by the diagnostic judgement.\n\n"
+        )
     diagnosis_prompt = (
         f"Case information:\n{case_text}\n\n"
-        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"Guideline evidence:\n{_as_json(guideline_evidence)}\n\n"
-        f"Formatted PubMed evidence:\n{_as_json(pubmed_evidence)}\n\n"
+        f"Current search-planning hypotheses:\n{_as_json(hypotheses)}\n\n"
+        f"{revision_context}"
         f"Numbered evidence:\n{_as_json(numbered_evidence)}\n\n"
-        f"Similar case retrieval result:\n{_as_json(similar_case_diagnosis_evidence)}\n\n"
-        "Set used_skill to whether guideline evidence is non-empty. Derive skill_names from the "
-        "skill-name prefix before the full-width Chinese colon in each guideline evidence item. "
-        "Copy the complete numbered evidence list into evidence exactly as provided. "
+        f"Compact similar-case summary:\n{_as_json(similar_case_summary)}\n\n"
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
     diagnosis_prompt = _prepare_structured_prompt(
         diagnosis_prompt,
-        DiagnosisResult,
+        FinalDiagnosisContent,
         native_structured_output=native_structured_output,
     )
-    _notify_agent_started(progress_callback, "Digestive Diagnosis Agent", round_index)
+    agent_name = (
+        "Corrective Digestive Diagnosis Agent"
+        if corrective
+        else "Digestive Diagnosis Agent"
+    )
+    _notify_agent_started(progress_callback, agent_name, round_index)
     raw_result = (
         await Runner.run(
             diagnosis_agent,
             diagnosis_prompt,
-            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
-    result = _parse_structured_result(raw_result, DiagnosisResult)
-    result = result.model_copy(update={"evidence": numbered_evidence})
+    diagnosis_content = _parse_structured_result(raw_result, FinalDiagnosisContent)
+    skill_names = list(
+        dict.fromkeys(
+            evidence.split("：", 1)[0].strip()
+            for evidence in guideline_evidence
+        )
+    )
+    result = DiagnosisResult(
+        used_skill=bool(guideline_evidence),
+        skill_names=skill_names,
+        topk_diagnoses=diagnosis_content.topk_diagnoses,
+        summary=diagnosis_content.summary,
+        evidence=numbered_evidence,
+    )
+    result_title = (
+        f"Corrective Final Diagnosis Result - Round {round_index}"
+        if corrective
+        else f"Final Diagnosis Result - Round {round_index}"
+    )
     _publish_stage_result(
-        f"Final Diagnosis Result - Round {round_index}",
+        result_title,
         result,
         debug=debug,
         progress_callback=progress_callback,
@@ -501,7 +552,7 @@ async def _run_diagnostic_judgement_async(
         await Runner.run(
             diagnostic_judgement_agent,
             diagnostic_judgement_prompt,
-            run_config=RunConfig(model_settings=_deepseek_model_settings(model)),
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosticJudgementResult)
@@ -530,6 +581,10 @@ async def make_diagnosis_pipeline_async(
         round_index=1,
         progress_callback=progress_callback,
     )
+    previous_hypotheses: list[str] | None = None
+    previous_diagnosis_result: DiagnosisResult | None = None
+    previous_diagnostic_judgement_result: DiagnosticJudgementResult | None = None
+    diagnosis_rounds: list[DiagnosisRoundResult] = []
 
     for round_index in range(1, max_diagnosis_rounds + 1):
         (
@@ -562,10 +617,14 @@ async def make_diagnosis_pipeline_async(
 
         diagnosis_result = await _run_final_diagnosis_async(
             case_text,
+            search_planning_result.hypotheses,
             knowledge_search_result,
             guideline_search_result.guideline_evidence,
             similar_case_retrieval_result,
             model=diagnosis_model,
+            previous_hypotheses=previous_hypotheses,
+            previous_diagnosis_result=previous_diagnosis_result,
+            diagnostic_judgement_result=previous_diagnostic_judgement_result,
             debug=debug,
             round_index=round_index,
             progress_callback=progress_callback,
@@ -585,15 +644,48 @@ async def make_diagnosis_pipeline_async(
         )
 
         if (
-            diagnostic_judgement_result.closer_result == "topk_diagnoses"
-            or round_index == max_diagnosis_rounds
+            diagnostic_judgement_result.closer_result != "topk_diagnoses"
+            and round_index == max_diagnosis_rounds
         ):
-            return DiagnosisPipelineResult(
+            diagnosis_result = await _run_final_diagnosis_async(
+                case_text,
+                search_planning_result.hypotheses,
+                knowledge_search_result,
+                guideline_search_result.guideline_evidence,
+                similar_case_retrieval_result,
+                model=diagnosis_model,
+                previous_hypotheses=search_planning_result.hypotheses,
+                previous_diagnosis_result=diagnosis_result,
+                diagnostic_judgement_result=diagnostic_judgement_result,
+                corrective=True,
+                debug=debug,
+                round_index=round_index,
+                progress_callback=progress_callback,
+            )
+
+        diagnosis_rounds.append(
+            DiagnosisRoundResult(
+                round=round_index,
                 search_planning_result=search_planning_result,
                 similar_case_retrieval_result=similar_case_retrieval_result,
                 diagnosis_result=diagnosis_result,
             )
+        )
 
+        if (
+            diagnostic_judgement_result.closer_result == "topk_diagnoses"
+            or round_index == max_diagnosis_rounds
+        ):
+            return DiagnosisPipelineResult(
+                multi_round_diagnosis=MultiRoundDiagnosisResult(
+                    is_multi_round=len(diagnosis_rounds) > 1,
+                    rounds=diagnosis_rounds,
+                )
+            )
+
+        previous_hypotheses = search_planning_result.hypotheses
+        previous_diagnosis_result = diagnosis_result
+        previous_diagnostic_judgement_result = diagnostic_judgement_result
         search_planning_result = await _run_search_planning_async(
             case_text,
             model=diagnosis_model,
@@ -633,14 +725,13 @@ async def make_diagnosis_async(
     debug: bool = False,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
-    return (
-        await make_diagnosis_pipeline_async(
-            case_text,
-            model=model,
-            debug=debug,
-            progress_callback=progress_callback,
-        )
-    ).diagnosis_result
+    pipeline_result = await make_diagnosis_pipeline_async(
+        case_text,
+        model=model,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
+    return pipeline_result.multi_round_diagnosis.rounds[-1].diagnosis_result
 
 
 def make_diagnosis(
@@ -650,12 +741,13 @@ def make_diagnosis(
     debug: bool = False,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
-    return make_diagnosis_pipeline(
+    pipeline_result = make_diagnosis_pipeline(
         case_text,
         model=model,
         debug=debug,
         progress_callback=progress_callback,
-    ).diagnosis_result
+    )
+    return pipeline_result.multi_round_diagnosis.rounds[-1].diagnosis_result
 
 
 def build_diagnosis_model(

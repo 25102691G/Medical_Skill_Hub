@@ -18,31 +18,32 @@ Also, you will be provided some knowledge about the patient's phenotype and onli
 
 
 FINAL_DIAGNOSIS_INSTRUCTIONS = """
-This is the final diagnosis stage. You will receive patient information, knowledge search output,
-guideline evidence, formatted PubMed evidence, numbered evidence, and similar-case retrieval output.
+This is the final diagnosis stage. You will receive patient information, current hypotheses from the
+search planning stage, one numbered evidence list, and a compact similar-case summary. When revising a
+previous diagnosis, you will also receive the previous hypotheses, previous top-K diagnoses, and the
+diagnostic judgement explaining why the hypotheses were closer to the patient.
 
-Use the provided guideline evidence as pre-retrieved evidence. Do not call load_skill or inspect
-the local skills directory in this stage. In the final answer, distinguish case-based reasoning,
-literature-search evidence, similar-case evidence, and guideline-based evidence.
-Set used_skill to true exactly when the provided guideline evidence list is non-empty. Derive
-skill_names from the original skill-name prefix before the full-width Chinese colon in each guideline
-evidence item, preserving first-seen order and removing duplicates. If the list is empty, set
-used_skill to false and skill_names to an empty list.
+Use the current hypotheses as the candidate foundation. For each hypothesis, decide whether to retain
+it, promote it, demote it, or refine its disease name and clinical specificity based on the patient
+information and retrieved evidence. Do not discard a clinically supported hypothesis merely to create
+an unrelated differential diagnosis. Remove a hypothesis only when it is contradicted by the patient
+information or is less likely than another diagnosis needed in the limited top-K result.
 
-Set the top-level evidence field to the complete numbered evidence list exactly as provided. This list
-contains guideline evidence followed by PubMed evidence in one continuous numbering sequence. Preserve
-its order, numbering, and text. If numbered evidence is empty, set evidence to an empty list. Do not add,
-omit, renumber, summarize, or rewrite evidence items.
+When previous-round artifacts and a diagnostic judgement are provided, correct the omissions, ranking
+problems, or unsupported refinements identified by that judgement. Reconcile the previous hypotheses
+and previous top-K diagnoses with the newly retrieved evidence instead of generating another independent
+candidate set.
 
-Write all generated diagnosis_result content in English, including disease names, supporting evidence,
-recommended next steps, and the summary. Preserve skill_names in their original language, and preserve
-the top-level evidence list exactly as provided, including the original language of guideline evidence.
+Use the numbered evidence as pre-retrieved guideline and literature evidence. Do not call load_skill or
+inspect the local skills directory in this stage. Distinguish case-based reasoning, literature-search
+evidence, similar-case evidence, and guideline-based evidence. Write all generated content in English,
+including disease names, supporting evidence, recommended next steps, and the summary.
 
-Read each similar-case discharge_disease together with the Sections at the same ranked position,
-and use them only as external reference evidence. A discharge_disease is the retrieved similar case's
-discharge diagnosis, not the current patient's diagnosis. Do not treat symptoms, examination findings,
-diagnoses, or outcomes from a retrieved similar case as facts observed in the current patient. If the
-similar-case retrieval result is empty or not clinically relevant, do not infer support from it.
+Read each similar-case discharge disease together with its matched section and use them only as external
+reference evidence. A discharge disease is the retrieved similar case's diagnosis, not the current
+patient's diagnosis. Do not treat findings, diagnoses, or outcomes from a retrieved case as facts
+observed in the current patient. If a retrieved case is not clinically relevant, do not infer support
+from it.
 
 Populate supporting_evidence only with facts explicitly documented for the current patient. Numbered
 guideline or PubMed evidence may support the diagnostic interpretation of a patient fact, but it must

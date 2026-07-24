@@ -66,6 +66,11 @@ class DiagnosisItem(BaseModel):
     )
 
 
+class FinalDiagnosisContent(BaseModel):
+    topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
+    summary: str = Field(description="Brief diagnostic analysis summary")
+
+
 class DiagnosisResult(BaseModel):
     used_skill: bool = Field(description="Whether a guideline skill was used before the final diagnosis stage")
     skill_names: list[str] = Field(description="List of skill names actually used")
@@ -120,10 +125,20 @@ class SimilarCaseRetrievalResult(BaseModel):
     )
 
 
-class DiagnosisPipelineResult(BaseModel):
+class DiagnosisRoundResult(BaseModel):
+    round: int
     search_planning_result: SearchPlanningResult
     similar_case_retrieval_result: SimilarCaseRetrievalResult
     diagnosis_result: DiagnosisResult
+
+
+class MultiRoundDiagnosisResult(BaseModel):
+    is_multi_round: bool
+    rounds: list[DiagnosisRoundResult]
+
+
+class DiagnosisPipelineResult(BaseModel):
+    multi_round_diagnosis: MultiRoundDiagnosisResult
 
 
 class DiagnosticJudgementResult(BaseModel):

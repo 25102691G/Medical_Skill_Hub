@@ -15,7 +15,7 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 INPUT="database/mimic_test_case_crohn.csv"
-LIMIT=200
+LIMIT=10
 WORKERS=10
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 DIAGNOSIS_TOPK=5
