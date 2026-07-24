@@ -5,7 +5,7 @@ from typing import Type
 from agents import Agent, Model
 from pydantic import BaseModel
 
-from diagnosis.tools.disease_normalization_tool import normalize_disease_name
+# from diagnosis.tools.disease_normalization_tool import normalize_disease_name
 
 
 BASE_INSTRUCTIONS = """
@@ -55,10 +55,10 @@ findings as facts observed in the current patient.
 
 If the provided evidence does not provide clear support, do not invent recommendation numbers, evidence
 levels, or recommendation strengths.
-
-Before outputting topk_diagnoses, call normalize_disease_name for each candidate disease name and set
-the disease field to the normalized ICD10 diagnosis name returned by the tool.
 """.strip()
+
+# Before outputting topk_diagnoses, call normalize_disease_name for each candidate disease name and set
+# the disease field to the normalized ICD10 diagnosis name returned by the tool.
 
 
 def build_digestive_diagnosis_agent(
@@ -78,6 +78,7 @@ def build_digestive_diagnosis_agent(
         name="Gastroenterology Diagnosis Agent",
         model=model,
         instructions="\n\n".join(instructions),
-        tools=[normalize_disease_name],
+        # tools=[normalize_disease_name],
+        tools=[],
         output_type=output_type if native_structured_output else None,
     )

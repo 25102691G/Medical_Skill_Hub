@@ -88,7 +88,10 @@ def _deepseek_model_settings(model: str | Model) -> ModelSettings | None:
     if not isinstance(model, OpenAIChatCompletionsModel):
         return None
     thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
-    return ModelSettings(extra_body={"thinking": {"type": thinking_type}})
+    return ModelSettings(
+        extra_body={"thinking": {"type": thinking_type}},
+        extra_args={"response_format": {"type": "json_object"}},
+    )
 
 
 def _prepare_structured_prompt(

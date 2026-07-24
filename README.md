@@ -16,6 +16,16 @@ HF_ENDPOINT=https://hf-mirror.com \
 .venv/bin/huggingface-cli download BAAI/bge-m3 \
   --local-dir models/bge-m3 \
   --max-workers 4
+
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/huggingface-cli download ncbi/MedCPT-Cross-Encoder \
+  --local-dir models/MedCPT-Cross-Encoder \
+  --max-workers 4
+
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/huggingface-cli download FremyCompany/BioLORD-2023-C \
+  --local-dir models/BioLORD-2023-C \
+  --max-workers 4
 ```
 
 ## 运行方式
