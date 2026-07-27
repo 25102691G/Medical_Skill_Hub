@@ -50,6 +50,20 @@ Hypothesis rules:
    when no complication is supported.
 5. Do not add an anatomical subtype or complication that is not supported by
    the case record.
+6. When the case explicitly links an underlying disease to a complication,
+   encode the disease, anatomical subtype, and complication in the same
+   hypothesis. Do not split them into separate hypotheses.
+7. Determine complication status from the entire current encounter. A
+   complication that improves or resolves after treatment remains part of the
+   diagnosis for that encounter; a later negative examination does not negate
+   an earlier documented complication.
+8. When the current presentation is attributed to a specifically documented
+   anatomical site, use that site instead of a broader historical disease
+   extent.
+9. Use "without complications" only when no complication is supported anywhere
+   in the current encounter. Do not combine it with a stated complication or
+   complication manifestation such as obstruction, abscess, fistula, bleeding,
+   perforation, or stricture.
 
 Search query rules:
 

@@ -43,6 +43,17 @@ Include all three components explicitly. Use "unspecified" for an anatomical sub
 supported by the case, and use "without complications" when no complication is supported. Do not add
 an anatomical subtype or complication that is not supported by the patient information.
 
+When the patient information explicitly links an underlying disease to a complication, encode the
+disease, anatomical subtype, and complication in the same top-K diagnosis. Do not split the underlying
+disease and its complication into separate diagnoses. Determine complication status from the entire
+current encounter: a complication that improves or resolves after treatment remains part of the
+diagnosis for that encounter, and a later negative examination does not negate an earlier documented
+complication. When the current presentation is attributed to a specifically documented anatomical
+site, use that site instead of a broader historical disease extent. Use "without complications" only
+when no complication is supported anywhere in the current encounter. Do not combine "without
+complications" with a stated complication or complication manifestation such as obstruction, abscess,
+fistula, bleeding, perforation, or stricture.
+
 Use the numbered evidence as pre-retrieved guideline and literature evidence. Do not call load_skill or
 inspect the local skills directory in this stage. Distinguish case-based reasoning, literature-search
 evidence, similar-case evidence, and guideline-based evidence. Write all generated content in English,

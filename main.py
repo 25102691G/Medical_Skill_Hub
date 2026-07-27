@@ -388,7 +388,7 @@ async def _run_guideline_search_async(
                 await Runner.run(
                     guideline_agent,
                     guideline_prompt,
-                    max_turns=15,
+                    max_turns=100,
                     run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
                 )
             ).final_output
