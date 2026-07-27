@@ -17,12 +17,18 @@ METHODS = (
     "similar_case_retrieval",
     "final_diagnosis",
 )
+METRICS = ("disease_anatomy", "complication")
 
-PROMPT = """You are a specialist in gastroenterology. Identify the rank of the gold-standard diagnosis among the five predicted diseases based only on the underlying ICD-10-CM disease subcategory or disease type.
+PROMPT = """You are a specialist in gastroenterology. Compare the gold-standard ICD-10-CM diagnosis with the five predicted diseases and identify two ranks.
 
-Ignore all complication information, including whether a diagnosis is with or without complications and any specific complication type. Diagnoses that differ only in complication status or complication type must be treated as a match. Accept synonymous clinical wording and differences in word order when the underlying disease subcategory or disease type is equivalent. A broad disease family, symptom, or related condition does not match a more specific disease subcategory. If a predicted disease contains multiple conditions, use its highest matching rank.
+1. disease_anatomy_rank: Match the disease category and anatomical subtype. Ignore all complication information, including whether a diagnosis is with or without complications and any specific complication type.
+2. complication_rank: Match the disease category, anatomical subtype, and complication status or specific complication type. "Without complications", an unspecified complication, and each specific complication type are different results. A broader complication description does not match a more specific complication type.
 
-Output only "No" or one number from 1 to 5.
+For both ranks, accept synonymous clinical wording and differences in word order when the relevant ICD-10-CM meaning is equivalent. A broad disease family, symptom, or related condition does not match a more specific disease category or anatomical subtype. If a predicted disease contains multiple conditions, use its highest matching rank. Use "No" when there is no match.
+
+Output only one JSON object in exactly this format:
+{{"disease_anatomy_rank":"No","complication_rank":"No"}}
+Replace each "No" with a string from "1" to "5" when a match exists.
 
 Predicted diseases:
 {predict_diagnosis}
@@ -61,7 +67,7 @@ def _evaluate_rank(
     model_name: str,
     predicted_diseases: list[str],
     golden_diagnosis: str,
-) -> int | None:
+) -> dict[str, int | None]:
     numbered_diseases = "\n".join(
         f"{rank}. {disease}"
         for rank, disease in enumerate(predicted_diseases, start=1)
@@ -77,9 +83,17 @@ def _evaluate_rank(
         seed=42,
     )
     result = (response.choices[0].message.content or "").strip()
-    if result not in VALID_RESULTS:
+    parsed_result = json.loads(result)
+    ranks = {
+        "disease_anatomy": parsed_result.get("disease_anatomy_rank"),
+        "complication": parsed_result.get("complication_rank"),
+    }
+    if any(rank not in VALID_RESULTS for rank in ranks.values()):
         raise ValueError(f"The model returned an invalid result: {result!r}")
-    return None if result == "No" else int(result)
+    return {
+        metric: None if rank == "No" else int(rank)
+        for metric, rank in ranks.items()
+    }
 
 
 def evaluate_file(
@@ -104,11 +118,16 @@ def evaluate_file(
         model_name = OPENAI_MODEL
     total = 0
     final_recall_hits = {
-        method: {1: 0, 3: 0, 5: 0}
+        method: {
+            metric: {1: 0, 3: 0, 5: 0}
+            for metric in METRICS
+        }
         for method in METHODS
     }
     round_totals: dict[int, int] = {}
-    round_recall_hits: dict[int, dict[str, dict[int, int]]] = {}
+    round_recall_hits: dict[
+        int, dict[str, dict[str, dict[int, int]]]
+    ] = {}
     used_skill_count = 0
     skill_counts: dict[str, int] = {}
 
@@ -198,7 +217,7 @@ def evaluate_file(
                             **{
                                 method: {
                                     "predicted_diseases": predicted_diseases[method],
-                                    "evaluated_rank": evaluated_ranks[method],
+                                    "evaluated_ranks": evaluated_ranks[method],
                                 }
                                 for method in METHODS
                             },
@@ -208,15 +227,21 @@ def evaluate_file(
                     round_hits = round_recall_hits.setdefault(
                         round_number,
                         {
-                            method: {1: 0, 3: 0, 5: 0}
+                            method: {
+                                metric: {1: 0, 3: 0, 5: 0}
+                                for metric in METRICS
+                            }
                             for method in METHODS
                         },
                     )
                     for method in METHODS:
-                        evaluated_rank = evaluated_ranks[method]
-                        if evaluated_rank is not None:
-                            for cutoff in (1, 3, 5):
-                                round_hits[method][cutoff] += evaluated_rank <= cutoff
+                        for metric in METRICS:
+                            evaluated_rank = evaluated_ranks[method][metric]
+                            if evaluated_rank is not None:
+                                for cutoff in (1, 3, 5):
+                                    round_hits[method][metric][cutoff] += (
+                                        evaluated_rank <= cutoff
+                                    )
 
                 evaluation_record = {
                     "subject_id": record.get("subject_id"),
@@ -236,16 +261,17 @@ def evaluate_file(
                 for skill_name in final_round["diagnosis_result"]["skill_names"]:
                     skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
                 final_evaluated_ranks = {
-                    method: round_evaluations[-1][method]["evaluated_rank"]
+                    method: round_evaluations[-1][method]["evaluated_ranks"]
                     for method in METHODS
                 }
                 for method in METHODS:
-                    evaluated_rank = final_evaluated_ranks[method]
-                    if evaluated_rank is not None:
-                        for cutoff in (1, 3, 5):
-                            final_recall_hits[method][cutoff] += (
-                                evaluated_rank <= cutoff
-                            )
+                    for metric in METRICS:
+                        evaluated_rank = final_evaluated_ranks[method][metric]
+                        if evaluated_rank is not None:
+                            for cutoff in (1, 3, 5):
+                                final_recall_hits[method][metric][cutoff] += (
+                                    evaluated_rank <= cutoff
+                                )
                 print(
                     f"[{line_number}] Completed "
                     f"subject_id={record.get('subject_id')}, "
@@ -254,7 +280,11 @@ def evaluate_file(
                         f"round {round_evaluation['round']} "
                         + ", ".join(
                             f"{method}="
-                            f"{round_evaluation[method]['evaluated_rank'] or 'No'}"
+                            + "/".join(
+                                f"{metric}:"
+                                f"{round_evaluation[method]['evaluated_ranks'][metric] or 'No'}"
+                                for metric in METRICS
+                            )
                             for method in METHODS
                         )
                         for round_evaluation in round_evaluations
@@ -265,8 +295,13 @@ def evaluate_file(
 
         final_summary = {
             method: {
-                f"recall{cutoff}": final_recall_hits[method][cutoff] / total
-                for cutoff in (1, 3, 5)
+                metric: {
+                    f"recall{cutoff}": (
+                        final_recall_hits[method][metric][cutoff] / total
+                    )
+                    for cutoff in (1, 3, 5)
+                }
+                for metric in METRICS
             }
             for method in METHODS
         }
@@ -276,11 +311,14 @@ def evaluate_file(
                 "total": round_totals[round_number],
                 **{
                     method: {
-                        f"recall{cutoff}": (
-                            round_recall_hits[round_number][method][cutoff]
-                            / round_totals[round_number]
-                        )
-                        for cutoff in (1, 3, 5)
+                        metric: {
+                            f"recall{cutoff}": (
+                                round_recall_hits[round_number][method][metric][cutoff]
+                                / round_totals[round_number]
+                            )
+                            for cutoff in (1, 3, 5)
+                        }
+                        for metric in METRICS
                     }
                     for method in METHODS
                 },
@@ -302,24 +340,22 @@ def evaluate_file(
 
     print(f"total: {total}")
     for method in METHODS:
-        print(f"final {method} recall1: {final_summary[method]['recall1']:.6f}")
-        print(f"final {method} recall3: {final_summary[method]['recall3']:.6f}")
-        print(f"final {method} recall5: {final_summary[method]['recall5']:.6f}")
+        for metric in METRICS:
+            for cutoff in (1, 3, 5):
+                print(
+                    f"final {method} {metric} recall{cutoff}: "
+                    f"{final_summary[method][metric][f'recall{cutoff}']:.6f}"
+                )
     for round_summary in round_summaries:
         print(f"round {round_summary['round']} total: {round_summary['total']}")
         for method in METHODS:
-            print(
-                f"round {round_summary['round']} {method} recall1: "
-                f"{round_summary[method]['recall1']:.6f}"
-            )
-            print(
-                f"round {round_summary['round']} {method} recall3: "
-                f"{round_summary[method]['recall3']:.6f}"
-            )
-            print(
-                f"round {round_summary['round']} {method} recall5: "
-                f"{round_summary[method]['recall5']:.6f}"
-            )
+            for metric in METRICS:
+                for cutoff in (1, 3, 5):
+                    print(
+                        f"round {round_summary['round']} {method} {metric} "
+                        f"recall{cutoff}: "
+                        f"{round_summary[method][metric][f'recall{cutoff}']:.6f}"
+                    )
     print(f"skill used: {used_skill_count}")
     print(f"skill unused: {total - used_skill_count}")
     print(f"skill usage rate: {used_skill_count / total:.6f}")

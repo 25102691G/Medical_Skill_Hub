@@ -42,11 +42,18 @@ Use the sandbox Skills capability:
 
 FUNCTION_TOOL_SKILL_INSTRUCTIONS = """
 Use the local guideline function tools:
-1. Call list_guideline_skills to inspect the available guideline skills.
-2. Call read_guideline_file with file_name "SKILL.md" for a relevant skill and follow its workflow.
-3. Search "recommendations-index.md" first with search_guideline.
-4. Read the corresponding lines from "guideline-full-text.md" with read_guideline_file to verify
-   the original context. Search the full text directly when the index has no clear match.
+1. Call list_guideline_skills exactly once and select at most 2 of the most relevant guideline skills.
+2. For each selected skill, call read_guideline_file with file_name "SKILL.md" exactly once.
+3. For each selected skill, call search_guideline on "recommendations-index.md" at most once, using
+   the core diagnostic keywords together in one call.
+4. For each selected skill, read at most 2 relevant line ranges from "guideline-full-text.md" to verify
+   the original context. If the index has no clear match, search "guideline-full-text.md" at most once.
+5. Never repeat a tool call with the same arguments. Do not try to run scripts or use tools that are
+   not provided.
+6. If no clear guideline evidence is found within these limits, return used_skill as false and return
+   empty skill_names and guideline_evidence lists.
+7. After completing this bounded search, do not call another tool. Return the final structured result
+   immediately.
 """.strip()
 
 GUIDELINE_FILES = {

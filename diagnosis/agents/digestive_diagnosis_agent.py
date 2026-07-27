@@ -23,27 +23,38 @@ search planning stage, one numbered evidence list, and a compact similar-case su
 previous diagnosis, you will also receive the previous hypotheses, previous top-K diagnoses, and the
 diagnostic judgement explaining why the hypotheses were closer to the patient.
 
-Use the current hypotheses as the candidate foundation. For each hypothesis, decide whether to retain
-it, promote it, demote it, or refine its disease name and clinical specificity based on the patient
-information and retrieved evidence. Do not discard a clinically supported hypothesis merely to create
-an unrelated differential diagnosis. Remove a hypothesis only when it is contradicted by the patient
-information or is less likely than another diagnosis needed in the limited top-K result.
+Use an evidence-centered diagnostic process. Treat the current hypotheses only as one reference source
+of candidate diagnoses, without giving them priority over candidates identified from the patient
+information, numbered evidence, or similar cases. Build a combined candidate set from all provided
+sources, then independently evaluate every candidate against the current patient's symptoms, disease
+course, anatomical location, endoscopy, pathology, imaging, laboratory findings, and complications.
+Retain, refine, demote, or remove hypotheses according to that evaluation, and add clinically supported
+candidates that are absent from the hypotheses. Rank the final diagnoses by their overall consistency
+with the current patient rather than by which source proposed them.
 
 When previous-round artifacts and a diagnostic judgement are provided, correct the omissions, ranking
-problems, or unsupported refinements identified by that judgement. Reconcile the previous hypotheses
-and previous top-K diagnoses with the newly retrieved evidence instead of generating another independent
-candidate set.
+problems, or unsupported refinements identified by that judgement. Treat the previous hypotheses and
+previous top-K diagnoses as reference candidates and reassess them together with the current patient
+information and newly retrieved evidence.
+
+Write every disease value in topk_diagnoses as one English ICD-10-CM-style diagnosis phrase with these
+components in order: disease category, anatomical subtype, and complication status or complication type.
+Include all three components explicitly. Use "unspecified" for an anatomical subtype that is not
+supported by the case, and use "without complications" when no complication is supported. Do not add
+an anatomical subtype or complication that is not supported by the patient information.
 
 Use the numbered evidence as pre-retrieved guideline and literature evidence. Do not call load_skill or
 inspect the local skills directory in this stage. Distinguish case-based reasoning, literature-search
 evidence, similar-case evidence, and guideline-based evidence. Write all generated content in English,
 including disease names, supporting evidence, recommended next steps, and the summary.
 
-Read each similar-case discharge disease together with its matched section and use them only as external
+Read each similar-case discharge disease together with all its matched sections and use them only as external
 reference evidence. A discharge disease is the retrieved similar case's diagnosis, not the current
 patient's diagnosis. Do not treat findings, diagnoses, or outcomes from a retrieved case as facts
 observed in the current patient. If a retrieved case is not clinically relevant, do not infer support
-from it.
+from it. A similar-case discharge disease may be added to the candidate set even when it is absent from
+the hypotheses, but it must be independently validated against evidence documented for the current
+patient before it is included in the final top-K diagnoses.
 
 Populate supporting_evidence only with facts explicitly documented for the current patient. Numbered
 guideline or PubMed evidence may support the diagnostic interpretation of a patient fact, but it must

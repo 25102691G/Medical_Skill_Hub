@@ -16,7 +16,7 @@ fi
 
 INPUT="database/mimic_test_case_crohn.csv"
 LIMIT=10
-WORKERS=10
+WORKERS=2
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 DIAGNOSIS_TOPK=5
 

@@ -178,12 +178,14 @@ bash run_evaluate.sh output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
 
 未指定 `--output` 时，评估结果默认写入
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
-每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测疾病和匹配排名。程序结束
-时会在输出文件末尾写入 `total`、`rounds` 和 `final_result`：`rounds` 分别统计实际
-进入各轮病例的 `recall1`、`recall3` 和 `recall5`，`final_result` 使用每个病例最后
-一轮的评估结果汇总相同指标，不会重复调用评估模型。汇总记录还会写入 `skill_usage`，
-其使用情况取自每个病例最后一轮的 `diagnosis_result`。模型返回 `No` 时，该病例在对应
-诊断组的三个指标中都记为未命中。
+每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测疾病，以及
+`disease_anatomy`（疾病类别＋解剖亚型，忽略并发症）和 `complication`（疾病类别、
+解剖亚型及并发症均匹配）两个排名。程序结束时会在输出文件末尾写入 `total`、`rounds`
+和 `final_result`：`rounds` 分别统计实际进入各轮病例的两组 Recall@1、Recall@3 和
+Recall@5，`final_result` 使用每个病例最后一轮的评估结果汇总相同指标，不会重复调用
+评估模型。汇总记录还会写入 `skill_usage`，其使用情况取自每个病例最后一轮的
+`diagnosis_result`。模型对某项返回 `No` 时，该病例在对应诊断组和指标的三个 Recall
+中都记为未命中。
 
 ## ChatKit 聊天界面
 

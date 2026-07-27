@@ -10,6 +10,7 @@ from collections.abc import Callable
 from typing import TypeVar
 
 from agents import (
+    MaxTurnsExceeded,
     Model,
     ModelSettings,
     OpenAIChatCompletionsModel,
@@ -382,14 +383,28 @@ async def _run_guideline_search_async(
             )
         ).final_output
     else:
-        raw_result = (
-            await Runner.run(
-                guideline_agent,
-                guideline_prompt,
-                max_turns=100,
-                run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+        try:
+            raw_result = (
+                await Runner.run(
+                    guideline_agent,
+                    guideline_prompt,
+                    max_turns=15,
+                    run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+                )
+            ).final_output
+        except MaxTurnsExceeded:
+            result = GuidelineSearchResult(
+                used_skill=False,
+                skill_names=[],
+                guideline_evidence=[],
             )
-        ).final_output
+            _publish_stage_result(
+                f"Guideline Search Result - Round {round_index}",
+                result,
+                debug=debug,
+                progress_callback=progress_callback,
+            )
+            return result
     result = _parse_structured_result(raw_result, GuidelineSearchResult)
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
@@ -427,7 +442,7 @@ async def _run_final_diagnosis_async(
         {
             "rank": rank,
             "discharge_disease": discharge_disease,
-            "matched_section": sections[0] if sections else None,
+            "matched_sections": sections,
         }
         for rank, (discharge_disease, sections) in enumerate(
             zip(

@@ -42,6 +42,14 @@ Hypothesis rules:
 2. When supported by the case, include time-critical conditions, surgical
    complications, or procedure-related complications that require urgent
    exclusion.
+3. Write every hypothesis as one English ICD-10-CM-style diagnosis phrase with
+   these components in order: disease category, anatomical subtype, and
+   complication status or complication type.
+4. Include all three components explicitly. Use "unspecified" for an anatomical
+   subtype that is not supported by the case, and use "without complications"
+   when no complication is supported.
+5. Do not add an anatomical subtype or complication that is not supported by
+   the case record.
 
 Search query rules:
 
