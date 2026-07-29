@@ -16,7 +16,7 @@ from main import build_diagnosis_model, make_diagnosis_pipeline_async
 PROJECT_ROOT = Path(__file__).absolute().parent
 OUTPUT_DIR = PROJECT_ROOT / "output" / "batch"
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
-OUTPUT_COLUMNS = ("subject_id", "hadm_id", "long_title")
+OUTPUT_COLUMNS = ("subject_id", "hadm_id", "icd_code", "long_title")
 
 
 def _positive_int(value: str) -> int:
@@ -120,6 +120,7 @@ async def _run_batch_async(
         return {
             "subject_id": row["subject_id"],
             "hadm_id": row["hadm_id"],
+            "icd_code": row["icd_code"],
             "long_title": row["long_title"],
             **pipeline_result.model_dump(mode="json"),
         }

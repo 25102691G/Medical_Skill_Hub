@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import os
 import sys
 import threading
@@ -37,30 +38,31 @@ Output:
 - 1: The term represents a disease or clinically meaningful diagnostic condition within the scope of gastroenterology.
 - 0: The term does not represent a gastroenterology disease or condition.
 
-Only answer with 1 or 0. Do not provide any explanation, punctuation, or additional text.
+Return only one valid JSON object with classification set to the string "1" or "0".
+Do not provide any explanation or text outside the JSON object.
 
 Example 1:
 Disease: Crohn disease
-Classification: 1
+JSON output: {{"classification":"1"}}
 
 Example 2:
 Disease: Acute pancreatitis
-Classification: 1
+JSON output: {{"classification":"1"}}
 
 Example 3:
 Disease: Asthma
-Classification: 0
+JSON output: {{"classification":"0"}}
 
 Example 4:
 Disease: Chronic kidney disease
-Classification: 0
+JSON output: {{"classification":"0"}}
 
 You can refer to ICD10 to determine whether it is a gastroenterology disease.
 
 Now, given the following disease or diagnostic term, determine whether it belongs to the field of gastroenterology:
 
 Disease: {disease}
-Classification:"""
+Return the JSON output now."""
 
 _thread_local = threading.local()
 
@@ -90,6 +92,8 @@ def _classify_disease(disease: str) -> str:
                     }
                 ],
                 temperature=0,
+                max_tokens=64,
+                response_format={"type": "json_object"},
             )
             choice = response.choices[0]
             if choice.finish_reason == "length":
@@ -105,9 +109,12 @@ def _classify_disease(disease: str) -> str:
                     f"using model {DEEPSEEK_MODEL!r}; "
                     f"finish_reason={choice.finish_reason!r}."
                 )
-            if result not in {"0", "1"}:
-                raise ValueError(f"DeepSeek returned an invalid classification: {result!r}")
-            return result
+            classification = str(json.loads(result).get("classification", ""))
+            if classification not in {"0", "1"}:
+                raise ValueError(
+                    f"DeepSeek returned an invalid classification: {result!r}"
+                )
+            return classification
         except Exception as exc:
             last_error = exc
             if attempt < MAX_RETRIES:

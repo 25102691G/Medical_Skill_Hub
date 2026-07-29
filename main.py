@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import json
 import os
-import re
 import sys
 from collections.abc import Callable
 from typing import TypeVar
@@ -46,6 +45,7 @@ from schemas import (
     DiagnosticJudgementResult,
     FinalDiagnosisContent,
     GuidelineSearchResult,
+    HypothesisItem,
     KnowledgeSearchResult,
     MultiRoundDiagnosisResult,
     SearchPlanningResult,
@@ -94,6 +94,7 @@ def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
     thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
     return ModelSettings(
         temperature=0,
+        max_tokens=16384,
         extra_body={"thinking": {"type": thinking_type}},
         extra_args={"response_format": {"type": "json_object"}},
     )
@@ -122,19 +123,8 @@ def _parse_structured_result(
     if isinstance(result, output_type):
         return result
     stripped = str(result).strip()
-    fenced_match = re.search(
-        r"```(?:json)?\s*(\{.*?\})\s*```",
-        stripped,
-        flags=re.DOTALL,
-    )
-    if fenced_match:
-        stripped = fenced_match.group(1).strip()
-    else:
-        start = stripped.find("{")
-        end = stripped.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise ValueError("No JSON object found in model output.")
-        stripped = stripped[start : end + 1]
+    if not stripped:
+        raise ValueError("Model returned empty JSON output.")
     return output_type.model_validate_json(stripped)
 
 
@@ -361,7 +351,10 @@ async def _run_guideline_search_async(
         f"Search queries:\n{_as_json(search_queries)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
         "Search the local guideline skills for clinically relevant guideline evidence. "
-        "Keep skill_names unchanged."
+        "Keep skill_names unchanged.\n\n"
+        "The outermost JSON value must be an object, not an array. "
+        "Use this exact JSON structure when no guideline skill is used:\n"
+        '{"used_skill":false,"skill_names":[],"guideline_evidence":[]}'
     )
     guideline_prompt = _prepare_structured_prompt(
         guideline_prompt,
@@ -417,13 +410,13 @@ async def _run_guideline_search_async(
 
 async def _run_final_diagnosis_async(
     case_text: str,
-    hypotheses: list[str],
+    hypotheses: list[HypothesisItem],
     knowledge_search_result: KnowledgeSearchResult,
     guideline_evidence: list[str],
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     model: str | Model,
-    previous_hypotheses: list[str] | None = None,
+    previous_hypotheses: list[HypothesisItem] | None = None,
     previous_diagnosis_result: DiagnosisResult | None = None,
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
     corrective: bool = False,
@@ -468,19 +461,32 @@ async def _run_final_diagnosis_async(
         and diagnostic_judgement_result is not None
     ):
         revision_context = (
-            f"Previous hypotheses:\n{_as_json(previous_hypotheses)}\n\n"
-            f"Previous top-K diagnoses:\n"
-            f"{_as_json(previous_diagnosis_result.topk_diagnoses)}\n\n"
-            f"Diagnostic judgement:\n{_as_json(diagnostic_judgement_result)}\n\n"
+            "<PREVIOUS_HYPOTHESES>\n"
+            f"{_as_json(previous_hypotheses)}\n"
+            "</PREVIOUS_HYPOTHESES>\n\n"
+            "<PREVIOUS_TOPK_DIAGNOSES>\n"
+            f"{_as_json(previous_diagnosis_result.topk_diagnoses)}\n"
+            "</PREVIOUS_TOPK_DIAGNOSES>\n\n"
+            "<DIAGNOSTIC_JUDGEMENT>\n"
+            f"{_as_json(diagnostic_judgement_result)}\n"
+            "</DIAGNOSTIC_JUDGEMENT>\n\n"
             "Revise the diagnosis specifically to correct the candidate omissions and ranking "
             "problems identified by the diagnostic judgement.\n\n"
         )
     diagnosis_prompt = (
-        f"Case information:\n{case_text}\n\n"
-        f"Current search-planning hypotheses:\n{_as_json(hypotheses)}\n\n"
+        "<PATIENT_INFORMATION>\n"
+        f"{case_text}\n"
+        "</PATIENT_INFORMATION>\n\n"
+        "<CURRENT_HYPOTHESES>\n"
+        f"{_as_json(hypotheses)}\n"
+        "</CURRENT_HYPOTHESES>\n\n"
+        "<NUMBERED_EVIDENCE>\n"
+        f"{_as_json(numbered_evidence)}\n"
+        "</NUMBERED_EVIDENCE>\n\n"
+        "<SIMILAR_CASES>\n"
+        f"{_as_json(similar_case_summary)}\n"
+        "</SIMILAR_CASES>\n\n"
         f"{revision_context}"
-        f"Numbered evidence:\n{_as_json(numbered_evidence)}\n\n"
-        f"Compact similar-case summary:\n{_as_json(similar_case_summary)}\n\n"
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
     diagnosis_prompt = _prepare_structured_prompt(
@@ -531,7 +537,7 @@ async def _run_final_diagnosis_async(
 
 async def _run_diagnostic_judgement_async(
     case_text: str,
-    hypotheses: list[str],
+    hypotheses: list[HypothesisItem],
     diagnosis_result: DiagnosisResult,
     knowledge_search_result: KnowledgeSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
@@ -596,7 +602,7 @@ async def make_diagnosis_pipeline_async(
         round_index=1,
         progress_callback=progress_callback,
     )
-    previous_hypotheses: list[str] | None = None
+    previous_hypotheses: list[HypothesisItem] | None = None
     previous_diagnosis_result: DiagnosisResult | None = None
     previous_diagnostic_judgement_result: DiagnosticJudgementResult | None = None
     diagnosis_rounds: list[DiagnosisRoundResult] = []

@@ -7,10 +7,6 @@ if [[ $# -ne 1 ]]; then
 fi
 
 INPUT="$1"
-MODEL=deepseek
-WORKERS=50
 
 python evaluate.py \
-    --input "$INPUT" \
-    --model "$MODEL" \
-    --workers "$WORKERS"
+    --input "$INPUT"

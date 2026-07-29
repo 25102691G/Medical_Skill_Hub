@@ -49,7 +49,15 @@ class KnowledgeSearchResult(BaseModel):
 
 class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
-    disease: str = Field(description="Suspected diagnosis disease name")
+    icd_code: str = Field(
+        min_length=3,
+        max_length=3,
+        pattern=r"^[A-Z][0-9][0-9A-Z]$",
+        description="Three-character ICD-10-CM category code without a decimal point",
+    )
+    category_name: str = Field(
+        description="Canonical English name corresponding to the ICD-10-CM category code"
+    )
     confidence: int = Field(ge=0, le=100, description="Integer confidence percentage from 0 to 100, for example 45 means 45%")
     supporting_evidence: list[str] = Field(
         description=(
@@ -96,8 +104,23 @@ class GuidelineSearchResult(BaseModel):
     )
 
 
+class HypothesisItem(BaseModel):
+    icd_code: str = Field(
+        min_length=3,
+        max_length=3,
+        pattern=r"^[A-Z][0-9][0-9A-Z]$",
+        description="Three-character ICD-10-CM category code without a decimal point",
+    )
+    category_name: str = Field(
+        description="Canonical English name corresponding to the ICD-10-CM category code"
+    )
+
+
 class SearchPlanningResult(BaseModel):
-    hypotheses: list[str] = Field(max_length=5, description="Up to 5 major candidate diagnoses")
+    hypotheses: list[HypothesisItem] = Field(
+        max_length=5,
+        description="Up to 5 major candidate diagnoses at the ICD-10-CM category level",
+    )
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
     similar_case_queries: list[str] = Field(
         description=(
@@ -116,6 +139,10 @@ class SimilarCaseRetrievalResult(BaseModel):
     discharge_disease: list[str] = Field(
         max_length=10,
         description="Discharge diseases from the top 10 similar cases in retrieval rank order",
+    )
+    icd_code: list[str] = Field(
+        max_length=10,
+        description="ICD codes corresponding to the retrieved similar cases in retrieval rank order",
     )
     Sections: list[list[SimilarCaseSection]] = Field(
         max_length=10,

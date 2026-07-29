@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Literal
 
 from agents import Agent, Runner
@@ -102,22 +101,23 @@ def _build_compile_prompt(full_text: str) -> str:
 
 def _build_deepseek_metadata_system_prompt() -> str:
     schema = {
-        "guideline_title": "string",
-        "skill_description": "string",
-        "display_name": "string",
-        "short_description": "string",
-        "default_prompt": "string",
-        "source_type": "guideline | consensus | expert_opinion | other",
-        "recommendations_label": "string",
-        "common_abbreviations": [{"abbreviation": "string", "meaning": "string"}],
-        "limitations": ["string"],
+        "guideline_title": "示例指南",
+        "skill_description": "基于示例指南提供临床建议",
+        "display_name": "示例指南",
+        "short_description": "查询示例指南中的临床建议",
+        "default_prompt": "请使用示例指南回答临床问题",
+        "source_type": "guideline",
+        "recommendations_label": "推荐意见",
+        "common_abbreviations": [{"abbreviation": "CD", "meaning": "Crohn disease"}],
+        "limitations": ["部分证据等级在源文件中缺失"],
     }
     return (
         "You generate concise metadata for a clinical guideline skill. Use only the supplied source text. "
         "Do not generate the recommendation index in this response. Prefer Chinese user-facing metadata "
         "when the source document is Chinese.\n\n"
         "Return only one valid JSON object. Do not wrap it in Markdown code fences. "
-        "Do not include explanations before or after the JSON. The JSON object must match this shape:\n"
+        "Do not include explanations before or after the JSON. "
+        "The following JSON object is the required output format example:\n"
         f"{json.dumps(schema, ensure_ascii=False, indent=2)}"
     )
 
@@ -133,22 +133,13 @@ Rules:
 3. Preserve recommendation numbers, evidence levels, strengths, drugs, doses, thresholds, and intervals
    exactly when present. Never invent missing information.
 4. Be concise while retaining the important source-backed information in this chunk.
-5. Return Markdown only, without a document-level H1 heading, JSON, code fences, or commentary.
+5. Put the Markdown fragment in the markdown field of one valid JSON object. Do not add a document-level
+   H1 heading, Markdown code fences, commentary, or text outside the JSON object.
 6. Use useful H2/H3 headings and keep the source order.
+
+Example JSON output:
+{"markdown":"## Diagnostic criteria\\n\\n- Source-backed criterion"}
 """.strip()
-
-
-def _extract_json_object(content: str) -> str:
-    stripped = content.strip()
-    fenced_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, flags=re.DOTALL)
-    if fenced_match:
-        return fenced_match.group(1).strip()
-
-    start = stripped.find("{")
-    end = stripped.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        raise ValueError("No JSON object found in model output.")
-    return stripped[start : end + 1]
 
 
 def _chunk_guideline_text(
@@ -181,6 +172,7 @@ def _request_deepseek_text(
     system_prompt: str,
     user_prompt: str,
     purpose: str,
+    max_tokens: int,
 ) -> str:
     response = client.chat.completions.create(
         model=DEEPSEEK_MODEL,
@@ -189,6 +181,8 @@ def _request_deepseek_text(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0,
+        max_tokens=max_tokens,
+        response_format={"type": "json_object"},
     )
     choice = response.choices[0]
     content = choice.message.content or ""
@@ -196,25 +190,17 @@ def _request_deepseek_text(
         raise RuntimeError(f"DeepSeek output was truncated while generating {purpose}.")
     if not content.strip():
         raise RuntimeError(f"DeepSeek returned empty output while generating {purpose}.")
-    return content
+    return content.strip()
 
 
 def _parse_deepseek_metadata(content: str) -> SkillCompilerMetadata:
     try:
         return SkillCompilerMetadata.model_validate_json(content)
-    except Exception:
-        try:
-            json_text = _extract_json_object(content)
-            return SkillCompilerMetadata.model_validate_json(json_text)
-        except Exception as exc:
-            preview = content[:1000].replace("\n", "\\n")
-            raise RuntimeError(f"DeepSeek did not return valid skill metadata JSON. Preview: {preview}") from exc
-
-
-def _strip_markdown_fence(content: str) -> str:
-    stripped = content.strip()
-    fenced_match = re.fullmatch(r"```(?:markdown|md)?\s*(.*?)\s*```", stripped, flags=re.DOTALL)
-    return fenced_match.group(1).strip() if fenced_match else stripped
+    except Exception as exc:
+        preview = content[:1000].replace("\n", "\\n")
+        raise RuntimeError(
+            f"DeepSeek did not return valid skill metadata JSON. Preview: {preview}"
+        ) from exc
 
 
 def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult:
@@ -233,6 +219,7 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
             f"{full_text}"
         ),
         purpose="skill metadata",
+        max_tokens=2048,
     )
     metadata = _parse_deepseek_metadata(metadata_content)
 
@@ -248,8 +235,9 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
                 f"{chunk}"
             ),
             purpose=f"recommendation index chunk {chunk_number}/{len(chunks)}",
+            max_tokens=8192,
         )
-        index_fragments.append(_strip_markdown_fence(fragment))
+        index_fragments.append(str(json.loads(fragment)["markdown"]).strip())
 
     recommendations_index_md = (
         f"# {metadata.guideline_title}重要信息索引\n\n"

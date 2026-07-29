@@ -40,7 +40,7 @@ SECTION_COLUMNS = (
     "brief_hospital_course",
     "medications_on_admission",
 )
-REQUIRED_COLUMNS = {"hadm_id", "long_title", *SECTION_COLUMNS}
+REQUIRED_COLUMNS = {"hadm_id", "icd_code", "long_title", *SECTION_COLUMNS}
 RRF_K = 60
 SECTION_CHUNK_TOKEN_COUNT = 510
 logger = logging.getLogger(__name__)
@@ -64,6 +64,7 @@ _corpus_embeddings_lock = Lock()
 @dataclass(frozen=True)
 class _CaseRecord:
     hadm_id: str
+    icd_code: str
     discharge_disease: str
 
 
@@ -141,6 +142,7 @@ def _load_case_records(
         case_indices: dict[str, int] = {}
         for row in reader:
             hadm_id = _cell_text(row.get(columns["hadm_id"]))
+            icd_code = _cell_text(row.get(columns["icd_code"]))
             discharge_disease = _cell_text(row.get(columns["long_title"]))
             section_values = [
                 (section_name, _cell_text(row.get(columns[section_name])))
@@ -158,6 +160,7 @@ def _load_case_records(
                 cases.append(
                     _CaseRecord(
                         hadm_id=hadm_id,
+                        icd_code=icd_code,
                         discharge_disease=discharge_disease,
                     )
                 )
@@ -222,6 +225,7 @@ def _tokenize(text: str) -> list[str]:
 def _empty_retrieval_result() -> SimilarCaseRetrievalResult:
     return SimilarCaseRetrievalResult(
         discharge_disease=[],
+        icd_code=[],
         Sections=[],
     )
 
@@ -984,5 +988,6 @@ def retrieve_similar_cases(
         discharge_disease=[
             cases[index].discharge_disease for index in top_indices
         ],
+        icd_code=[cases[index].icd_code for index in top_indices],
         Sections=result_sections,
     )

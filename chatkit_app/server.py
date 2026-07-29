@@ -97,7 +97,8 @@ FIELD_DISPLAY_NAMES = {
     "limitations": "Limitations",
     "topk_diagnoses": "Suspected Diagnoses",
     "rank": "Rank",
-    "disease": "Disease",
+    "icd_code": "ICD-10-CM Category Code",
+    "category_name": "ICD-10-CM Category Name",
     "confidence": "Support Strength",
     "supporting_evidence": "Supporting Evidence",
     "recommended_next_steps": "Recommended Next Steps",
@@ -185,7 +186,10 @@ def _format_diagnosis(result: DiagnosisResult) -> str:
         sections.extend(
             [
                 "",
-                f"### {item.rank}. {item.disease} (support strength: {item.confidence}%)",
+                (
+                    f"### {item.rank}. {item.icd_code} — {item.category_name} "
+                    f"(support strength: {item.confidence}%)"
+                ),
                 "",
                 "**Supporting Evidence**",
                 *[f"- {evidence}" for evidence in item.supporting_evidence],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -110,12 +111,28 @@ class deepseek_api:
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": system_prompt},
+                {
+                    "role": "system",
+                    "content": (
+                        f"{system_prompt}\n\n"
+                        "Return only one valid JSON object containing the response text. "
+                        "Do not use Markdown fences or add text outside the JSON.\n"
+                        'Example JSON output: {"content":"response text"}'
+                    ),
+                },
                 {"role": "user", "content": prompt},
             ],
             stream=False,
+            max_tokens=4096,
+            response_format={"type": "json_object"},
         )
-        return str(completion.choices[0].message.content or "")
+        choice = completion.choices[0]
+        if choice.finish_reason == "length":
+            raise RuntimeError("DeepSeek JSON output was truncated.")
+        content = (choice.message.content or "").strip()
+        if not content:
+            raise RuntimeError("DeepSeek returned empty JSON output.")
+        return str(json.loads(content)["content"])
 
 
 class gemini_api:

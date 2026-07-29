@@ -3,9 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import re
 
-from agents import Agent, OpenAIChatCompletionsModel, Runner
+from agents import Agent, ModelSettings, OpenAIChatCompletionsModel, RunConfig, Runner
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
@@ -53,6 +52,9 @@ Requirements:
    precision.
 6. Return only one valid JSON object with the field translated_text. Do not wrap the JSON in
    Markdown fences or add explanatory text.
+
+Example JSON output:
+{"translated_text":"translated display text"}
 """.strip()
 
 
@@ -96,21 +98,19 @@ class DisplayTranslator:
             f"Display text as JSON string:\n{json.dumps(text, ensure_ascii=False)}"
         )
         try:
-            result = await Runner.run(self._agent, prompt)
-            content = str(result.final_output).strip()
-            fenced_match = re.search(
-                r"```(?:json)?\s*(\{.*?\})\s*```",
-                content,
-                flags=re.DOTALL,
+            result = await Runner.run(
+                self._agent,
+                prompt,
+                run_config=RunConfig(
+                    model_settings=ModelSettings(
+                        max_tokens=8192,
+                        extra_args={"response_format": {"type": "json_object"}},
+                    )
+                ),
             )
-            if fenced_match:
-                content = fenced_match.group(1).strip()
-            else:
-                start = content.find("{")
-                end = content.rfind("}")
-                if start == -1 or end == -1 or end <= start:
-                    raise ValueError("No JSON object found in translation output.")
-                content = content[start : end + 1]
+            content = str(result.final_output).strip()
+            if not content:
+                raise RuntimeError("DeepSeek returned empty translation JSON output.")
             translated_text = TranslationResult.model_validate_json(
                 content
             ).translated_text

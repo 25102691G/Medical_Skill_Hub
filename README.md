@@ -51,6 +51,11 @@ DEEPSEEK_THINKING=true
 `DEEPSEEK_THINKING` 控制诊断流水线中的 DeepSeek 请求是否启用深度思考，
 设置为 `true` 时启用，设置为 `false` 时关闭，默认值为 `true`。
 
+项目中的 DeepSeek Chat Completions 调用统一使用 JSON Output：请求传入
+`response_format={"type":"json_object"}` 和与用途相匹配的 `max_tokens`，提示词包含
+JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本及二分类等原始业务输出会
+先封装在 JSON 字段中，解析后再恢复为原有返回类型。
+
 也可以直接调用 Python 入口：
 
 ```bash
@@ -91,70 +96,28 @@ DEEPSEEK_THINKING=true
 ```
 
 结果逐条写入 `output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl`。每行对应一个成功完成
-的病例，包含 `subject_id`、`hadm_id`、`long_title` 和
+的病例，包含 `subject_id`、`hadm_id`、`icd_code`、`long_title` 和
 `multi_round_diagnosis`。`multi_round_diagnosis.is_multi_round` 表示是否进入了第二轮，
 `multi_round_diagnosis.rounds` 按轮次保存每一轮的 `round`、
 `search_planning_result`、`similar_case_retrieval_result` 和结构化
 `diagnosis_result`。如果第二轮触发纠正诊断，该轮保存纠正后的
-`diagnosis_result`。单个病例失败时，错误会输出到终端，脚本继续处理下一条病例。
-
-## 纯 LLM Baseline
-
-`llm_baseline.py` 与 `batch_main.py` 使用相同的输入 CSV 和病例文本列，但每个病例仅
-执行直接的 LLM 诊断调用，不执行指南检索、PubMed
-检索、相似病例检索或疾病名称标准化。`diagnosis_result` 只保存评估所需的
-`topk_diagnoses`，每项包含 `rank` 和 `disease`。模型调用统一通过
-`interface.py` 中的 `LLM_handler` 完成，目前支持 OpenAI、DeepSeek、Gemini 和
-Claude。
-
-```bash
-./run_llm_baseline.sh
-```
-
-在项目根目录的 `.env` 中配置供应商、API Key 和模型。例如：
-
-```dotenv
-LLM_BASELINE_PROVIDER="deepseek"
-DEEPSEEK_API_KEY="your_deepseek_api_key"
-DEEPSEEK_MODEL="deepseek-chat"
-```
-
-四种供应商对应的配置分别为 `OPENAI_API_KEY` / `OPENAI_MODEL`、
-`DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`、`GEMINI_API_KEY` / `GEMINI_MODEL`
-和 `CLAUDE_API_KEY` / `CLAUDE_MODEL`。`run_llm_baseline.sh` 会加载 `.env`，
-再通过命令行参数传给 `llm_baseline.py`。也可以直接运行 Python 入口：
-
-```bash
-.venv/bin/python llm_baseline.py \
-  --model deepseek \
-  --input database/mimic_iv_test_case.csv \
-  --limit 10 \
-  --workers 20
-```
-
-API Key 和模型参数均为可选参数；未显式传入时，`LLM_handler` 会读取 `.env`
-中的对应配置。Gemini 和 Claude 分别需要可选依赖 `google-generativeai` 和
-`anthropic`，只有选择相应供应商时才会导入。
-
-结果逐条写入
-`output/baseline/mimic_iv_llm_baseline_results_<时间戳>_<实际模型名>.jsonl`。
-DeepSeek 实际调用 `.env` 中
-`DEEPSEEK_MODEL` 指定的模型；例如指定 `deepseek-chat` 时，文件名末尾为
-`_deepseek-chat.jsonl`。`run_llm_baseline.sh` 默认使用 20 个并发请求，直接运行
-Python 入口时可通过 `--workers` 指定并发数。
+`diagnosis_result`。`search_planning_result.hypotheses` 和
+`diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 保存三字符 ICD-10-CM
+类别编码，并使用 `category_name` 保存对应的规范英文类别名称。单个病例失败时，错误
+会输出到终端，脚本继续处理下一条病例。
 
 ## 诊断结果评估
 
-`evaluate.py` 使用 OpenAI 或 DeepSeek 对多轮批量诊断结果进行评估。脚本逐行读取
-`long_title` 作为标准诊断，并遍历 `multi_round_diagnosis.rounds`。每一轮分别提取以下
-三组前五项诊断，让模型判断标准诊断在各组预测疾病中的排名：
+`evaluate.py` 对多轮批量诊断结果中的 ICD code 进行直接匹配。`batch_main.py` 将输入
+CSV 中的 `icd_code` 写入每条结果，评估脚本以该字段为金标准，并遍历
+`multi_round_diagnosis.rounds`。每一轮分别提取以下三组前五项 ICD code：
 
-- `multi_round_diagnosis.rounds[].search_planning_result.hypotheses`
-- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.discharge_disease`
-- `multi_round_diagnosis.rounds[].diagnosis_result.topk_diagnoses[].disease`
+- `multi_round_diagnosis.rounds[].search_planning_result.hypotheses[].icd_code`
+- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.icd_code[]`
+- `multi_round_diagnosis.rounds[].diagnosis_result.topk_diagnoses[].icd_code`
 
-运行前需要在 `.env` 中配置对应供应商的 API Key；OpenAI 使用 `OPENAI_MODEL`，
-DeepSeek 使用 `DEEPSEEK_MODEL` 和 `DEEPSEEK_BASE_URL`。
+金标准和预测编码均先去除首尾空白、转为大写、移除小数点，再取前三个字符进行匹配。
+例如 `K50`、`K50.1` 和 `K501` 均按 `K50` 比较。评估过程不调用 LLM。
 
 可以通过 `run_evaluate.sh` 传入批处理结果：
 
@@ -162,30 +125,22 @@ DeepSeek 使用 `DEEPSEEK_MODEL` 和 `DEEPSEEK_BASE_URL`。
 bash run_evaluate.sh output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
 ```
 
-也可以直接运行 Python 并指定输入和输出 JSONL：
+也可以直接运行 Python 并指定输入 JSONL：
 
 ```bash
 .venv/bin/python evaluate.py \
-  --model deepseek \
-  --input output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl \
-  --output output/evaluate/diagnosis_evaluation.jsonl \
-  --workers 50
+  --input output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
 ```
 
-`--model` 可选值为 `openai` 和 `deepseek`，默认使用 `openai`。
-`run_evaluate.sh` 默认使用 50 个并发请求，直接运行 Python 入口时可通过
-`--workers` 指定并发数。
-
-未指定 `--output` 时，评估结果默认写入
+评估结果固定写入
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
-每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测疾病，以及
-`disease_anatomy`（疾病类别＋解剖亚型，忽略并发症）和 `complication`（疾病类别、
-解剖亚型及并发症均匹配）两个排名。程序结束时会在输出文件末尾写入 `total`、`rounds`
-和 `final_result`：`rounds` 分别统计实际进入各轮病例的两组 Recall@1、Recall@3 和
-Recall@5，`final_result` 使用每个病例最后一轮的评估结果汇总相同指标，不会重复调用
-评估模型。汇总记录还会写入 `skill_usage`，其使用情况取自每个病例最后一轮的
-`diagnosis_result`。模型对某项返回 `No` 时，该病例在对应诊断组和指标的三个 Recall
-中都记为未命中。
+每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测 ICD code，以及
+`disease` 排名。该指标只匹配编码前三位。程序结束时会在输出文件末尾写入
+`total`、`rounds` 和
+`final_result`：`rounds` 统计实际进入各轮病例的 Recall@1、Recall@3 和 Recall@5，
+`final_result` 使用每个病例最后一轮的评估结果汇总相同指标。
+汇总记录还会写入 `skill_usage`，其使用情况取自每个病例最后一轮的
+`diagnosis_result`。没有匹配编码时，该病例在对应诊断组的三个 Recall 中都记为未命中。
 
 ## ChatKit 聊天界面
 
@@ -216,8 +171,8 @@ OPENAI_MODEL=gpt-5.5
 
 修改 `.env` 后需要重新启动两个入口。所选供应商用于搜索规划、知识检索、指南检索、
 最终诊断和诊断结果判断等完整诊断流程。
-OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 返回普通 JSON，并在本地按相同的
-Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
+OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 使用 API JSON Output，并在本地按
+相同的 Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
 指南检索阶段中，OpenAI 使用 Sandbox Skills 读取本地指南，DeepSeek 使用标准 function
 tools 搜索和读取同一套 `skills/` 资源；两条路径生成相同的 `GuidelineSearchResult`。
 
@@ -292,9 +247,10 @@ RRF 生成 Top-20 候选病例，再使用 `ncbi/MedCPT-Cross-Encoder` 对全部
 排序。每个候选病例的 reranker 文档仅由检索命中的 Top-2 chunks 组成：先按 BM25 和
 Dense 的 chunk 排名执行 RRF，再去重选出前两个 chunk；reranker 不读取或输入完整
 `discharge_text`。reranker 完成后按 `discharge_disease` 聚合，相同诊断标签保留分数
-最高的代表病例，最终输出前五个不同诊断标签。结果中的 `Sections` 是各标签代表病例
-实际参与 reranker 的 Top-2 chunks，包含原 section 名称和 chunk 内容，并作为外部参考
-证据传入最终诊断和诊断判断阶段，不会被视为当前患者已经存在的临床事实。reranker
+最高的代表病例，最终输出前五个不同诊断标签。结果中的 `icd_code` 与
+`discharge_disease`、`Sections` 按下标一一对应。`Sections` 是各标签代表病例实际参与
+reranker 的 Top-2 chunks，包含原 section 名称和 chunk 内容，并作为外部参考证据传入
+最终诊断和诊断判断阶段，不会被视为当前患者已经存在的临床事实。reranker
 模型加载或推理失败时会记录错误日志，回退到 RRF 排名后执行相同的标签级聚合。
 启用 `--debug` 时，终端的标准错误流会输出 BM25、Dense、RRF 和 Reranker 排名。
 BM25/Dense 明细包括查询文本、住院号、出院疾病、病例聚合分数及命中的 Top-2
@@ -321,8 +277,8 @@ CSV 数据条数和并行病例数。直接运行 Python 入口时，`--limit` �
 `similar_case_queries`，再执行 BM25、Dense Retriever、RRF 和 Reranker，结果写入
 `output/similar_case/similar_case_results_<timestamp>.jsonl`。每条成功记录包含原病例标识、
 `search_planning_result.similar_case_queries`、BM25/Dense/RRF/Reranker 排名明细
-`similar_case_retrieval_rankings`，以及 Reranker 排序后的 `discharge_disease` 和
-`Sections`。
+`similar_case_retrieval_rankings`，以及 Reranker 排序后的 `discharge_disease`、
+`icd_code` 和 `Sections`。
 独立模块的输出不保存规划阶段的 `hypotheses`、`search_queries`，也不保存相似病例的
 完整 `discharge_text`。运行时终端仍会输出四路排名明细及跳过原因。
 
