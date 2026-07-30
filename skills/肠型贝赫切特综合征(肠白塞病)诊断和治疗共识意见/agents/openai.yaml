@@ -1,0 +1,4 @@
+interface:
+  display_name: "肠白塞病诊治共识"
+  short_description: "查询肠白塞病诊断与治疗共识中的临床建议"
+  default_prompt: "请使用肠白塞病诊断与治疗共识回答临床问题"

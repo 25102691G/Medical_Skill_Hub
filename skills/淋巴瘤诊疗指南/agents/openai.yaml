@@ -1,0 +1,4 @@
+interface:
+  display_name: "淋巴瘤诊疗指南"
+  short_description: "查询淋巴瘤诊疗指南中的临床建议"
+  default_prompt: "请使用淋巴瘤诊疗指南回答临床问题"
