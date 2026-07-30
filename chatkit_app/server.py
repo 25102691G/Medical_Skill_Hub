@@ -86,12 +86,21 @@ STAGE_OUTPUT_ORDER = {
 FIELD_DISPLAY_NAMES = {
     "hypotheses": "Candidate Diagnoses",
     "search_queries": "Literature Search Queries",
-    "similar_case_queries": "Similar-Case Retrieval Features",
+    "positive_features": "Positive Patient Features",
     "used_skill": "Used Local Guideline Material",
     "skill_names": "Guideline Material Identifiers",
+    "skill_results": "Guideline Results by Skill",
+    "skill_name": "Guideline Material Identifier",
+    "disease_name": "Disease Name",
     "guideline_evidence": "Guideline Evidence",
-    "pubmed_evidence": "PubMed Evidence",
+    "guideline_diagnosis": "Guideline-Based Diagnosis",
+    "relevant_pubmed_results": "Relevant PubMed Results",
+    "results": "Results",
+    "query": "Search Query",
     "pmid": "PubMed PMID",
+    "title": "Publication Title",
+    "abstract": "Abstract",
+    "url": "PubMed URL",
     "summary": "Summary",
     "evidence": "Evidence",
     "limitations": "Limitations",
@@ -242,7 +251,7 @@ def _format_stage_result(title: str, content: str) -> str:
             return f"{heading}\n\nNo retrieval ranking details are available."
 
         field_names = {
-            "similar_case_queries": "Similar-Case Queries",
+            "positive_features": "Positive Features",
         }
         sections = [heading]
         for group in ranking_groups:

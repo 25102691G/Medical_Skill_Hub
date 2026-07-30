@@ -1,0 +1,4 @@
+interface:
+  display_name: "腹壁切口疝指南(2025版)"
+  short_description: "查询腹壁切口疝指南中的临床建议"
+  default_prompt: "请使用腹壁切口疝指南回答临床问题"

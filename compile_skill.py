@@ -64,7 +64,7 @@ def main() -> int:
     hit_lines: set[int] = set()
 
     for index, line in enumerate(lines):
-        if all(pattern.search(line) for pattern in patterns):
+        if any(pattern.search(line) for pattern in patterns):
             start = max(0, index - args.context)
             end = min(len(lines), index + args.context + 1)
             hit_lines.update(range(start, end))
@@ -97,6 +97,10 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Existing MinerU Markdown output. When provided, PDF parsing is skipped.",
     )
+    parser.add_argument(
+        "--category",
+        help="Guideline category. Required with --pdf or --full-text-md.",
+    )
     parser.add_argument("--skills-dir", type=Path, default=SKILLS_DIR, help="Directory containing local skills.")
     parser.add_argument(
         "--mineru-command",
@@ -114,10 +118,12 @@ def _validate_inputs(args: argparse.Namespace) -> None:
         raise SystemExit(f"Error: PDF directory does not exist: {args.pdfs}")
     if args.full_text_md and not args.full_text_md.exists():
         raise SystemExit(f"Error: Markdown file does not exist: {args.full_text_md}")
+    if (args.pdf or args.full_text_md) and not args.category:
+        raise SystemExit("Error: --category is required with --pdf or --full-text-md.")
 
 
-def _run_mineru(pdf_path: Path, command_template: str) -> str:
-    output_dir = ROOT_DIR / "mineru"
+def _run_mineru(pdf_path: Path, category: str, command_template: str) -> str:
+    output_dir = ROOT_DIR / "mineru" / category
     document_output_dir = output_dir / pdf_path.stem
     if document_output_dir.is_dir():
         markdown_path = _find_mineru_markdown(document_output_dir, pdf_path.stem)
@@ -141,13 +147,12 @@ def _run_mineru(pdf_path: Path, command_template: str) -> str:
         part.format(input=str(pdf_path), output=str(output_dir))
         for part in command_parts
     ]
-    completed = subprocess.run(command, check=False, text=True, capture_output=True)
+    completed = subprocess.run(command, check=False, text=True)
     if completed.returncode != 0:
         raise SystemExit(
             "Error: MinerU parsing failed.\n"
             f"Output root: {output_dir}\n"
-            f"Command: {' '.join(command)}\n"
-            f"stderr:\n{completed.stderr.strip()}"
+            f"Command: {' '.join(command)}"
         )
 
     markdown_path = _find_mineru_markdown(document_output_dir, pdf_path.stem)
@@ -188,11 +193,12 @@ def _render_openai_yaml(result: SkillCompilerResult) -> str:
     )
 
 
-def _render_skill_md(skill_name: str, result: SkillCompilerResult) -> str:
+def _render_skill_md(skill_name: str, category: str, result: SkillCompilerResult) -> str:
     abbreviations = _render_abbreviations(result.common_abbreviations)
+    description = f"类别：{category}。{result.skill_description.strip()}"
     return f"""---
 name: {skill_name}
-description: {_yaml_value(result.skill_description)}
+description: {_yaml_value(description)}
 ---
 
 # {result.guideline_title}
@@ -238,6 +244,7 @@ def _render_abbreviations(items: list[SkillCompilerAbbreviation]) -> str:
 def _write_skill_directory(
     skill_dir: Path,
     skill_name: str,
+    category: str,
     full_text: str,
     result: SkillCompilerResult,
 ) -> None:
@@ -245,7 +252,7 @@ def _write_skill_directory(
     _write_text(skill_dir / "references" / "recommendations-index.md", result.recommendations_index_md)
     _write_text(
         skill_dir / "SKILL.md",
-        _render_skill_md(skill_name, result),
+        _render_skill_md(skill_name, category, result),
     )
     _write_text(skill_dir / "agents" / "openai.yaml", _render_openai_yaml(result))
     _write_text(skill_dir / "scripts" / "search_guideline.py", SEARCH_GUIDELINE_SCRIPT, executable=True)
@@ -259,18 +266,33 @@ def main() -> int:
         input_paths = sorted(
             (
                 path
-                for path in args.pdfs.iterdir()
+                for path in args.pdfs.rglob("*")
                 if path.is_file() and path.suffix.lower() == ".pdf"
             ),
-            key=lambda path: path.name,
+            key=lambda path: str(path.relative_to(args.pdfs)),
         )
         if not input_paths:
             print(f"No PDF files found in directory: {args.pdfs}")
             return 0
+        uncategorized_paths = [
+            path
+            for path in input_paths
+            if path.parent == args.pdfs
+        ]
+        if uncategorized_paths:
+            paths = "\n".join(str(path) for path in uncategorized_paths)
+            raise SystemExit(
+                "Error: Every PDF must be placed under a guideline category directory:\n"
+                f"{paths}"
+            )
+        inputs = [
+            (path, path.parent.name)
+            for path in input_paths
+        ]
     else:
-        input_paths = [args.full_text_md or args.pdf]
+        inputs = [(args.full_text_md or args.pdf, args.category)]
 
-    for input_path in input_paths:
+    for input_path, category in inputs:
         skill_name = input_path.stem
         skill_dir = args.skills_dir / skill_name
         if skill_dir.exists() and not args.force:
@@ -281,12 +303,13 @@ def main() -> int:
         if args.full_text_md:
             full_text = input_path.read_text(encoding="utf-8")
         else:
-            full_text = _run_mineru(input_path, args.mineru_command)
+            full_text = _run_mineru(input_path, category, args.mineru_command)
 
         result = compile_guideline_text(full_text)
         _write_skill_directory(
             skill_dir,
             skill_name,
+            category,
             full_text,
             result,
         )

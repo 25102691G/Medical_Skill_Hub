@@ -95,12 +95,15 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_THINKING=true
 ```
 
-结果逐条写入 `output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl`。每行对应一个成功完成
-的病例，包含 `subject_id`、`hadm_id`、`icd_code`、`long_title` 和
+结果逐条写入
+`output/batch/<输入文件名>_<limit>_<时间戳>.jsonl`；未指定 `--limit` 时使用 `all`。
+例如输入 `mimic_test_case_hernia.csv` 且 `--limit 5` 时，输出文件名类似
+`mimic_test_case_hernia_5_20260729_145433_369954.jsonl`。每行对应一个成功完成的病例，
+包含 `subject_id`、`hadm_id`、`icd_code`、`long_title` 和
 `multi_round_diagnosis`。`multi_round_diagnosis.is_multi_round` 表示是否进入了第二轮，
 `multi_round_diagnosis.rounds` 按轮次保存每一轮的 `round`、
-`search_planning_result`、`similar_case_retrieval_result` 和结构化
-`diagnosis_result`。如果第二轮触发纠正诊断，该轮保存纠正后的
+`search_planning_result`、`similar_case_retrieval_result`、按 skill 分组的
+`guideline_search_result` 和结构化 `diagnosis_result`。如果第二轮触发纠正诊断，该轮保存纠正后的
 `diagnosis_result`。`search_planning_result.hypotheses` 和
 `diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 保存三字符 ICD-10-CM
 类别编码，并使用 `category_name` 保存对应的规范英文类别名称。单个病例失败时，错误
@@ -122,14 +125,14 @@ CSV 中的 `icd_code` 写入每条结果，评估脚本以该字段为金标准�
 可以通过 `run_evaluate.sh` 传入批处理结果：
 
 ```bash
-bash run_evaluate.sh output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
+bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 ```
 
 也可以直接运行 Python 并指定输入 JSONL：
 
 ```bash
 .venv/bin/python evaluate.py \
-  --input output/batch/mimic_iv_diagnosis_results_<时间戳>.jsonl
+  --input output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 ```
 
 评估结果固定写入
@@ -216,8 +219,12 @@ ChatKit 展示翻译仍然使用 DeepSeek。
 
 医学知识检索通过 NCBI E-utilities 查询 PubMed。建议在项目根目录的 `.env` 中配置：
 
-每轮知识检索使用前 3 条文献查询并发检索，每条最多返回 3 篇文献。检索结果只保留
-PMID、标题、摘要和 URL，然后由诊断供应商对应的模型进行一次统一筛选和总结。
+每轮知识检索使用全部最多 5 条文献查询并发检索，每条最多返回 3 篇文献。检索结果只保留
+PMID、标题、摘要和 URL；非结构化 `AbstractText` 原样保留，结构化 `AbstractText`
+按原顺序整理为 `Label [NlmCategory]` 标题和未经改写的摘要正文。Python 会删除 PMID、
+标题或摘要为空，以及摘要为 `No abstract available` 的整条结果，但不删除重复 PMID。
+之后由诊断供应商对应的模型仅选择与检索词相关的 PMID；重复出现的 PMID 会被重点考虑。
+最终结果由 Python 根据模型选择的 PMID 映射回未经模型改写的原始 PubMed 结果。
 
 ```dotenv
 NCBI_API_KEY=your_ncbi_api_key
@@ -230,9 +237,60 @@ NCBI_TOOL=medical_skill_hub
 如需调整，可设置 `NCBI_REQUESTS_PER_SECOND`、`NCBI_MAX_RETRIES`、
 `NCBI_RETRY_BASE_SECONDS` 和 `NCBI_TIMEOUT_SECONDS`。
 
+## 指南 Skill 编译与检索
+
+批量编译前，需要将每份 PDF 放入人工确认的疾病类别目录：
+
+```text
+guidelines/
+├── 非感染性小肠炎和结肠炎/
+│   ├── 中国克罗恩病诊治指南（2023年·广州）.pdf
+│   └── 中国溃疡性结肠炎诊治指南（2023年·西安）.pdf
+├── 肠的其他疾病/
+│   └── ...
+└── 肝疾病/
+    └── ...
+```
+
+运行：
+
+```bash
+./run_compile_skill.sh
+```
+
+编译脚本递归读取分类目录。直接放在 `guidelines/` 根目录下的 PDF 不会编译，而是提示
+先完成分类。MinerU 输出按相同类别保存：
+
+```text
+mineru/<类别>/<PDF 文件名>/auto/...
+```
+
+生成的 skill 仍保持 Codex 原生的扁平目录结构：
+
+```text
+skills/<PDF 文件名>/
+├── SKILL.md
+├── agents/openai.yaml
+├── references/
+└── scripts/
+```
+
+`SKILL.md` 的 description 由编译器写入人工确认的类别，再追加指南全文生成的具体疾病
+名称、英文名、常用缩写、适用范围和触发边界。使用单个 PDF 或已有 MinerU Markdown
+编译时，需要通过 `--category` 明确指定类别。
+
+指南检索使用 `search_planning_result.hypotheses` 选择所有与候选疾病直接对应的 skills，
+不设置固定 skill 数量，也不会仅因症状、检查结果或宽泛的消化内科词汇重合而选择其他
+疾病类别的 skill。选择完成后，仅使用 `positive_features` 在这些 skills 内定位诊断标准、
+鉴别诊断、确认或排除检查及下一步建议；推荐索引只用于定位，证据和指南诊断结论均以
+`guideline-full-text.md` 核实后的内容为依据。每个 skill 的 `guideline_evidence` 和
+`guideline_diagnosis` 保存在同一个 `skill_results` 项目中。`search_queries` 只用于
+PubMed 检索。最终诊断阶段不接收当前或上一轮 `hypotheses`，而是使用患者信息、PubMed
+证据、相似病例和完整指南结果独立生成诊断候选。
+
 ## 相似病例检索
 
-检索规划阶段生成 `similar_case_queries` 英文短语列表，其中同时包含病例中明确记录的
+检索规划阶段生成 `positive_features` 英文短语列表，其中同时包含病例中明确记录的
 阳性临床表现和阳性辅助检查结果。临床表现包括阳性症状、异常生命体征和体格检查阳性
 体征；辅助检查结果包括实验室、影像、内镜、病理和微生物检查结果。相似病例库使用
 `database/mimic_similar_case.csv`，并使用其中结构化出院记录 section 的非空内容，不再
@@ -274,9 +332,9 @@ CSV 数据条数和并行病例数。直接运行 Python 入口时，`--limit` �
 
 输入 CSV 需要包含 `subject_id`、`hadm_id`、`long_title` 和
 `discharge_text_before_disposition`。程序先调用检索规划 Agent 生成
-`similar_case_queries`，再执行 BM25、Dense Retriever、RRF 和 Reranker，结果写入
+`positive_features`，再执行 BM25、Dense Retriever、RRF 和 Reranker，结果写入
 `output/similar_case/similar_case_results_<timestamp>.jsonl`。每条成功记录包含原病例标识、
-`search_planning_result.similar_case_queries`、BM25/Dense/RRF/Reranker 排名明细
+`search_planning_result.positive_features`、BM25/Dense/RRF/Reranker 排名明细
 `similar_case_retrieval_rankings`，以及 Reranker 排序后的 `discharge_disease`、
 `icd_code` 和 `Sections`。
 独立模块的输出不保存规划阶段的 `hypotheses`、`search_queries`，也不保存相似病例的

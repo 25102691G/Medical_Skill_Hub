@@ -79,7 +79,10 @@ async def _run_batch_async(
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    output_path = OUTPUT_DIR / f"mimic_iv_diagnosis_results_{timestamp}.jsonl"
+    limit_label = limit if limit is not None else "all"
+    output_path = (
+        OUTPUT_DIR / f"{resolved_csv_path.stem}_{limit_label}_{timestamp}.jsonl"
+    )
 
     attempted_count = 0
     success_count = 0

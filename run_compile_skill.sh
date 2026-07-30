@@ -20,17 +20,23 @@ SKILL_COMPILER_PROVIDER="${SKILL_COMPILER_PROVIDER:-deepseek}"
 DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"
 DEEPSEEK_BASE_URL="${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
 DEEPSEEK_MODEL="${DEEPSEEK_MODEL:-deepseek-v4-pro}"
-MINERU_DEVICE_MODE="${MINERU_DEVICE_MODE:-cpu}"
-MINERU_COMMAND="${MINERU_COMMAND:-.venv/bin/mineru -p {input} -o {output} -b pipeline -m auto -l ch}"
+MINERU_DEVICE_MODE="${MINERU_DEVICE_MODE:-cuda}"
+NO_PROXY="${NO_PROXY:+${NO_PROXY},}127.0.0.1,localhost"
+no_proxy="${no_proxy:+${no_proxy},}127.0.0.1,localhost"
+MINERU_COMMAND="${MINERU_COMMAND:-}"
+if [[ -z "$MINERU_COMMAND" ]]; then
+    MINERU_COMMAND='.venv/bin/mineru -p {input} -o {output} -b pipeline -m auto -l ch'
+fi
 
 export SKILL_COMPILER_PROVIDER
 export DEEPSEEK_API_KEY
 export DEEPSEEK_BASE_URL
 export DEEPSEEK_MODEL
 export MINERU_DEVICE_MODE
+export NO_PROXY
+export no_proxy
 
 .venv/bin/python compile_skill.py \
     --pdfs "$INPUT_PDFS" \
     --skills-dir "$SKILLS_DIR" \
-    --mineru-command "$MINERU_COMMAND" \
-    --force
+    --mineru-command "$MINERU_COMMAND"

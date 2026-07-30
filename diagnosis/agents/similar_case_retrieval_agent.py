@@ -788,16 +788,16 @@ def _rrf_rank(
 
 
 def retrieve_similar_cases(
-    similar_case_queries: list[str],
+    positive_features: list[str],
     *,
     debug: bool = False,
     ranking_callback: RankingCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
 
-    query = _join_query(similar_case_queries)
+    query = _join_query(positive_features)
     if not query:
         _report_skipped_rankings(
-            "similar_case_queries",
+            "positive_features",
             query,
             (),
             (),
@@ -810,7 +810,7 @@ def retrieve_similar_cases(
     cases, sections = _load_case_records()
     if not sections:
         _report_skipped_rankings(
-            "similar_case_queries",
+            "positive_features",
             query,
             cases,
             sections,
@@ -831,7 +831,7 @@ def retrieve_similar_cases(
         sections,
     )
     _report_ranking(
-        "similar_case_queries",
+        "positive_features",
         "BM25",
         query,
         bm25_ranking,
@@ -856,7 +856,7 @@ def retrieve_similar_cases(
         sections,
     )
     _report_ranking(
-        "similar_case_queries",
+        "positive_features",
         "Dense",
         query,
         dense_ranking,
@@ -872,7 +872,7 @@ def retrieve_similar_cases(
         min(SIMILAR_CASE_RRF_CANDIDATE_K, len(cases)),
     )
     _report_ranking(
-        "similar_case_queries",
+        "positive_features",
         "RRF",
         query,
         rrf_ranking,
@@ -892,7 +892,7 @@ def retrieve_similar_cases(
     )
     if not rrf_ranking:
         _report_ranking(
-            "similar_case_queries",
+            "positive_features",
             "Reranker",
             query,
             [],
@@ -924,7 +924,7 @@ def retrieve_similar_cases(
             exc,
         )
         _report_ranking(
-            "similar_case_queries",
+            "positive_features",
             "Reranker",
             query,
             [],
@@ -961,7 +961,7 @@ def retrieve_similar_cases(
 
     if reranker_completed:
         _report_ranking(
-            "similar_case_queries",
+            "positive_features",
             "Reranker",
             query,
             final_ranking,

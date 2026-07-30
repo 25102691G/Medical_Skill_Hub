@@ -24,7 +24,14 @@ class SkillCompilerAbbreviation(BaseModel):
 
 class SkillCompilerMetadata(BaseModel):
     guideline_title: str = Field(description="Official guideline or consensus title")
-    skill_description: str = Field(description="Front matter description for SKILL.md")
+    skill_description: str = Field(
+        description=(
+            "Disease-specific front matter description for SKILL.md. Include the Chinese and English "
+            "disease names, common abbreviations, applicable clinical scope, and clear trigger boundary. "
+            "Do not include a broad disease category because the compiler adds the verified source "
+            "directory category."
+        )
+    )
     display_name: str = Field(description="Display name for agents/openai.yaml")
     short_description: str = Field(description="Short description for agents/openai.yaml")
     default_prompt: str = Field(description="Default prompt for agents/openai.yaml")
@@ -76,7 +83,10 @@ Task:
    drugs, doses, thresholds, or follow-up intervals.
 7. If OCR line breaks or missing context make an item unclear, explicitly mark that uncertainty in
    the Markdown index instead of filling unsupported fields.
-8. Generate concise metadata for SKILL.md and agents/openai.yaml.
+8. Generate concise metadata for SKILL.md and agents/openai.yaml. The skill description must identify
+   the specific disease in Chinese and English, common abbreviations when supported, applicable
+   clinical scope, and when the skill should be used. Do not assign or mention a broad disease
+   category; the compiler adds the verified category from the source directory.
 
 The output must be valid structured data matching the requested schema.
 """.strip()
@@ -102,7 +112,7 @@ def _build_compile_prompt(full_text: str) -> str:
 def _build_deepseek_metadata_system_prompt() -> str:
     schema = {
         "guideline_title": "示例指南",
-        "skill_description": "基于示例指南提供临床建议",
+        "skill_description": "用于示例疾病（Example disease，ED）的诊断、鉴别诊断、治疗和随访，仅在病例候选诊断包含该疾病时使用。",
         "display_name": "示例指南",
         "short_description": "查询示例指南中的临床建议",
         "default_prompt": "请使用示例指南回答临床问题",
@@ -114,7 +124,10 @@ def _build_deepseek_metadata_system_prompt() -> str:
     return (
         "You generate concise metadata for a clinical guideline skill. Use only the supplied source text. "
         "Do not generate the recommendation index in this response. Prefer Chinese user-facing metadata "
-        "when the source document is Chinese.\n\n"
+        "when the source document is Chinese. The skill_description must identify the specific disease "
+        "in Chinese and English, include common abbreviations when supported, describe the applicable "
+        "clinical scope and trigger boundary, and must not assign or mention a broad disease category "
+        "because the compiler adds the verified source directory category.\n\n"
         "Return only one valid JSON object. Do not wrap it in Markdown code fences. "
         "Do not include explanations before or after the JSON. "
         "The following JSON object is the required output format example:\n"
@@ -235,7 +248,7 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
                 f"{chunk}"
             ),
             purpose=f"recommendation index chunk {chunk_number}/{len(chunks)}",
-            max_tokens=8192,
+            max_tokens=32768,
         )
         index_fragments.append(str(json.loads(fragment)["markdown"]).strip())
 

@@ -47,7 +47,9 @@ from schemas import (
     GuidelineSearchResult,
     HypothesisItem,
     KnowledgeSearchResult,
+    KnowledgeSearchSelectionResult,
     MultiRoundDiagnosisResult,
+    PubMedQueryResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
 )
@@ -189,7 +191,7 @@ async def _run_search_planning_async(
             "The diagnostic judgement found that hypotheses were closer to the patient information "
             "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
             "diagnosis round. Return the complete SearchPlanningResult required by the schema, but "
-            "preserve the previous hypotheses and similar_case_queries unless they violate the agent "
+            "preserve the previous hypotheses and positive_features unless they violate the agent "
             "instructions. Use the previous artifacts, including previous guideline evidence, only to "
             "improve the retrieval strategy, and do not treat their contents as new patient facts. "
         )
@@ -253,7 +255,7 @@ async def _run_knowledge_search_async(
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> KnowledgeSearchResult:
-    selected_queries = search_queries[:3]
+    selected_queries = search_queries
     pubmed_results = await asyncio.to_thread(
         search_pubmed_queries,
         selected_queries,
@@ -265,12 +267,11 @@ async def _run_knowledge_search_async(
     )
     knowledge_prompt = (
         f"Search queries:\n{_as_json(selected_queries)}\n\n"
-        f"PubMed search results:\n{_as_json(pubmed_results)}\n\n"
-        "Keep search queries, publication titles, URLs, and quoted source text in their original language."
+        f"PubMed search results:\n{_as_json(pubmed_results)}"
     )
     knowledge_prompt = _prepare_structured_prompt(
         knowledge_prompt,
-        KnowledgeSearchResult,
+        KnowledgeSearchSelectionResult,
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Knowledge Searcher Agent", round_index)
@@ -281,7 +282,28 @@ async def _run_knowledge_search_async(
             run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
-    result = _parse_structured_result(raw_result, KnowledgeSearchResult)
+    selection_result = _parse_structured_result(
+        raw_result,
+        KnowledgeSearchSelectionResult,
+    )
+    selected_pmids = set(selection_result.selected_pmids)
+    result = KnowledgeSearchResult(
+        relevant_pubmed_results=[
+            PubMedQueryResult(
+                query=query_result["query"],
+                results=[
+                    pubmed_result
+                    for pubmed_result in query_result["results"]
+                    if pubmed_result["pmid"] in selected_pmids
+                ],
+            )
+            for query_result in pubmed_results
+            if any(
+                pubmed_result["pmid"] in selected_pmids
+                for pubmed_result in query_result["results"]
+            )
+        ]
+    )
     _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
         result,
@@ -291,17 +313,18 @@ async def _run_knowledge_search_async(
     return result
 
 
-def _format_pubmed_evidence(
+def _format_pubmed_results(
     knowledge_search_result: KnowledgeSearchResult,
 ) -> list[str]:
     return [
-        f"PubMed PMID {item.pmid}（{item.title}）：{item.evidence}"
-        for item in knowledge_search_result.pubmed_evidence
+        f"PubMed PMID {item.pmid}（{item.title}）：{item.abstract}"
+        for query_result in knowledge_search_result.relevant_pubmed_results
+        for item in query_result.results
     ]
 
 
 def _run_similar_case_retrieval(
-    similar_case_queries: list[str],
+    positive_features: list[str],
     *,
     debug: bool = False,
     round_index: int | None = None,
@@ -310,7 +333,7 @@ def _run_similar_case_retrieval(
     _notify_agent_started(progress_callback, "Similar Case Retrieval Agent", round_index)
     ranking_details: list[dict[str, object]] = []
     result = retrieve_similar_cases(
-        similar_case_queries,
+        positive_features,
         debug=debug,
         ranking_callback=(
             ranking_details.append
@@ -334,7 +357,8 @@ def _run_similar_case_retrieval(
 
 
 async def _run_guideline_search_async(
-    search_queries: list[str],
+    hypotheses: list[HypothesisItem],
+    positive_features: list[str],
     *,
     model: str | Model,
     debug: bool = False,
@@ -348,13 +372,19 @@ async def _run_guideline_search_async(
         native_structured_output=native_structured_output,
     )
     guideline_prompt = (
-        f"Search queries:\n{_as_json(search_queries)}\n\n"
+        f"Diagnostic hypotheses for skill selection:\n{_as_json(hypotheses)}\n\n"
+        "Select skills only when their disease scope directly corresponds to at least one diagnostic "
+        "hypothesis. A shared broad category without a specific disease match is insufficient. Do not "
+        "select a skill from an unrelated disease category.\n\n"
+        f"Positive patient features for guideline content retrieval:\n{_as_json(positive_features)}\n\n"
         f"Available skills directory:\n{SKILLS_DIR}\n\n"
-        "Search the local guideline skills for clinically relevant guideline evidence. "
-        "Keep skill_names unchanged.\n\n"
+        "After selecting the skills, use only positive_features to search within each skill and compare "
+        "the patient features with guideline information verified against the guideline full text. "
+        "Do not use hypotheses as within-skill search terms or patient evidence. Keep each skill's "
+        "evidence and guideline diagnosis together in one skill_results item.\n\n"
         "The outermost JSON value must be an object, not an array. "
         "Use this exact JSON structure when no guideline skill is used:\n"
-        '{"used_skill":false,"skill_names":[],"guideline_evidence":[]}'
+        '{"used_skill":false,"skill_results":[]}'
     )
     guideline_prompt = _prepare_structured_prompt(
         guideline_prompt,
@@ -388,8 +418,7 @@ async def _run_guideline_search_async(
         except MaxTurnsExceeded:
             result = GuidelineSearchResult(
                 used_skill=False,
-                skill_names=[],
-                guideline_evidence=[],
+                skill_results=[],
             )
             _publish_stage_result(
                 f"Guideline Search Result - Round {round_index}",
@@ -410,13 +439,11 @@ async def _run_guideline_search_async(
 
 async def _run_final_diagnosis_async(
     case_text: str,
-    hypotheses: list[HypothesisItem],
     knowledge_search_result: KnowledgeSearchResult,
-    guideline_evidence: list[str],
+    guideline_search_result: GuidelineSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     model: str | Model,
-    previous_hypotheses: list[HypothesisItem] | None = None,
     previous_diagnosis_result: DiagnosisResult | None = None,
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
     corrective: bool = False,
@@ -445,10 +472,15 @@ async def _run_final_diagnosis_async(
             start=1,
         )
     ]
-    pubmed_evidence = _format_pubmed_evidence(knowledge_search_result)
+    pubmed_results = _format_pubmed_results(knowledge_search_result)
+    guideline_evidence = [
+        f"{skill_result.skill_name}：{evidence}"
+        for skill_result in guideline_search_result.skill_results
+        for evidence in skill_result.guideline_evidence
+    ]
     combined_evidence = [
         *guideline_evidence,
-        *pubmed_evidence,
+        *pubmed_results,
     ]
     numbered_evidence = [
         f"[{index}] {evidence}"
@@ -456,14 +488,10 @@ async def _run_final_diagnosis_async(
     ]
     revision_context = ""
     if (
-        previous_hypotheses is not None
-        and previous_diagnosis_result is not None
+        previous_diagnosis_result is not None
         and diagnostic_judgement_result is not None
     ):
         revision_context = (
-            "<PREVIOUS_HYPOTHESES>\n"
-            f"{_as_json(previous_hypotheses)}\n"
-            "</PREVIOUS_HYPOTHESES>\n\n"
             "<PREVIOUS_TOPK_DIAGNOSES>\n"
             f"{_as_json(previous_diagnosis_result.topk_diagnoses)}\n"
             "</PREVIOUS_TOPK_DIAGNOSES>\n\n"
@@ -477,12 +505,12 @@ async def _run_final_diagnosis_async(
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>\n\n"
-        "<CURRENT_HYPOTHESES>\n"
-        f"{_as_json(hypotheses)}\n"
-        "</CURRENT_HYPOTHESES>\n\n"
         "<NUMBERED_EVIDENCE>\n"
         f"{_as_json(numbered_evidence)}\n"
         "</NUMBERED_EVIDENCE>\n\n"
+        "<GUIDELINE_RESULTS>\n"
+        f"{_as_json(guideline_search_result)}\n"
+        "</GUIDELINE_RESULTS>\n\n"
         "<SIMILAR_CASES>\n"
         f"{_as_json(similar_case_summary)}\n"
         "</SIMILAR_CASES>\n\n"
@@ -508,14 +536,12 @@ async def _run_final_diagnosis_async(
         )
     ).final_output
     diagnosis_content = _parse_structured_result(raw_result, FinalDiagnosisContent)
-    skill_names = list(
-        dict.fromkeys(
-            evidence.split("：", 1)[0].strip()
-            for evidence in guideline_evidence
-        )
-    )
+    skill_names = [
+        skill_result.skill_name
+        for skill_result in guideline_search_result.skill_results
+    ]
     result = DiagnosisResult(
-        used_skill=bool(guideline_evidence),
+        used_skill=guideline_search_result.used_skill,
         skill_names=skill_names,
         topk_diagnoses=diagnosis_content.topk_diagnoses,
         summary=diagnosis_content.summary,
@@ -541,7 +567,7 @@ async def _run_diagnostic_judgement_async(
     diagnosis_result: DiagnosisResult,
     knowledge_search_result: KnowledgeSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
-    guideline_evidence: list[str],
+    guideline_search_result: GuidelineSearchResult,
     *,
     model: str | Model,
     debug: bool = False,
@@ -559,7 +585,7 @@ async def _run_diagnostic_judgement_async(
         f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
-        f"Guideline evidence:\n{_as_json(guideline_evidence)}\n\n"
+        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Keep closer_result as the required enum value."
     )
@@ -602,7 +628,6 @@ async def make_diagnosis_pipeline_async(
         round_index=1,
         progress_callback=progress_callback,
     )
-    previous_hypotheses: list[HypothesisItem] | None = None
     previous_diagnosis_result: DiagnosisResult | None = None
     previous_diagnostic_judgement_result: DiagnosticJudgementResult | None = None
     diagnosis_rounds: list[DiagnosisRoundResult] = []
@@ -622,13 +647,14 @@ async def make_diagnosis_pipeline_async(
             ),
             asyncio.to_thread(
                 _run_similar_case_retrieval,
-                search_planning_result.similar_case_queries,
+                search_planning_result.positive_features,
                 debug=debug,
                 round_index=round_index,
                 progress_callback=progress_callback,
             ),
             _run_guideline_search_async(
-                search_planning_result.search_queries,
+                search_planning_result.hypotheses,
+                search_planning_result.positive_features,
                 model=diagnosis_model,
                 debug=debug,
                 round_index=round_index,
@@ -638,12 +664,10 @@ async def make_diagnosis_pipeline_async(
 
         diagnosis_result = await _run_final_diagnosis_async(
             case_text,
-            search_planning_result.hypotheses,
             knowledge_search_result,
-            guideline_search_result.guideline_evidence,
+            guideline_search_result,
             similar_case_retrieval_result,
             model=diagnosis_model,
-            previous_hypotheses=previous_hypotheses,
             previous_diagnosis_result=previous_diagnosis_result,
             diagnostic_judgement_result=previous_diagnostic_judgement_result,
             debug=debug,
@@ -657,7 +681,7 @@ async def make_diagnosis_pipeline_async(
             diagnosis_result,
             knowledge_search_result,
             similar_case_retrieval_result,
-            guideline_search_result.guideline_evidence,
+            guideline_search_result,
             model=diagnosis_model,
             debug=debug,
             round_index=round_index,
@@ -670,12 +694,10 @@ async def make_diagnosis_pipeline_async(
         ):
             diagnosis_result = await _run_final_diagnosis_async(
                 case_text,
-                search_planning_result.hypotheses,
                 knowledge_search_result,
-                guideline_search_result.guideline_evidence,
+                guideline_search_result,
                 similar_case_retrieval_result,
                 model=diagnosis_model,
-                previous_hypotheses=search_planning_result.hypotheses,
                 previous_diagnosis_result=diagnosis_result,
                 diagnostic_judgement_result=diagnostic_judgement_result,
                 corrective=True,
@@ -689,6 +711,7 @@ async def make_diagnosis_pipeline_async(
                 round=round_index,
                 search_planning_result=search_planning_result,
                 similar_case_retrieval_result=similar_case_retrieval_result,
+                guideline_search_result=guideline_search_result,
                 diagnosis_result=diagnosis_result,
             )
         )
@@ -704,7 +727,6 @@ async def make_diagnosis_pipeline_async(
                 )
             )
 
-        previous_hypotheses = search_planning_result.hypotheses
         previous_diagnosis_result = diagnosis_result
         previous_diagnostic_judgement_result = diagnostic_judgement_result
         search_planning_result = await _run_search_planning_async(
@@ -713,7 +735,11 @@ async def make_diagnosis_pipeline_async(
             previous_search_planning_result=search_planning_result,
             previous_diagnosis_result=diagnosis_result,
             diagnostic_judgement_result=diagnostic_judgement_result,
-            previous_guideline_evidence=guideline_search_result.guideline_evidence,
+            previous_guideline_evidence=[
+                f"{skill_result.skill_name}：{evidence}"
+                for skill_result in guideline_search_result.skill_results
+                for evidence in skill_result.guideline_evidence
+            ],
             debug=debug,
             round_index=round_index + 1,
             progress_callback=progress_callback,

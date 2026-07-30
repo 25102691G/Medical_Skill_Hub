@@ -32,8 +32,8 @@ Return:
 
 * hypotheses: up to 5 major candidate diagnoses;
 * search_queries: up to 5 medical literature search queries;
-* similar_case_queries: positive clinical manifestations and examination results for similar-case
-  retrieval.
+* positive_features: positive clinical manifestations and examination results for similar-case
+  retrieval and guideline evidence search.
 
 Do not add items solely to reach a fixed number. If evidence is insufficient for a field, return an
 empty list for that field rather than placeholder text.
@@ -55,7 +55,7 @@ unless the record contains definitive supporting evidence.
 When previous-round artifacts are provided, use them only to improve the next-round retrieval strategy.
 
 Do not treat previous guideline statements or other previous-round content as facts observed in the
-current patient. Do not copy them into similar_case_queries.
+current patient. Do not copy them into positive_features.
 
 ### 3. Hypothesis Generation
 
@@ -108,9 +108,9 @@ Collectively cover the following when applicable:
 * a major differential diagnosis or evidence that could disconfirm the leading hypothesis;
 * postoperative or procedure-related complications.
 
-### 6. Similar-Case Query Requirements
+### 6. Positive Feature Requirements
 
-similar_case_queries must contain explicitly documented positive clinical features and positive
+positive_features must contain explicitly documented positive clinical features and positive
 auxiliary examination results from the case record.
 
 Clinical features include positive symptoms, abnormal vital signs, and positive physical examination
@@ -125,7 +125,7 @@ that are only recommended, planned, or pending.
 Write every item as a concise English phrase suitable for matching similar cases. Use only English words
 and numbers.
 
-Do not copy a hypothesis into similar_case_queries unless it is explicitly documented as an observed
+Do not copy a hypothesis into positive_features unless it is explicitly documented as an observed
 confirmed finding in the case record.
 
 ### 7. Output Requirements

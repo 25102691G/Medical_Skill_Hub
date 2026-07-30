@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -13,36 +13,40 @@ class PhenotypeExtractionResult(BaseModel):
     phenotypes: list[PhenotypeItem] = Field(description="Patient phenotype list extracted from the case text")
 
 
-class PubMedEvidenceItem(BaseModel):
+class PubMedSearchResult(BaseModel):
     pmid: str = Field(
         min_length=1,
         pattern=r"^\d+$",
-        description="Exact numeric PubMed PMID copied from a retrieved result",
+        description="Numeric PubMed PMID from the retrieved result",
     )
     title: str = Field(
         min_length=1,
-        description="Exact publication title copied from the retrieved PubMed result",
+        description="Publication title from the retrieved PubMed result",
     )
-    evidence: str = Field(
+    abstract: str = Field(
         min_length=1,
-        description=(
-            "Clinically relevant evidence faithfully extracted or summarized from the publication "
-            "abstract, without adding conclusions that are absent from the abstract"
-        ),
+        description="Publication abstract from the retrieved PubMed result",
+    )
+    url: str = Field(description="PubMed publication URL")
+
+
+class PubMedQueryResult(BaseModel):
+    query: str = Field(description="Original PubMed search query")
+    results: list[PubMedSearchResult] = Field(
+        description="Retrieved PubMed results selected as relevant to the search queries"
+    )
+
+
+class KnowledgeSearchSelectionResult(BaseModel):
+    selected_pmids: list[Annotated[str, Field(pattern=r"^\d+$")]] = Field(
+        description="Numeric PMIDs selected from the provided PubMed search results"
     )
 
 
 class KnowledgeSearchResult(BaseModel):
-    summary: str = Field(
+    relevant_pubmed_results: list[PubMedQueryResult] = Field(
         description=(
-            "Brief synthesis of what the retrieved PubMed literature supports and any important "
-            "limitations or insufficiency"
-        )
-    )
-    pubmed_evidence: list[PubMedEvidenceItem] = Field(
-        description=(
-            "Relevant PubMed evidence items. Include an item only when its retrieved abstract contains "
-            "clinically relevant evidence and both its PMID and title are available."
+            "Original PubMed search results whose PMIDs were selected as relevant, grouped by query"
         )
     )
 
@@ -93,14 +97,26 @@ class DiagnosisResult(BaseModel):
     )
 
 
-class GuidelineSearchResult(BaseModel):
-    used_skill: bool = Field(description="Whether any guideline skill was used")
-    skill_names: list[str] = Field(description="List of guideline skill names actually used")
+class GuidelineSkillResult(BaseModel):
+    skill_name: str = Field(description="Original local guideline skill name")
+    disease_name: str = Field(description="Disease evaluated by this guideline skill")
     guideline_evidence: list[str] = Field(
         description=(
-            "Relevant guideline evidence extracted from loaded skills. Each item must use the format "
-            "skill name：guideline evidence, preserving the original local skill name."
+            "Relevant evidence extracted from this skill and verified against its guideline full text"
         )
+    )
+    guideline_diagnosis: str = Field(
+        description=(
+            "Concise natural-language conclusion comparing the patient's positive features with the "
+            "verified guideline information and stating whether the patient may have this disease"
+        )
+    )
+
+
+class GuidelineSearchResult(BaseModel):
+    used_skill: bool = Field(description="Whether any guideline skill was loaded and searched")
+    skill_results: list[GuidelineSkillResult] = Field(
+        description="Guideline evidence and diagnostic conclusion grouped by used skill"
     )
 
 
@@ -122,10 +138,10 @@ class SearchPlanningResult(BaseModel):
         description="Up to 5 major candidate diagnoses at the ICD-10-CM category level",
     )
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
-    similar_case_queries: list[str] = Field(
+    positive_features: list[str] = Field(
         description=(
             "Explicitly documented positive clinical manifestations and examination results "
-            "for similar-case retrieval"
+            "for similar-case retrieval and guideline evidence search"
         )
     )
 
@@ -156,6 +172,7 @@ class DiagnosisRoundResult(BaseModel):
     round: int
     search_planning_result: SearchPlanningResult
     similar_case_retrieval_result: SimilarCaseRetrievalResult
+    guideline_search_result: GuidelineSearchResult
     diagnosis_result: DiagnosisResult
 
 
