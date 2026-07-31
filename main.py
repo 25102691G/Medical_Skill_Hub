@@ -112,9 +112,12 @@ def _prepare_structured_prompt(
         return prompt
     return (
         f"{prompt}\n\n"
+        "## Output Requirements\n\n"
         "Return only one valid JSON object matching this JSON Schema. "
-        "Do not wrap the JSON in Markdown fences or add explanatory text:\n"
-        f"{json.dumps(output_type.model_json_schema(), ensure_ascii=False)}"
+        "Do not wrap the JSON in Markdown fences or add explanatory text.\n\n"
+        "<OUTPUT_SCHEMA>\n"
+        f"{json.dumps(output_type.model_json_schema(), ensure_ascii=False)}\n"
+        "</OUTPUT_SCHEMA>"
     )
 
 
@@ -179,15 +182,28 @@ async def _run_search_planning_async(
         native_structured_output=native_structured_output,
     )
     search_planning_prompt = (
-        f"Patient information:\n{case_text}\n\n"
+        "<PATIENT_INFORMATION>\n"
+        f"{case_text}\n"
+        "</PATIENT_INFORMATION>"
     )
     if previous_search_planning_result and previous_diagnosis_result and diagnostic_judgement_result:
         search_planning_prompt = (
-            f"Patient information:\n{case_text}\n\n"
-            f"Previous search planning result:\n{_as_json(previous_search_planning_result)}\n\n"
-            f"Previous diagnosis result:\n{_as_json(previous_diagnosis_result)}\n\n"
-            f"Diagnostic judgement result:\n{_as_json(diagnostic_judgement_result)}\n\n"
-            f"Previous guideline evidence:\n{_as_json(previous_guideline_evidence or [])}\n\n"
+            "<PATIENT_INFORMATION>\n"
+            f"{case_text}\n"
+            "</PATIENT_INFORMATION>\n\n"
+            "<PREVIOUS_SEARCH_PLANNING_RESULT>\n"
+            f"{_as_json(previous_search_planning_result)}\n"
+            "</PREVIOUS_SEARCH_PLANNING_RESULT>\n\n"
+            "<PREVIOUS_DIAGNOSIS_RESULT>\n"
+            f"{_as_json(previous_diagnosis_result)}\n"
+            "</PREVIOUS_DIAGNOSIS_RESULT>\n\n"
+            "<DIAGNOSTIC_JUDGEMENT>\n"
+            f"{_as_json(diagnostic_judgement_result)}\n"
+            "</DIAGNOSTIC_JUDGEMENT>\n\n"
+            "<PREVIOUS_GUIDELINE_EVIDENCE>\n"
+            f"{_as_json(previous_guideline_evidence or [])}\n"
+            "</PREVIOUS_GUIDELINE_EVIDENCE>\n\n"
+            "## Task\n\n"
             "The diagnostic judgement found that hypotheses were closer to the patient information "
             "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
             "diagnosis round. Return the complete SearchPlanningResult required by the schema, but "
@@ -266,8 +282,12 @@ async def _run_knowledge_search_async(
         native_structured_output=native_structured_output,
     )
     knowledge_prompt = (
-        f"Search queries:\n{_as_json(selected_queries)}\n\n"
-        f"PubMed search results:\n{_as_json(pubmed_results)}"
+        "<SEARCH_QUERIES>\n"
+        f"{_as_json(selected_queries)}\n"
+        "</SEARCH_QUERIES>\n\n"
+        "<PUBMED_SEARCH_RESULTS>\n"
+        f"{_as_json(pubmed_results)}\n"
+        "</PUBMED_SEARCH_RESULTS>"
     )
     knowledge_prompt = _prepare_structured_prompt(
         knowledge_prompt,
@@ -286,23 +306,39 @@ async def _run_knowledge_search_async(
         raw_result,
         KnowledgeSearchSelectionResult,
     )
-    selected_pmids = set(selection_result.selected_pmids)
+    selected_sections = {
+        (section.pmid, section.section_index)
+        for section in selection_result.selected_sections
+    }
+    relevant_pubmed_results = []
+    for query_result in pubmed_results:
+        relevant_results = []
+        for pubmed_result in query_result["results"]:
+            abstract_sections = [
+                section
+                for section in pubmed_result["abstract_sections"]
+                if (
+                    pubmed_result["pmid"],
+                    section["section_index"],
+                )
+                in selected_sections
+            ]
+            if abstract_sections:
+                relevant_results.append(
+                    {
+                        **pubmed_result,
+                        "abstract_sections": abstract_sections,
+                    }
+                )
+        if relevant_results:
+            relevant_pubmed_results.append(
+                PubMedQueryResult(
+                    query=query_result["query"],
+                    results=relevant_results,
+                )
+            )
     result = KnowledgeSearchResult(
-        relevant_pubmed_results=[
-            PubMedQueryResult(
-                query=query_result["query"],
-                results=[
-                    pubmed_result
-                    for pubmed_result in query_result["results"]
-                    if pubmed_result["pmid"] in selected_pmids
-                ],
-            )
-            for query_result in pubmed_results
-            if any(
-                pubmed_result["pmid"] in selected_pmids
-                for pubmed_result in query_result["results"]
-            )
-        ]
+        relevant_pubmed_results=relevant_pubmed_results,
     )
     _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
@@ -317,9 +353,10 @@ def _format_pubmed_results(
     knowledge_search_result: KnowledgeSearchResult,
 ) -> list[str]:
     return [
-        f"PubMed PMID {item.pmid}（{item.title}）：{item.abstract}"
+        f"PubMed PMID {item.pmid}（{item.title}）：{section.text}"
         for query_result in knowledge_search_result.relevant_pubmed_results
         for item in query_result.results
+        for section in item.abstract_sections
     ]
 
 
@@ -372,16 +409,25 @@ async def _run_guideline_search_async(
         native_structured_output=native_structured_output,
     )
     guideline_prompt = (
-        f"Diagnostic hypotheses for skill selection:\n{_as_json(hypotheses)}\n\n"
+        "<DIAGNOSTIC_HYPOTHESES>\n"
+        f"{_as_json(hypotheses)}\n"
+        "</DIAGNOSTIC_HYPOTHESES>\n\n"
+        "## Skill Selection\n\n"
         "Select skills only when their disease scope directly corresponds to at least one diagnostic "
         "hypothesis. A shared broad category without a specific disease match is insufficient. Do not "
         "select a skill from an unrelated disease category.\n\n"
-        f"Positive patient features for guideline content retrieval:\n{_as_json(positive_features)}\n\n"
-        f"Available skills directory:\n{SKILLS_DIR}\n\n"
+        "<POSITIVE_FEATURES>\n"
+        f"{_as_json(positive_features)}\n"
+        "</POSITIVE_FEATURES>\n\n"
+        "<AVAILABLE_SKILLS_DIRECTORY>\n"
+        f"{SKILLS_DIR}\n"
+        "</AVAILABLE_SKILLS_DIRECTORY>\n\n"
+        "## Guideline Retrieval\n\n"
         "After selecting the skills, use only positive_features to search within each skill and compare "
         "the patient features with guideline information verified against the guideline full text. "
         "Do not use hypotheses as within-skill search terms or patient evidence. Keep each skill's "
         "evidence and guideline diagnosis together in one skill_results item.\n\n"
+        "## Output Requirements\n\n"
         "The outermost JSON value must be an object, not an array. "
         "When no guideline skill is used, set used_skill to false, explain the specific reason in "
         "unused_reason, and return an empty skill_results array. Set unused_reason to null when at "
@@ -394,7 +440,8 @@ async def _run_guideline_search_async(
     )
     if not native_structured_output:
         guideline_prompt += (
-            "\n\nYour final response must be valid json.\n"
+            "\n\n## JSON Output Requirements\n\n"
+            "Your final response must be valid json.\n\n"
             "After all tool calls are complete, output exactly one json object and nothing else. "
             "The first character must be { and the last character must be }. "
             "Do not output a top-level array such as []. Do not output tool results directly. "
@@ -408,11 +455,13 @@ async def _run_guideline_search_async(
             "and return an empty skill_results array.\n\n"
             "If a guideline skill was selected and searched but no matching evidence was found, "
             "do not output [] by itself. The following is a format example only; replace every "
-            "placeholder string with the actual result:\n"
+            "placeholder string with the actual result:\n\n"
+            "<OUTPUT_FORMAT_EXAMPLE>\n"
             '{"used_skill":true,"unused_reason":null,'
             '"skill_results":[{"skill_name":"selected skill name",'
             '"disease_name":"evaluated disease","guideline_evidence":[],'
-            '"guideline_diagnosis":"Explanation of the insufficient guideline evidence."}]}\n\n'
+            '"guideline_diagnosis":"Explanation of the insufficient guideline evidence."}]}\n'
+            "</OUTPUT_FORMAT_EXAMPLE>\n\n"
             "Before producing the final response, verify silently that the entire response can be "
             "parsed by json.loads, the outermost value is an object, and no characters appear "
             "before { or after }."
@@ -538,6 +587,7 @@ async def _run_final_diagnosis_async(
             "<DIAGNOSTIC_JUDGEMENT>\n"
             f"{_as_json(diagnostic_judgement_result)}\n"
             "</DIAGNOSTIC_JUDGEMENT>\n\n"
+            "## Revision Instructions\n\n"
             "Revise the diagnosis specifically to correct the candidate omissions and ranking "
             "problems identified by the diagnostic judgement.\n\n"
         )
@@ -555,6 +605,7 @@ async def _run_final_diagnosis_async(
         f"{_as_json(similar_case_summary)}\n"
         "</SIMILAR_CASES>\n\n"
         f"{revision_context}"
+        "## Task\n\n"
         f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
     )
     diagnosis_prompt = _prepare_structured_prompt(
@@ -624,13 +675,25 @@ async def _run_diagnostic_judgement_async(
         "skill_results": guideline_search_result.skill_results,
     }
     diagnostic_judgement_prompt = (
-        f"Patient information:\n{case_text}\n\n"
-        f"Hypotheses from search planning:\n{_as_json(hypotheses)}\n\n"
-        f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
-        f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
-        f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
-        "Guideline search result:\n"
-        f"{_as_json(guideline_result_for_judgement)}\n\n"
+        "<PATIENT_INFORMATION>\n"
+        f"{case_text}\n"
+        "</PATIENT_INFORMATION>\n\n"
+        "<HYPOTHESES>\n"
+        f"{_as_json(hypotheses)}\n"
+        "</HYPOTHESES>\n\n"
+        "<TOPK_DIAGNOSES>\n"
+        f"{_as_json(diagnosis_result.topk_diagnoses)}\n"
+        "</TOPK_DIAGNOSES>\n\n"
+        "<KNOWLEDGE_SEARCH_RESULT>\n"
+        f"{_as_json(knowledge_search_result)}\n"
+        "</KNOWLEDGE_SEARCH_RESULT>\n\n"
+        "<SIMILAR_CASES>\n"
+        f"{_as_json(similar_case_retrieval_result)}\n"
+        "</SIMILAR_CASES>\n\n"
+        "<GUIDELINE_RESULTS>\n"
+        f"{_as_json(guideline_result_for_judgement)}\n"
+        "</GUIDELINE_RESULTS>\n\n"
+        "## Task\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Keep closer_result as the required enum value."
     )

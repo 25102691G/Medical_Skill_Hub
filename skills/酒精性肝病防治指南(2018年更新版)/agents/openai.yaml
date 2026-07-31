@@ -1,0 +1,4 @@
+interface:
+  display_name: "酒精性肝病防治指南"
+  short_description: "查询酒精性肝病防治指南（2018年更新）中的临床建议"
+  default_prompt: "请使用酒精性肝病防治指南回答临床问题"

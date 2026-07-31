@@ -1,0 +1,4 @@
+interface:
+  display_name: "腹膜肿瘤指南（胃肠部分）"
+  short_description: "查询胃肠腹膜肿瘤整合诊治指南中的临床建议"
+  default_prompt: "请使用《中国肿瘤整合诊治指南：腹膜肿瘤(胃肠肿瘤部分)》回答临床问题"

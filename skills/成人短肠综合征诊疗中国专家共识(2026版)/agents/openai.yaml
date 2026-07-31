@@ -1,0 +1,4 @@
+interface:
+  display_name: "成人短肠综合征指南"
+  short_description: "查询成人短肠综合征诊疗中国专家共识(2026版)中的临床建议"
+  default_prompt: "请使用成人短肠综合征诊疗中国专家共识(2026版)回答临床问题"

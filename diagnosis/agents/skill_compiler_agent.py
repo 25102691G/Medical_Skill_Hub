@@ -64,12 +64,16 @@ DEEPSEEK_INDEX_CHUNK_CHARS = 30_000
 
 
 SKILL_COMPILER_INSTRUCTIONS = """
+## SKILL COMPILER INSTRUCTIONS
+
 You are a clinical guideline skill compiler.
 
-Input:
-- A Markdown full text extracted from a clinical PDF.
+### 1. Input
 
-Task:
+You will receive a Markdown full text extracted from a clinical PDF.
+
+### 2. Objective
+
 1. Identify the official title of the guideline, consensus, or expert document.
 2. Generate the complete Markdown content for references/recommendations-index.md.
 3. The index must be based on the full guideline text, not on a fixed table template.
@@ -88,6 +92,8 @@ Task:
    clinical scope, and when the skill should be used. Do not assign or mention a broad disease
    category; the compiler adds the verified category from the source directory.
 
+### 3. Output Requirements
+
 The output must be valid structured data matching the requested schema.
 """.strip()
 
@@ -103,9 +109,12 @@ def build_skill_compiler_agent() -> Agent:
 
 def _build_compile_prompt(full_text: str) -> str:
     return (
+        "## Task\n\n"
         "Compile the following clinical document into a guideline skill metadata and "
         "recommendation index. Use only the supplied source text.\n\n"
-        f"{full_text}"
+        "<SOURCE_DOCUMENT>\n"
+        f"{full_text}\n"
+        "</SOURCE_DOCUMENT>"
     )
 
 
@@ -121,37 +130,66 @@ def _build_deepseek_metadata_system_prompt() -> str:
         "common_abbreviations": [{"abbreviation": "CD", "meaning": "Crohn disease"}],
         "limitations": ["部分证据等级在源文件中缺失"],
     }
-    return (
-        "You generate concise metadata for a clinical guideline skill. Use only the supplied source text. "
-        "Do not generate the recommendation index in this response. Prefer Chinese user-facing metadata "
-        "when the source document is Chinese. The skill_description must identify the specific disease "
-        "in Chinese and English, include common abbreviations when supported, describe the applicable "
-        "clinical scope and trigger boundary, and must not assign or mention a broad disease category "
-        "because the compiler adds the verified source directory category.\n\n"
-        "Return only one valid JSON object. Do not wrap it in Markdown code fences. "
-        "Do not include explanations before or after the JSON. "
-        "The following JSON object is the required output format example:\n"
-        f"{json.dumps(schema, ensure_ascii=False, indent=2)}"
-    )
+    return f"""
+## DEEPSEEK METADATA INSTRUCTIONS
+
+You generate concise metadata for a clinical guideline skill.
+
+### 1. Source Boundaries
+
+Use only the supplied source text. Do not generate the recommendation index in this response.
+
+### 2. Metadata Requirements
+
+Prefer Chinese user-facing metadata when the source document is Chinese.
+
+The skill_description must identify the specific disease in Chinese and English, include common
+abbreviations when supported, describe the applicable clinical scope and trigger boundary, and must not
+assign or mention a broad disease category because the compiler adds the verified source directory
+category.
+
+### 3. Output Requirements
+
+Return only one valid JSON object. Do not wrap it in Markdown code fences. Do not include explanations
+before or after the JSON.
+
+The following JSON object is the required output format example:
+
+<OUTPUT_FORMAT_EXAMPLE>
+{json.dumps(schema, ensure_ascii=False, indent=2)}
+</OUTPUT_FORMAT_EXAMPLE>
+""".strip()
 
 
 def _build_deepseek_index_system_prompt() -> str:
     return """
+## DEEPSEEK INDEX INSTRUCTIONS
+
 You generate one source-backed Markdown fragment for a clinical guideline index.
 
-Rules:
-1. Use only the supplied source chunk.
-2. Extract clinically important recommendations, diagnostic criteria, classifications, differential
-   diagnoses, examinations, treatments, monitoring, follow-up, contraindications, and cautions.
-3. Preserve recommendation numbers, evidence levels, strengths, drugs, doses, thresholds, and intervals
-   exactly when present. Never invent missing information.
-4. Be concise while retaining the important source-backed information in this chunk.
-5. Put the Markdown fragment in the markdown field of one valid JSON object. Do not add a document-level
-   H1 heading, Markdown code fences, commentary, or text outside the JSON object.
-6. Use useful H2/H3 headings and keep the source order.
+### 1. Source Boundaries
 
-Example JSON output:
+Use only the supplied source chunk.
+
+### 2. Content Requirements
+
+1. Extract clinically important recommendations, diagnostic criteria, classifications, differential
+   diagnoses, examinations, treatments, monitoring, follow-up, contraindications, and cautions.
+2. Preserve recommendation numbers, evidence levels, strengths, drugs, doses, thresholds, and intervals
+   exactly when present. Never invent missing information.
+3. Be concise while retaining the important source-backed information in this chunk.
+4. Use useful H2/H3 headings and keep the source order.
+
+### 3. Output Requirements
+
+Put the Markdown fragment in the markdown field of one valid JSON object. Do not add a document-level
+H1 heading, Markdown code fences, commentary, or text outside the JSON object.
+
+#### Example JSON Output
+
+<OUTPUT_FORMAT_EXAMPLE>
 {"markdown":"## Diagnostic criteria\\n\\n- Source-backed criterion"}
+</OUTPUT_FORMAT_EXAMPLE>
 """.strip()
 
 
@@ -228,11 +266,14 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
         client,
         system_prompt=_build_deepseek_metadata_system_prompt(),
         user_prompt=(
+            "## Task\n\n"
             "Generate skill metadata from the following complete clinical document.\n\n"
-            f"{full_text}"
+            "<SOURCE_DOCUMENT>\n"
+            f"{full_text}\n"
+            "</SOURCE_DOCUMENT>"
         ),
         purpose="skill metadata",
-        max_tokens=2048,
+        max_tokens=8192,
     )
     metadata = _parse_deepseek_metadata(metadata_content)
 
@@ -244,13 +285,17 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
             client,
             system_prompt=_build_deepseek_index_system_prompt(),
             user_prompt=(
-                f"Generate the Markdown index fragment for source chunk {chunk_number} of {len(chunks)}.\n\n"
-                f"{chunk}"
+                "## Task\n\n"
+                f"Generate the Markdown index fragment for source chunk {chunk_number} of "
+                f"{len(chunks)}.\n\n"
+                f'<SOURCE_CHUNK index="{chunk_number}" total="{len(chunks)}">\n'
+                f"{chunk}\n"
+                "</SOURCE_CHUNK>"
             ),
             purpose=f"recommendation index chunk {chunk_number}/{len(chunks)}",
             max_tokens=32768,
         )
-        index_fragments.append(str(json.loads(fragment)["markdown"]).strip())
+        index_fragments.append(str(json.loads(fragment, strict=False)["markdown"]).strip())
 
     recommendations_index_md = (
         f"# {metadata.guideline_title}重要信息索引\n\n"

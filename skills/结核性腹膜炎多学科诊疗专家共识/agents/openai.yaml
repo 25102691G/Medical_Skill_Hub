@@ -1,0 +1,4 @@
+interface:
+  display_name: "结核性腹膜炎多学科诊疗专家共识"
+  short_description: "查询结核性腹膜炎多学科诊疗共识中的临床建议"
+  default_prompt: "请使用结核性腹膜炎多学科诊疗专家共识回答临床问题"

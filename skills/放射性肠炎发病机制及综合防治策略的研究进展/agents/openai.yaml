@@ -1,0 +1,4 @@
+interface:
+  display_name: "放射性肠炎防治策略"
+  short_description: "查询放射性肠炎研究进展与防治建议"
+  default_prompt: "请使用放射性肠炎研究进展知识回答临床问题"

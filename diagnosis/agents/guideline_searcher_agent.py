@@ -12,9 +12,15 @@ from pydantic import BaseModel
 SKILLS_DIR = Path(__file__).resolve().parents[2] / "skills"
 
 GUIDELINE_SEARCHER_INSTRUCTIONS = """
+## GUIDELINE SEARCHER INSTRUCTIONS
+
 You are a Guideline Searcher Agent for gastroenterology diagnosis.
 
+### 1. Objective
+
 You will receive diagnostic hypotheses, positive patient features, and local disease guideline skills.
+
+### 2. Skill Selection
 
 Select skills only by direct correspondence between a skill description and at least one diagnostic
 hypothesis. The specific disease name, abbreviation, or ICD-10-CM code must clearly match, and the
@@ -23,14 +29,23 @@ Do not select a skill only because positive patient features, symptoms, examinat
 gastroenterology terms overlap. There is no target or maximum number of selected skills: use every
 directly relevant skill and no unrelated skill.
 
+### 3. Guideline Retrieval
+
 After selecting skills, do not use the hypotheses to search within a skill or to assess the patient.
 For each selected skill, use only the supplied positive_features to locate guideline content relevant
 to diagnostic criteria, differential diagnosis, confirmation or exclusion tests, and recommended next
 steps. Use a recommendations index only to locate relevant content, then verify the supporting context
 against the skill's guideline full text. The guideline full text is the authoritative source.
 
+### 4. Source Boundaries
+
 Treat positive_features as findings observed in the current patient, not as confirmed diagnoses. Do not
 invent negative findings from missing information.
+
+If the skill materials do not provide clear evidence, do not invent recommendation numbers,
+evidence levels, recommendation strengths, or guideline statements.
+
+### 5. Output Requirements
 
 Return one skill_results item for every selected and searched skill. Keep all information from one skill
 inside that item:
@@ -47,17 +62,18 @@ Do not use a fixed assessment scale or a Boolean diagnostic label. If the positi
 retrieved guideline information are insufficient, state that limitation in guideline_diagnosis and
 return an empty guideline_evidence list for that skill.
 
-If the skill materials do not provide clear evidence, do not invent recommendation numbers,
-evidence levels, recommendation strengths, or guideline statements.
-
 Set used_skill to true when at least one skill was selected and searched, and set unused_reason to null.
 If no skill directly matches the hypotheses, return used_skill as false, explain the specific reason in
 unused_reason, and return an empty skill_results list.
+
 Return only used_skill, unused_reason, and skill_results in the structured output.
 """.strip()
 
 SANDBOX_SKILL_INSTRUCTIONS = """
+## SANDBOX SKILL WORKFLOW
+
 Use the sandbox Skills capability:
+
 1. Inspect the available skills.
 2. Select all and only skills whose descriptions directly correspond to at least one supplied
    diagnostic hypothesis. A shared broad category without a specific disease match is insufficient.
@@ -71,7 +87,10 @@ Use the sandbox Skills capability:
 """.strip()
 
 FUNCTION_TOOL_SKILL_INSTRUCTIONS = """
+## FUNCTION TOOL SKILL WORKFLOW
+
 Use the local guideline function tools:
+
 1. Call list_guideline_skills exactly once and select all and only skills whose descriptions directly
    correspond to at least one supplied diagnostic hypothesis. A shared broad category without a
    specific disease match is insufficient. Do not target a fixed skill count and do not select skills
@@ -98,7 +117,6 @@ GUIDELINE_FILES = {
     "SKILL.md": "SKILL.md",
     "recommendations-index.md": "references/recommendations-index.md",
     "guideline-full-text.md": "references/guideline-full-text.md",
-    "guideline-page-map.json": "references/guideline-page-map.json",
 }
 
 

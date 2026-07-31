@@ -1,0 +1,4 @@
+interface:
+  display_name: "放射性肠损伤外科治疗共识"
+  short_description: "查询慢性放射性肠损伤外科治疗专家共识中的临床建议"
+  default_prompt: "请使用慢性放射性肠损伤外科治疗专家共识（2019版）回答临床问题"

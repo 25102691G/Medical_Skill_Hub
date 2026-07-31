@@ -1,0 +1,4 @@
+interface:
+  display_name: "阑尾炎诊断与治疗指南(2024)"
+  short_description: "查询阑尾炎诊断与治疗指南(2024)中的临床建议"
+  default_prompt: "请使用阑尾炎诊断与治疗指南(2024)回答临床问题"

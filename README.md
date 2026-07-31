@@ -21,11 +21,6 @@ HF_ENDPOINT=https://hf-mirror.com \
 .venv/bin/huggingface-cli download ncbi/MedCPT-Cross-Encoder \
   --local-dir models/MedCPT-Cross-Encoder \
   --max-workers 4
-
-HF_ENDPOINT=https://hf-mirror.com \
-.venv/bin/huggingface-cli download FremyCompany/BioLORD-2023-C \
-  --local-dir models/BioLORD-2023-C \
-  --max-workers 4
 ```
 
 ## 运行方式
@@ -222,11 +217,12 @@ ChatKit 展示翻译仍然使用 DeepSeek。
 医学知识检索通过 NCBI E-utilities 查询 PubMed。建议在项目根目录的 `.env` 中配置：
 
 每轮知识检索使用全部最多 5 条文献查询并发检索，每条最多返回 3 篇文献。检索结果只保留
-PMID、标题、摘要和 URL；非结构化 `AbstractText` 原样保留，结构化 `AbstractText`
-按原顺序整理为 `Label [NlmCategory]` 标题和未经改写的摘要正文。Python 会删除 PMID、
-标题或摘要为空，以及摘要为 `No abstract available` 的整条结果，但不删除重复 PMID。
-之后由诊断供应商对应的模型仅选择与检索词相关的 PMID；重复出现的 PMID 会被重点考虑。
-最终结果由 Python 根据模型选择的 PMID 映射回未经模型改写的原始 PubMed 结果。
+PMID、标题、独立摘要 section 和 URL；非结构化 `AbstractText` 作为唯一 section 保留，
+结构化 `AbstractText` 按原顺序保留各 section 的未经改写正文，不拼接 section，也不保留
+Label 或 NlmCategory。Python 会删除 PMID、标题或摘要 section 为空的整条结果，但不删除
+重复 PMID。之后由诊断供应商对应的模型分别选择与检索词相关的摘要 section；重复出现的
+PMID 会被重点考虑。最终结果由 Python 根据模型选择的 PMID 和 section index 映射回未经
+模型改写的原始 PubMed 摘要 section。
 
 ```dotenv
 NCBI_API_KEY=your_ncbi_api_key
@@ -366,8 +362,7 @@ Transformers 加载模型，并将 chunk 向量缓存到
 `SIMILAR_CASE_RERANKER_BATCH_SIZE` 和 `SIMILAR_CASE_RERANKER_DEVICE` 调整配置。
 BM25/Dense 候选数默认均为 `50`，RRF 候选病例数默认为 `20`；reranker device
 支持 `cpu`、`cuda` 和 `auto`。离线运行时，可将 `SIMILAR_CASE_RERANKER_MODEL`
-设置为本地 MedCPT 模型目录，并将 `DISEASE_NORMALIZATION_MODEL` 设置为本地
-BioLORD 模型目录。
+设置为本地 MedCPT 模型目录。
 
 ## 最终诊断证据引用
 

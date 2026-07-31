@@ -13,6 +13,17 @@ class PhenotypeExtractionResult(BaseModel):
     phenotypes: list[PhenotypeItem] = Field(description="Patient phenotype list extracted from the case text")
 
 
+class PubMedAbstractSection(BaseModel):
+    section_index: int = Field(
+        ge=1,
+        description="One-based section index in the original PubMed abstract",
+    )
+    text: str = Field(
+        min_length=1,
+        description="Original text of one PubMed abstract section",
+    )
+
+
 class PubMedSearchResult(BaseModel):
     pmid: str = Field(
         min_length=1,
@@ -23,9 +34,9 @@ class PubMedSearchResult(BaseModel):
         min_length=1,
         description="Publication title from the retrieved PubMed result",
     )
-    abstract: str = Field(
+    abstract_sections: list[PubMedAbstractSection] = Field(
         min_length=1,
-        description="Publication abstract from the retrieved PubMed result",
+        description="Publication abstract preserved as separate sections",
     )
     url: str = Field(description="PubMed publication URL")
 
@@ -37,16 +48,26 @@ class PubMedQueryResult(BaseModel):
     )
 
 
+class SelectedPubMedSection(BaseModel):
+    pmid: Annotated[str, Field(pattern=r"^\d+$")] = Field(
+        description="Numeric PMID copied from the provided PubMed search results",
+    )
+    section_index: int = Field(
+        ge=1,
+        description="Section index copied from the selected abstract section",
+    )
+
+
 class KnowledgeSearchSelectionResult(BaseModel):
-    selected_pmids: list[Annotated[str, Field(pattern=r"^\d+$")]] = Field(
-        description="Numeric PMIDs selected from the provided PubMed search results"
+    selected_sections: list[SelectedPubMedSection] = Field(
+        description="PubMed abstract sections selected as relevant to the search queries"
     )
 
 
 class KnowledgeSearchResult(BaseModel):
     relevant_pubmed_results: list[PubMedQueryResult] = Field(
         description=(
-            "Original PubMed search results whose PMIDs were selected as relevant, grouped by query"
+            "Original PubMed search results containing only selected abstract sections, grouped by query"
         )
     )
 

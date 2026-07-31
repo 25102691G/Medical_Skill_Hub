@@ -1,0 +1,4 @@
+interface:
+  display_name: "肛瘘的诊治专家共识(2020版)"
+  short_description: "查询肛瘘的诊治专家共识(2020版)中的临床建议"
+  default_prompt: "请使用肛瘘的诊治专家共识(2020版)回答临床问题"

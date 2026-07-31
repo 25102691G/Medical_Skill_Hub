@@ -1,0 +1,4 @@
+interface:
+  display_name: "日本消化性溃疡指南2020解读"
+  short_description: "查询2020年日本消化性溃疡临床实践指南的解读建议"
+  default_prompt: "请使用日本消化性溃疡指南2020版解读提供临床建议"

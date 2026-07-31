@@ -1,0 +1,4 @@
+interface:
+  display_name: "代谢相关脂肪性肝病防治指南(2024年版)"
+  short_description: "查询代谢相关脂肪性肝病防治指南中的临床建议"
+  default_prompt: "请使用代谢相关脂肪性肝病防治指南回答临床问题"

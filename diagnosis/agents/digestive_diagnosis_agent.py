@@ -5,8 +5,6 @@ from typing import Type
 from agents import Agent, Model
 from pydantic import BaseModel
 
-# from diagnosis.tools.disease_normalization_tool import normalize_disease_name
-
 
 BASE_INSTRUCTIONS = """
 ## BASE INSTRUCTIONS
@@ -168,7 +166,6 @@ def build_digestive_diagnosis_agent(
         name="Gastroenterology Diagnosis Agent",
         model=model,
         instructions="\n\n".join(instructions),
-        # tools=[normalize_disease_name],
         tools=[],
         output_type=output_type if native_structured_output else None,
     )

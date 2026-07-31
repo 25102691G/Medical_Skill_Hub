@@ -1,0 +1,4 @@
+interface:
+  display_name: "遗传性结直肠癌外科诊疗专家共识"
+  short_description: "查询遗传性结直肠癌外科诊疗专家共识中的临床建议"
+  default_prompt: "请使用遗传性结直肠癌外科诊疗专家共识回答临床问题"
