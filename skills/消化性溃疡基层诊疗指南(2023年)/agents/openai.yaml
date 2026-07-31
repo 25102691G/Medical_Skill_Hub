@@ -1,0 +1,4 @@
+interface:
+  display_name: "消化性溃疡诊疗指南"
+  short_description: "查询消化性溃疡诊疗指南中的临床建议"
+  default_prompt: "请使用消化性溃疡诊疗指南回答临床问题"
