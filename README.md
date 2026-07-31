@@ -103,7 +103,9 @@ DEEPSEEK_THINKING=true
 `multi_round_diagnosis`。`multi_round_diagnosis.is_multi_round` 表示是否进入了第二轮，
 `multi_round_diagnosis.rounds` 按轮次保存每一轮的 `round`、
 `search_planning_result`、`similar_case_retrieval_result`、按 skill 分组的
-`guideline_search_result` 和结构化 `diagnosis_result`。如果第二轮触发纠正诊断，该轮保存纠正后的
+`guideline_search_result` 和结构化 `diagnosis_result`。未使用 skill 时，
+`guideline_search_result.unused_reason` 记录具体原因；该字段仅用于观察 skill 调用过程，
+不会传给最终诊断或多轮诊断判断。如果第二轮触发纠正诊断，该轮保存纠正后的
 `diagnosis_result`。`search_planning_result.hypotheses` 和
 `diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 保存三字符 ICD-10-CM
 类别编码，并使用 `category_name` 保存对应的规范英文类别名称。单个病例失败时，错误

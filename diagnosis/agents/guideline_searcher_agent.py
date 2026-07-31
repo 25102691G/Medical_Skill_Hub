@@ -50,9 +50,10 @@ return an empty guideline_evidence list for that skill.
 If the skill materials do not provide clear evidence, do not invent recommendation numbers,
 evidence levels, recommendation strengths, or guideline statements.
 
-Set used_skill to true when at least one skill was selected and searched. If no skill directly matches
-the hypotheses, return used_skill as false and an empty skill_results list.
-Return only used_skill and skill_results in the structured output.
+Set used_skill to true when at least one skill was selected and searched, and set unused_reason to null.
+If no skill directly matches the hypotheses, return used_skill as false, explain the specific reason in
+unused_reason, and return an empty skill_results list.
+Return only used_skill, unused_reason, and skill_results in the structured output.
 """.strip()
 
 SANDBOX_SKILL_INSTRUCTIONS = """
@@ -83,10 +84,12 @@ Use the local guideline function tools:
    the original context. If the index has no clear match, search "guideline-full-text.md" at most once.
 5. Never repeat a tool call with the same arguments. Do not try to run scripts or use tools that are
    not provided.
-6. Return one skill_results item for every selected and searched skill. If no clear guideline evidence
-   is found, keep that skill item, return an empty guideline_evidence list, and explain the
-   insufficiency in guideline_diagnosis.
-7. If no skill is selected, return used_skill as false and an empty skill_results list.
+6. Return one skill_results item for every selected and searched skill. If a search tool returns
+   "No matching guideline content found.", treat that text only as an intermediate tool result and
+   never copy it outside the final json object. Keep the selected skill item, return an empty
+   guideline_evidence list, and explain the insufficiency only inside guideline_diagnosis.
+7. If no skill is selected, return used_skill as false, explain the specific reason in unused_reason,
+   and return an empty skill_results list. Set unused_reason to null when a skill is used.
 8. After completing this bounded search, do not call another tool. Return the final structured result
    immediately.
 """.strip()

@@ -115,6 +115,9 @@ class GuidelineSkillResult(BaseModel):
 
 class GuidelineSearchResult(BaseModel):
     used_skill: bool = Field(description="Whether any guideline skill was loaded and searched")
+    unused_reason: str | None = Field(
+        description="Reason no guideline skill was used; null when used_skill is true",
+    )
     skill_results: list[GuidelineSkillResult] = Field(
         description="Guideline evidence and diagnostic conclusion grouped by used skill"
     )

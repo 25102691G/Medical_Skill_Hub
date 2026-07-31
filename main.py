@@ -383,14 +383,40 @@ async def _run_guideline_search_async(
         "Do not use hypotheses as within-skill search terms or patient evidence. Keep each skill's "
         "evidence and guideline diagnosis together in one skill_results item.\n\n"
         "The outermost JSON value must be an object, not an array. "
-        "Use this exact JSON structure when no guideline skill is used:\n"
-        '{"used_skill":false,"skill_results":[]}'
+        "When no guideline skill is used, set used_skill to false, explain the specific reason in "
+        "unused_reason, and return an empty skill_results array. Set unused_reason to null when at "
+        "least one guideline skill is used."
     )
     guideline_prompt = _prepare_structured_prompt(
         guideline_prompt,
         GuidelineSearchResult,
         native_structured_output=native_structured_output,
     )
+    if not native_structured_output:
+        guideline_prompt += (
+            "\n\nYour final response must be valid json.\n"
+            "After all tool calls are complete, output exactly one json object and nothing else. "
+            "The first character must be { and the last character must be }. "
+            "Do not output a top-level array such as []. Do not output tool results directly. "
+            "Do not add explanations, comments, parentheses, Markdown fences, prefixes, or suffixes "
+            "outside the json object.\n\n"
+            "The json object must contain exactly these three top-level fields: "
+            '"used_skill" as a boolean, "unused_reason" as a string or null, and '
+            '"skill_results" as an array.\n\n'
+            "If no guideline skill directly matches the diagnostic hypotheses, set used_skill to "
+            "false, explain which hypotheses lack a directly corresponding skill in unused_reason, "
+            "and return an empty skill_results array.\n\n"
+            "If a guideline skill was selected and searched but no matching evidence was found, "
+            "do not output [] by itself. The following is a format example only; replace every "
+            "placeholder string with the actual result:\n"
+            '{"used_skill":true,"unused_reason":null,'
+            '"skill_results":[{"skill_name":"selected skill name",'
+            '"disease_name":"evaluated disease","guideline_evidence":[],'
+            '"guideline_diagnosis":"Explanation of the insufficient guideline evidence."}]}\n\n'
+            "Before producing the final response, verify silently that the entire response can be "
+            "parsed by json.loads, the outermost value is an object, and no characters appear "
+            "before { or after }."
+        )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
     if native_structured_output:
         raw_result = (
@@ -418,6 +444,7 @@ async def _run_guideline_search_async(
         except MaxTurnsExceeded:
             result = GuidelineSearchResult(
                 used_skill=False,
+                unused_reason="Guideline search exceeded the maximum number of agent turns.",
                 skill_results=[],
             )
             _publish_stage_result(
@@ -427,7 +454,16 @@ async def _run_guideline_search_async(
                 progress_callback=progress_callback,
             )
             return result
-    result = _parse_structured_result(raw_result, GuidelineSearchResult)
+    try:
+        result = _parse_structured_result(raw_result, GuidelineSearchResult)
+    except ValueError:
+        result = GuidelineSearchResult(
+            used_skill=False,
+            unused_reason=(
+                "Guideline search result could not be parsed as valid structured output."
+            ),
+            skill_results=[],
+        )
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -486,6 +522,10 @@ async def _run_final_diagnosis_async(
         f"[{index}] {evidence}"
         for index, evidence in enumerate(combined_evidence, start=1)
     ]
+    guideline_result_for_diagnosis = {
+        "used_skill": guideline_search_result.used_skill,
+        "skill_results": guideline_search_result.skill_results,
+    }
     revision_context = ""
     if (
         previous_diagnosis_result is not None
@@ -509,7 +549,7 @@ async def _run_final_diagnosis_async(
         f"{_as_json(numbered_evidence)}\n"
         "</NUMBERED_EVIDENCE>\n\n"
         "<GUIDELINE_RESULTS>\n"
-        f"{_as_json(guideline_search_result)}\n"
+        f"{_as_json(guideline_result_for_diagnosis)}\n"
         "</GUIDELINE_RESULTS>\n\n"
         "<SIMILAR_CASES>\n"
         f"{_as_json(similar_case_summary)}\n"
@@ -579,13 +619,18 @@ async def _run_diagnostic_judgement_async(
         model,
         native_structured_output=native_structured_output,
     )
+    guideline_result_for_judgement = {
+        "used_skill": guideline_search_result.used_skill,
+        "skill_results": guideline_search_result.skill_results,
+    }
     diagnostic_judgement_prompt = (
         f"Patient information:\n{case_text}\n\n"
         f"Hypotheses from search planning:\n{_as_json(hypotheses)}\n\n"
         f"Top-K diagnoses from diagnosis stage:\n{_as_json(diagnosis_result.topk_diagnoses)}\n\n"
         f"Knowledge search result:\n{_as_json(knowledge_search_result)}\n\n"
         f"Similar case retrieval result:\n{_as_json(similar_case_retrieval_result)}\n\n"
-        f"Guideline search result:\n{_as_json(guideline_search_result)}\n\n"
+        "Guideline search result:\n"
+        f"{_as_json(guideline_result_for_judgement)}\n\n"
         "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
         "Keep closer_result as the required enum value."
     )
