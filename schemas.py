@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _normalize_icd_code(icd_code: str) -> str:
+    return icd_code.strip().upper().replace(".", "")
 
 
 class PhenotypeItem(BaseModel):
@@ -79,13 +83,12 @@ class KnowledgeSearchResult(BaseModel):
 class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
     icd_code: str = Field(
-        min_length=4,
-        max_length=4,
-        pattern=r"^[A-Z][0-9][0-9A-Z][0-9A-Z]$",
-        description="Four-character ICD-10-CM subcategory code without a decimal point",
+        min_length=3,
+        pattern=r"^[A-Z][0-9][0-9A-Z]+$",
+        description="ICD-10-CM code with three or more characters without a decimal point",
     )
     category_name: str = Field(
-        description="Canonical English description corresponding to the ICD-10-CM subcategory code"
+        description="Canonical English description corresponding to the ICD-10-CM code"
     )
     confidence: int = Field(ge=0, le=100, description="Integer confidence percentage from 0 to 100, for example 45 means 45%")
     supporting_evidence: list[str] = Field(
@@ -101,6 +104,10 @@ class DiagnosisItem(BaseModel):
             "Recommended next examinations or clinical management directions. If a step uses numbered "
             "evidence, append the corresponding citation numbers, for example [1] or [1][2]."
         )
+    )
+
+    normalize_icd_code = field_validator("icd_code", mode="before")(
+        _normalize_icd_code
     )
 
 
@@ -155,20 +162,23 @@ class GuidelineSearchResult(BaseModel):
 
 class HypothesisItem(BaseModel):
     icd_code: str = Field(
-        min_length=4,
-        max_length=4,
-        pattern=r"^[A-Z][0-9][0-9A-Z][0-9A-Z]$",
-        description="Four-character ICD-10-CM subcategory code without a decimal point",
+        min_length=3,
+        pattern=r"^[A-Z][0-9][0-9A-Z]+$",
+        description="ICD-10-CM code with three or more characters without a decimal point",
     )
     category_name: str = Field(
-        description="Canonical English description corresponding to the ICD-10-CM subcategory code"
+        description="Canonical English description corresponding to the ICD-10-CM code"
+    )
+
+    normalize_icd_code = field_validator("icd_code", mode="before")(
+        _normalize_icd_code
     )
 
 
 class SearchPlanningResult(BaseModel):
     hypotheses: list[HypothesisItem] = Field(
         max_length=5,
-        description="Up to 5 major candidate diagnoses at the ICD-10-CM subcategory level",
+        description="Up to 5 major candidate diagnoses using the most specific available ICD-10-CM code",
     )
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
     positive_features: list[str] = Field(
