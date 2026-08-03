@@ -10,7 +10,11 @@ METHODS = (
     "similar_case_retrieval",
     "final_diagnosis",
 )
-METRICS = ("disease",)
+METRIC_PREFIX_LENGTHS = {
+    "disease": 3,
+    "subcategory": 4,
+}
+METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -24,27 +28,70 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _icd_category(icd_code: str) -> str:
-    return icd_code.strip().upper().replace(".", "")[:3]
+def _normalize_icd_code(icd_code: str) -> str:
+    return icd_code.strip().upper().replace(".", "")
 
 
 def _evaluate_rank(
     predicted_icd_codes: list[str],
     golden_icd_code: str,
 ) -> dict[str, int | None]:
-    golden_category = _icd_category(golden_icd_code)
-    matched_rank = next(
-        (
-            rank
-            for rank, predicted_icd_code in enumerate(
-                predicted_icd_codes,
-                start=1,
-            )
-            if _icd_category(predicted_icd_code) == golden_category
-        ),
-        None,
+    normalized_golden_code = _normalize_icd_code(golden_icd_code)
+    normalized_predicted_codes = [
+        _normalize_icd_code(icd_code) for icd_code in predicted_icd_codes
+    ]
+    return {
+        metric: next(
+            (
+                rank
+                for rank, predicted_icd_code in enumerate(
+                    normalized_predicted_codes,
+                    start=1,
+                )
+                if len(normalized_golden_code) >= prefix_length
+                and len(predicted_icd_code) >= prefix_length
+                and predicted_icd_code[:prefix_length]
+                == normalized_golden_code[:prefix_length]
+            ),
+            None,
+        )
+        for metric, prefix_length in METRIC_PREFIX_LENGTHS.items()
+    }
+
+
+def _print_recall_table(
+    title: str,
+    total: int,
+    summary: dict[str, dict[str, dict[str, float]]],
+) -> None:
+    method_width = max(len("Method"), *(len(method) for method in METHODS))
+    print(f"{title} (n={total})")
+    print(
+        f"{'Method':<{method_width}}  "
+        f"{'3-digit Recall':^25}  "
+        f"{'4-digit Recall':^25}"
     )
-    return {"disease": matched_rank}
+    print(
+        f"{'':<{method_width}}  "
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7}  "
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7}"
+    )
+    for method in METHODS:
+        three_digit_values = [
+            summary[method]["disease"][f"recall{cutoff}"]
+            for cutoff in (1, 3, 5)
+        ]
+        four_digit_values = [
+            summary[method]["subcategory"][f"recall{cutoff}"]
+            for cutoff in (1, 3, 5)
+        ]
+        print(
+            f"{method:<{method_width}}  "
+            + " ".join(f"{value:>7.1%}" for value in three_digit_values)
+            + "  "
+            + " ".join(f"{value:>7.1%}" for value in four_digit_values)
+        )
+    print()
 
 
 def evaluate_file(input_path: Path) -> Path:
@@ -236,24 +283,13 @@ def evaluate_file(input_path: Path) -> Path:
         }
         output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
 
-    print(f"total: {total}")
-    for method in METHODS:
-        for metric in METRICS:
-            for cutoff in (1, 3, 5):
-                print(
-                    f"final {method} {metric} recall{cutoff}: "
-                    f"{final_summary[method][metric][f'recall{cutoff}']:.6f}"
-                )
+    _print_recall_table("Final Results", total, final_summary)
     for round_summary in round_summaries:
-        print(f"round {round_summary['round']} total: {round_summary['total']}")
-        for method in METHODS:
-            for metric in METRICS:
-                for cutoff in (1, 3, 5):
-                    print(
-                        f"round {round_summary['round']} {method} {metric} "
-                        f"recall{cutoff}: "
-                        f"{round_summary[method][metric][f'recall{cutoff}']:.6f}"
-                    )
+        _print_recall_table(
+            f"Round {round_summary['round']}",
+            round_summary["total"],
+            round_summary,
+        )
     print(f"skill used: {used_skill_count}")
     print(f"skill unused: {total - used_skill_count}")
     print(f"skill usage rate: {used_skill_count / total:.6f}")

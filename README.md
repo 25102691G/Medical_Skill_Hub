@@ -117,8 +117,10 @@ CSV 中的 `icd_code` 写入每条结果，评估脚本以该字段为金标准�
 - `multi_round_diagnosis.rounds[].similar_case_retrieval_result.icd_code[]`
 - `multi_round_diagnosis.rounds[].diagnosis_result.topk_diagnoses[].icd_code`
 
-金标准和预测编码均先去除首尾空白、转为大写、移除小数点，再取前三个字符进行匹配。
-例如 `K50`、`K50.1` 和 `K501` 均按 `K50` 比较。评估过程不调用 LLM。
+金标准和预测编码均先去除首尾空白、转为大写并移除小数点。`disease` 指标取前三个
+字符进行匹配，例如 `K50`、`K50.1` 和 `K501` 均按 `K50` 比较；`subcategory`
+指标取前四个字符进行匹配，例如 `K50.1` 和 `K501` 均按 `K501` 比较。评估过程不调用
+LLM。
 
 可以通过 `run_evaluate.sh` 传入批处理结果：
 
@@ -136,10 +138,10 @@ bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 评估结果固定写入
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
 每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测 ICD code，以及
-`disease` 排名。该指标只匹配编码前三位。程序结束时会在输出文件末尾写入
+`disease` 和 `subcategory` 排名，分别匹配编码前三位和前四位。程序结束时会在输出文件末尾写入
 `total`、`rounds` 和
 `final_result`：`rounds` 统计实际进入各轮病例的 Recall@1、Recall@3 和 Recall@5，
-`final_result` 使用每个病例最后一轮的评估结果汇总相同指标。
+`final_result` 使用每个病例最后一轮的评估结果汇总两个指标的相同 Recall。
 汇总记录还会写入 `skill_usage`，其使用情况取自每个病例最后一轮的
 `diagnosis_result`。没有匹配编码时，该病例在对应诊断组的三个 Recall 中都记为未命中。
 

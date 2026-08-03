@@ -79,16 +79,17 @@ class KnowledgeSearchResult(BaseModel):
 class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
     icd_code: str = Field(
-        min_length=3,
-        max_length=3,
-        pattern=r"^[A-Z][0-9][0-9A-Z]$",
-        description="Three-character ICD-10-CM category code without a decimal point",
+        min_length=4,
+        max_length=4,
+        pattern=r"^[A-Z][0-9][0-9A-Z][0-9A-Z]$",
+        description="Four-character ICD-10-CM subcategory code without a decimal point",
     )
     category_name: str = Field(
-        description="Canonical English name corresponding to the ICD-10-CM category code"
+        description="Canonical English description corresponding to the ICD-10-CM subcategory code"
     )
     confidence: int = Field(ge=0, le=100, description="Integer confidence percentage from 0 to 100, for example 45 means 45%")
     supporting_evidence: list[str] = Field(
+        default_factory=list,
         description=(
             "Evidence from the current patient case supporting this diagnosis. If numbered evidence "
             "supports the diagnostic interpretation, append the corresponding citation numbers, "
@@ -154,20 +155,20 @@ class GuidelineSearchResult(BaseModel):
 
 class HypothesisItem(BaseModel):
     icd_code: str = Field(
-        min_length=3,
-        max_length=3,
-        pattern=r"^[A-Z][0-9][0-9A-Z]$",
-        description="Three-character ICD-10-CM category code without a decimal point",
+        min_length=4,
+        max_length=4,
+        pattern=r"^[A-Z][0-9][0-9A-Z][0-9A-Z]$",
+        description="Four-character ICD-10-CM subcategory code without a decimal point",
     )
     category_name: str = Field(
-        description="Canonical English name corresponding to the ICD-10-CM category code"
+        description="Canonical English description corresponding to the ICD-10-CM subcategory code"
     )
 
 
 class SearchPlanningResult(BaseModel):
     hypotheses: list[HypothesisItem] = Field(
         max_length=5,
-        description="Up to 5 major candidate diagnoses at the ICD-10-CM category level",
+        description="Up to 5 major candidate diagnoses at the ICD-10-CM subcategory level",
     )
     search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
     positive_features: list[str] = Field(
