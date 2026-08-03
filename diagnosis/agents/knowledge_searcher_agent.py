@@ -248,7 +248,10 @@ def pubmed_search(case_info: str, max_docs: int = 3) -> dict[str, Any]:
         max_retry=NCBI_MAX_RETRIES,
         sleep_time=NCBI_RETRY_BASE_SECONDS,
     )
-    documents = _retrieve_documents(retriever, case_info)
+    try:
+        documents = _retrieve_documents(retriever, case_info)
+    except urllib.error.URLError:
+        documents = []
     results = [_document_to_result(document) for document in documents]
     return {
         "query": case_info,

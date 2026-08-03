@@ -133,6 +133,10 @@ def _parse_structured_result(
     return output_type.model_validate_json(stripped)
 
 
+def _stage_failure_reason(stage_name: str, exc: Exception) -> str:
+    return f"{stage_name} failed: {type(exc).__name__}: {exc}"
+
+
 def _print_debug_section(title: str, model_object: object) -> None:
     print(f"\n===== {title} =====", file=sys.stderr)
     print(_as_json(model_object), file=sys.stderr)
@@ -236,6 +240,46 @@ async def _run_search_planning_async(
     return result
 
 
+async def _run_search_planning_with_fallback(
+    case_text: str,
+    *,
+    model: str | Model,
+    previous_search_planning_result: SearchPlanningResult | None = None,
+    previous_diagnosis_result: DiagnosisResult | None = None,
+    diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
+    previous_guideline_evidence: list[str] | None = None,
+    debug: bool = False,
+    round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> SearchPlanningResult:
+    try:
+        return await _run_search_planning_async(
+            case_text,
+            model=model,
+            previous_search_planning_result=previous_search_planning_result,
+            previous_diagnosis_result=previous_diagnosis_result,
+            diagnostic_judgement_result=diagnostic_judgement_result,
+            previous_guideline_evidence=previous_guideline_evidence,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
+    except Exception as exc:
+        result = SearchPlanningResult(
+            hypotheses=[],
+            search_queries=[],
+            positive_features=[],
+            reason=_stage_failure_reason("Search planning", exc),
+        )
+        _publish_stage_result(
+            f"Search Planning Result - Round {round_index}",
+            result,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+        return result
+
+
 def _run_search_planning(
     case_text: str,
     *,
@@ -249,7 +293,7 @@ def _run_search_planning(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SearchPlanningResult:
     return asyncio.run(
-        _run_search_planning_async(
+        _run_search_planning_with_fallback(
             case_text,
             model=model,
             previous_search_planning_result=previous_search_planning_result,
@@ -339,6 +383,11 @@ async def _run_knowledge_search_async(
             )
     result = KnowledgeSearchResult(
         relevant_pubmed_results=relevant_pubmed_results,
+        reason="; ".join(
+            query_result["reason"]
+            for query_result in pubmed_results
+            if query_result.get("reason")
+        ) or None,
     )
     _publish_stage_result(
         f"Knowledge Search Result - Round {round_index}",
@@ -431,7 +480,7 @@ async def _run_guideline_search_async(
         "The outermost JSON value must be an object, not an array. "
         "When no guideline skill is used, set used_skill to false, explain the specific reason in "
         "unused_reason, and return an empty skill_results array. Set unused_reason to null when at "
-        "least one guideline skill is used."
+        "least one guideline skill is used. Set reason to null for a normally completed search."
     )
     guideline_prompt = _prepare_structured_prompt(
         guideline_prompt,
@@ -447,9 +496,9 @@ async def _run_guideline_search_async(
             "Do not output a top-level array such as []. Do not output tool results directly. "
             "Do not add explanations, comments, parentheses, Markdown fences, prefixes, or suffixes "
             "outside the json object.\n\n"
-            "The json object must contain exactly these three top-level fields: "
+            "The json object must contain exactly these four top-level fields: "
             '"used_skill" as a boolean, "unused_reason" as a string or null, and '
-            '"skill_results" as an array.\n\n'
+            '"skill_results" as an array, and "reason" as null.\n\n'
             "If no guideline skill directly matches the diagnostic hypotheses, set used_skill to "
             "false, explain which hypotheses lack a directly corresponding skill in unused_reason, "
             "and return an empty skill_results array.\n\n"
@@ -457,7 +506,7 @@ async def _run_guideline_search_async(
             "do not output [] by itself. The following is a format example only; replace every "
             "placeholder string with the actual result:\n\n"
             "<OUTPUT_FORMAT_EXAMPLE>\n"
-            '{"used_skill":true,"unused_reason":null,'
+            '{"used_skill":true,"unused_reason":null,"reason":null,'
             '"skill_results":[{"skill_name":"selected skill name",'
             '"disease_name":"evaluated disease","guideline_evidence":[],'
             '"guideline_diagnosis":"Explanation of the insufficient guideline evidence."}]}\n'
@@ -495,6 +544,7 @@ async def _run_guideline_search_async(
                 used_skill=False,
                 unused_reason="Guideline search exceeded the maximum number of agent turns.",
                 skill_results=[],
+                reason="Guideline search exceeded the maximum number of agent turns.",
             )
             _publish_stage_result(
                 f"Guideline Search Result - Round {round_index}",
@@ -512,6 +562,7 @@ async def _run_guideline_search_async(
                 "Guideline search result could not be parsed as valid structured output."
             ),
             skill_results=[],
+            reason="Guideline search result could not be parsed as valid structured output.",
         )
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
@@ -729,7 +780,7 @@ async def make_diagnosis_pipeline_async(
 ) -> DiagnosisPipelineResult:
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
-    search_planning_result = await _run_search_planning_async(
+    search_planning_result = await _run_search_planning_with_fallback(
         case_text,
         model=diagnosis_model,
         debug=debug,
@@ -742,9 +793,9 @@ async def make_diagnosis_pipeline_async(
 
     for round_index in range(1, max_diagnosis_rounds + 1):
         (
-            knowledge_search_result,
-            similar_case_retrieval_result,
-            guideline_search_result,
+            knowledge_search_outcome,
+            similar_case_retrieval_outcome,
+            guideline_search_outcome,
         ) = await asyncio.gather(
             _run_knowledge_search_async(
                 search_planning_result.search_queries,
@@ -768,7 +819,63 @@ async def make_diagnosis_pipeline_async(
                 round_index=round_index,
                 progress_callback=progress_callback,
             ),
+            return_exceptions=True,
         )
+
+        if isinstance(knowledge_search_outcome, Exception):
+            knowledge_search_result = KnowledgeSearchResult(
+                relevant_pubmed_results=[],
+                reason=_stage_failure_reason(
+                    "Knowledge search",
+                    knowledge_search_outcome,
+                ),
+            )
+            _publish_stage_result(
+                f"Knowledge Search Result - Round {round_index}",
+                knowledge_search_result,
+                debug=debug,
+                progress_callback=progress_callback,
+            )
+        else:
+            knowledge_search_result = knowledge_search_outcome
+
+        if isinstance(similar_case_retrieval_outcome, Exception):
+            similar_case_retrieval_result = SimilarCaseRetrievalResult(
+                discharge_disease=[],
+                icd_code=[],
+                Sections=[],
+                reason=_stage_failure_reason(
+                    "Similar-case retrieval",
+                    similar_case_retrieval_outcome,
+                ),
+            )
+            _publish_stage_result(
+                f"Similar Case Retrieval Result - Round {round_index}",
+                similar_case_retrieval_result,
+                debug=debug,
+                progress_callback=progress_callback,
+            )
+        else:
+            similar_case_retrieval_result = similar_case_retrieval_outcome
+
+        if isinstance(guideline_search_outcome, Exception):
+            guideline_search_result = GuidelineSearchResult(
+                used_skill=False,
+                unused_reason="Guideline search failed.",
+                skill_results=[],
+                reason=_stage_failure_reason(
+                    "Guideline search",
+                    guideline_search_outcome,
+                ),
+            )
+            _publish_stage_result(
+                f"Guideline Search Result - Round {round_index}",
+                guideline_search_result,
+                debug=debug,
+                progress_callback=progress_callback,
+            )
+        else:
+            guideline_search_result = guideline_search_outcome
 
         diagnosis_result = await _run_final_diagnosis_async(
             case_text,
@@ -837,7 +944,7 @@ async def make_diagnosis_pipeline_async(
 
         previous_diagnosis_result = diagnosis_result
         previous_diagnostic_judgement_result = diagnostic_judgement_result
-        search_planning_result = await _run_search_planning_async(
+        search_planning_result = await _run_search_planning_with_fallback(
             case_text,
             model=diagnosis_model,
             previous_search_planning_result=search_planning_result,

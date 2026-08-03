@@ -70,6 +70,10 @@ class KnowledgeSearchResult(BaseModel):
             "Original PubMed search results containing only selected abstract sections, grouped by query"
         )
     )
+    reason: str | None = Field(
+        default=None,
+        description="Failure reason when knowledge search returns an empty result",
+    )
 
 
 class DiagnosisItem(BaseModel):
@@ -142,6 +146,10 @@ class GuidelineSearchResult(BaseModel):
     skill_results: list[GuidelineSkillResult] = Field(
         description="Guideline evidence and diagnostic conclusion grouped by used skill"
     )
+    reason: str | None = Field(
+        default=None,
+        description="Failure reason when guideline search returns an empty result",
+    )
 
 
 class HypothesisItem(BaseModel):
@@ -168,6 +176,10 @@ class SearchPlanningResult(BaseModel):
             "for similar-case retrieval and guideline evidence search"
         )
     )
+    reason: str | None = Field(
+        default=None,
+        description="Failure reason when search planning returns an empty result",
+    )
 
 
 class SimilarCaseSection(BaseModel):
@@ -189,6 +201,10 @@ class SimilarCaseRetrievalResult(BaseModel):
         description=(
             "Matched discharge summary sections for each similar case in retrieval rank order"
         ),
+    )
+    reason: str | None = Field(
+        default=None,
+        description="Failure reason when similar-case retrieval returns an empty result",
     )
 
 

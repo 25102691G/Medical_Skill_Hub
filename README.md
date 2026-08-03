@@ -104,7 +104,8 @@ DEEPSEEK_THINKING=true
 `diagnosis_result`。`search_planning_result.hypotheses` 和
 `diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 保存三字符 ICD-10-CM
 类别编码，并使用 `category_name` 保存对应的规范英文类别名称。单个病例失败时，错误
-会输出到终端，脚本继续处理下一条病例。
+会输出到终端，脚本继续处理下一条病例。单个 PubMed 查询在完成配置的重试后仍遇到网络错误时，
+该查询按空结果处理，不会导致整个病例失败。
 
 ## 诊断结果评估
 
