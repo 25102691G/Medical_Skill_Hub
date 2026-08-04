@@ -102,8 +102,9 @@ DEEPSEEK_THINKING=true
 `guideline_search_result.unused_reason` 记录具体原因；该字段仅用于观察 skill 调用过程，
 不会传给最终诊断或多轮诊断判断。如果第二轮触发纠正诊断，该轮保存纠正后的
 `diagnosis_result`。`search_planning_result.hypotheses` 和
-`diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 保存三字符 ICD-10-CM
-类别编码，并使用 `category_name` 保存对应的规范英文类别名称。单个病例失败时，错误
+`diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 优先保存四字符 ICD-10-CM
+子类编码；仅当对应类别不存在四字符子类（如 `I10`）时保存三字符类别编码，并使用
+`category_name` 保存对应的规范英文名称。单个病例失败时，错误
 会输出到终端，脚本继续处理下一条病例。单个 PubMed 查询在完成配置的重试后仍遇到网络错误时，
 该查询按空结果处理，不会导致整个病例失败。
 

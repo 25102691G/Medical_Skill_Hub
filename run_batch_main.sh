@@ -16,7 +16,7 @@ fi
 
 # INPUT="database/mimic_test_case_hernia.csv"
 INPUT="database/sample5_test.csv"
-LIMIT=100
+LIMIT=10
 WORKERS=2
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 DIAGNOSIS_TOPK=5

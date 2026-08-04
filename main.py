@@ -208,8 +208,9 @@ async def _run_search_planning_async(
             f"{_as_json(previous_guideline_evidence or [])}\n"
             "</PREVIOUS_GUIDELINE_EVIDENCE>\n\n"
             "## Task\n\n"
-            "The diagnostic judgement found that hypotheses were closer to the patient information "
-            "than the previous topk_diagnoses. Regenerate improved search_queries for the next "
+            "The diagnostic judgement found that search_planning_diagnoses were closer to the "
+            "patient information than the previous final_diagnoses. Regenerate improved "
+            "search_queries for the next "
             "diagnosis round. Return the complete SearchPlanningResult required by the schema, but "
             "preserve the previous hypotheses and positive_features unless they violate the agent "
             "instructions. Use the previous artifacts, including previous guideline evidence, only to "
@@ -705,11 +706,8 @@ async def _run_final_diagnosis_async(
 
 async def _run_diagnostic_judgement_async(
     case_text: str,
-    hypotheses: list[HypothesisItem],
+    search_planning_diagnoses: list[HypothesisItem],
     diagnosis_result: DiagnosisResult,
-    knowledge_search_result: KnowledgeSearchResult,
-    similar_case_retrieval_result: SimilarCaseRetrievalResult,
-    guideline_search_result: GuidelineSearchResult,
     *,
     model: str | Model,
     debug: bool = False,
@@ -721,31 +719,26 @@ async def _run_diagnostic_judgement_async(
         model,
         native_structured_output=native_structured_output,
     )
-    guideline_result_for_judgement = {
-        "used_skill": guideline_search_result.used_skill,
-        "skill_results": guideline_search_result.skill_results,
-    }
+    final_diagnoses = [
+        {
+            "icd_code": diagnosis.icd_code,
+            "category_name": diagnosis.category_name,
+        }
+        for diagnosis in diagnosis_result.topk_diagnoses
+    ]
     diagnostic_judgement_prompt = (
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>\n\n"
-        "<HYPOTHESES>\n"
-        f"{_as_json(hypotheses)}\n"
-        "</HYPOTHESES>\n\n"
-        "<TOPK_DIAGNOSES>\n"
-        f"{_as_json(diagnosis_result.topk_diagnoses)}\n"
-        "</TOPK_DIAGNOSES>\n\n"
-        "<KNOWLEDGE_SEARCH_RESULT>\n"
-        f"{_as_json(knowledge_search_result)}\n"
-        "</KNOWLEDGE_SEARCH_RESULT>\n\n"
-        "<SIMILAR_CASES>\n"
-        f"{_as_json(similar_case_retrieval_result)}\n"
-        "</SIMILAR_CASES>\n\n"
-        "<GUIDELINE_RESULTS>\n"
-        f"{_as_json(guideline_result_for_judgement)}\n"
-        "</GUIDELINE_RESULTS>\n\n"
+        "<SEARCH_PLANNING_DIAGNOSES>\n"
+        f"{_as_json(search_planning_diagnoses)}\n"
+        "</SEARCH_PLANNING_DIAGNOSES>\n\n"
+        "<FINAL_DIAGNOSES>\n"
+        f"{_as_json(final_diagnoses)}\n"
+        "</FINAL_DIAGNOSES>\n\n"
         "## Task\n\n"
-        "Judge whether topk_diagnoses or hypotheses is closer to the patient information. "
+        "Judge whether final_diagnoses or search_planning_diagnoses is closer to the patient "
+        "information. "
         "Keep closer_result as the required enum value."
     )
     diagnostic_judgement_prompt = _prepare_structured_prompt(
@@ -894,9 +887,6 @@ async def make_diagnosis_pipeline_async(
             case_text,
             search_planning_result.hypotheses,
             diagnosis_result,
-            knowledge_search_result,
-            similar_case_retrieval_result,
-            guideline_search_result,
             model=diagnosis_model,
             debug=debug,
             round_index=round_index,
@@ -904,7 +894,7 @@ async def make_diagnosis_pipeline_async(
         )
 
         if (
-            diagnostic_judgement_result.closer_result != "topk_diagnoses"
+            diagnostic_judgement_result.closer_result != "final_diagnoses"
             and round_index == max_diagnosis_rounds
         ):
             diagnosis_result = await _run_final_diagnosis_async(
@@ -932,7 +922,7 @@ async def make_diagnosis_pipeline_async(
         )
 
         if (
-            diagnostic_judgement_result.closer_result == "topk_diagnoses"
+            diagnostic_judgement_result.closer_result == "final_diagnoses"
             or round_index == max_diagnosis_rounds
         ):
             return DiagnosisPipelineResult(

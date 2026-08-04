@@ -218,23 +218,25 @@ def evaluate_file(input_path: Path) -> Path:
                                 evaluated_rank <= cutoff
                             )
             print(
-                f"[{line_number}] Completed "
+                f"[{line_number}] Evaluated "
                 f"subject_id={record.get('subject_id')}, "
-                f"hadm_id={record.get('hadm_id')}: "
-                + "; ".join(
-                    f"round {round_evaluation['round']} "
-                    + ", ".join(
-                        f"{method}="
-                        + "/".join(
-                            f"{metric}:"
-                            f"{round_evaluation[method]['evaluated_ranks'][metric] or 'No'}"
-                            for metric in METRICS
-                        )
-                        for method in METHODS
-                    )
+                f"hadm_id={record.get('hadm_id')}\n"
+                + "\n".join(
+                    f"  Round {round_evaluation['round']}"
+                    f" | Search planning: ICD-3 rank="
+                    f"{round_evaluation['search_planning']['evaluated_ranks']['disease'] or 'not found'}, "
+                    f"ICD-4 rank="
+                    f"{round_evaluation['search_planning']['evaluated_ranks']['subcategory'] or 'not found'}\n"
+                    f"          | Similar cases  : ICD-3 rank="
+                    f"{round_evaluation['similar_case_retrieval']['evaluated_ranks']['disease'] or 'not found'}, "
+                    f"ICD-4 rank="
+                    f"{round_evaluation['similar_case_retrieval']['evaluated_ranks']['subcategory'] or 'not found'}\n"
+                    f"          | Final diagnosis: ICD-3 rank="
+                    f"{round_evaluation['final_diagnosis']['evaluated_ranks']['disease'] or 'not found'}, "
+                    f"ICD-4 rank="
+                    f"{round_evaluation['final_diagnosis']['evaluated_ranks']['subcategory'] or 'not found'}"
                     for round_evaluation in round_evaluations
-                )
-                + ".",
+                ),
                 file=sys.stderr,
             )
 

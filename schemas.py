@@ -84,8 +84,12 @@ class DiagnosisItem(BaseModel):
     rank: int = Field(description="Diagnosis ranking, starting from 1")
     icd_code: str = Field(
         min_length=3,
-        pattern=r"^[A-Z][0-9][0-9A-Z]+$",
-        description="ICD-10-CM code with three or more characters without a decimal point",
+        max_length=4,
+        pattern=r"^[A-Z][0-9][0-9A-Z]{1,2}$",
+        description=(
+            "Prefer the four-character ICD-10-CM subcategory code without a decimal point; "
+            "use the three-character category code only when it has no four-character subcategory"
+        ),
     )
     category_name: str = Field(
         description="Canonical English description corresponding to the ICD-10-CM code"
@@ -163,8 +167,12 @@ class GuidelineSearchResult(BaseModel):
 class HypothesisItem(BaseModel):
     icd_code: str = Field(
         min_length=3,
-        pattern=r"^[A-Z][0-9][0-9A-Z]+$",
-        description="ICD-10-CM code with three or more characters without a decimal point",
+        max_length=4,
+        pattern=r"^[A-Z][0-9][0-9A-Z]{1,2}$",
+        description=(
+            "Prefer the four-character ICD-10-CM subcategory code without a decimal point; "
+            "use the three-character category code only when it has no four-character subcategory"
+        ),
     )
     category_name: str = Field(
         description="Canonical English description corresponding to the ICD-10-CM code"
@@ -237,7 +245,7 @@ class DiagnosisPipelineResult(BaseModel):
 
 
 class DiagnosticJudgementResult(BaseModel):
-    closer_result: Literal["topk_diagnoses", "hypotheses"] = Field(
+    closer_result: Literal["final_diagnoses", "search_planning_diagnoses"] = Field(
         description="Which candidate diagnosis set is closer to the patient information"
     )
     reason: str = Field(description="Reasoning for the diagnostic judgement")

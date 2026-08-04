@@ -119,10 +119,16 @@ ranking errors while reassessing all candidates against the current patient info
 
 For each diagnosis:
 
-* set icd_code to the four-character ICD-10-CM subcategory code without a decimal point;
+* prefer the four-character ICD-10-CM subcategory code without a decimal point;
+* use a three-character ICD-10-CM category code only when that category has no four-character
+  subcategory, such as I10;
 * set category_name to the canonical English description corresponding to that code.
 
-Include only diagnostic details represented by the selected four-character subcategory. Do not add
+Do not use a three-character category code merely because the patient information lacks a more specific
+subtype. When the category has four-character subcategories, select the appropriate unspecified or other
+subcategory if the documented information does not support a more specific one.
+
+Include only diagnostic details represented by the selected ICD-10-CM code. Do not add
 details that require a more specific ICD-10-CM code, including:
 
 * additional anatomical refinement or subtype;
@@ -132,10 +138,10 @@ details that require a more specific ICD-10-CM code, including:
 * other details beyond the four-character level.
 
 Clinical location and complications may be used for diagnostic reasoning and may appear in
-category_name only when they are part of the canonical description of the selected four-character
-subcategory.
+category_name only when they are part of the canonical description of the selected code.
 
-The icd_code and category_name in each diagnosis must identify the same ICD-10-CM subcategory.
+The icd_code and category_name in each diagnosis must identify the same ICD-10-CM category or
+subcategory.
 
 Do not output duplicate icd_code values.
 
