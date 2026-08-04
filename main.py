@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import TypeVar
 
 from agents import (
+    Agent,
     MaxTurnsExceeded,
     Model,
     ModelSettings,
@@ -29,10 +30,18 @@ from config import (
 )
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
-from diagnosis.agents.guideline_searcher_agent import SKILLS_DIR, build_guideline_searcher_agent
+from diagnosis.agents.guideline_searcher_agent import (
+    SKILLS_DIR,
+    GuidelineToolState,
+    build_guideline_searcher_agent,
+)
 from diagnosis.agents.knowledge_searcher_agent import (
     build_knowledge_searcher_agent,
     search_pubmed_queries,
+)
+from diagnosis.agents.preprocessing_agent import (
+    build_hypothesis_preprocessing_agent,
+    build_positive_feature_preprocessing_agent,
 )
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
@@ -46,7 +55,9 @@ from schemas import (
     HypothesisItem,
     KnowledgeSearchResult,
     KnowledgeSearchSelectionResult,
+    LlmHypothesesResult,
     MultiRoundDiagnosisResult,
+    PositiveFeaturesResult,
     PubMedQueryResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
@@ -155,8 +166,171 @@ def _publish_stage_result(
         progress_callback("stage_completed", title, _as_json(model_object))
 
 
+async def _run_hypothesis_preprocessing_async(
+    case_text: str,
+    *,
+    model: str | Model,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> LlmHypothesesResult:
+    native_structured_output = _uses_native_structured_output(model)
+    agent = build_hypothesis_preprocessing_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
+    prompt = _prepare_structured_prompt(
+        (
+            "<PATIENT_INFORMATION>\n"
+            f"{case_text}\n"
+            "</PATIENT_INFORMATION>"
+        ),
+        LlmHypothesesResult,
+        native_structured_output=native_structured_output,
+    )
+    _notify_agent_started(
+        progress_callback,
+        "Diagnostic Hypothesis Preprocessing Agent",
+        None,
+    )
+    raw_result = (
+        await Runner.run(
+            agent,
+            prompt,
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+        )
+    ).final_output
+    result = _parse_structured_result(raw_result, LlmHypothesesResult)
+    _publish_stage_result(
+        "LLM Hypotheses Preprocessing Result",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
+    return result
+
+
+async def _run_positive_feature_preprocessing_async(
+    case_text: str,
+    *,
+    model: str | Model,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> PositiveFeaturesResult:
+    native_structured_output = _uses_native_structured_output(model)
+    agent = build_positive_feature_preprocessing_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
+    prompt = _prepare_structured_prompt(
+        (
+            "<PATIENT_INFORMATION>\n"
+            f"{case_text}\n"
+            "</PATIENT_INFORMATION>"
+        ),
+        PositiveFeaturesResult,
+        native_structured_output=native_structured_output,
+    )
+    _notify_agent_started(
+        progress_callback,
+        "Positive Feature Preprocessing Agent",
+        None,
+    )
+    raw_result = (
+        await Runner.run(
+            agent,
+            prompt,
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+        )
+    ).final_output
+    result = _parse_structured_result(raw_result, PositiveFeaturesResult)
+    _publish_stage_result(
+        "Positive Features Preprocessing Result",
+        result,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
+    return result
+
+
+def _merge_planning_hypotheses(
+    llm_hypotheses_result: LlmHypothesesResult,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult,
+) -> list[HypothesisItem]:
+    merged_hypotheses: list[HypothesisItem] = []
+    seen_codes: set[str] = set()
+    for hypothesis in llm_hypotheses_result.llm_hypotheses:
+        if hypothesis.icd_code in seen_codes:
+            continue
+        seen_codes.add(hypothesis.icd_code)
+        merged_hypotheses.append(hypothesis)
+
+    for similar_case in similar_case_retrieval_result.rerank:
+        hypothesis = HypothesisItem(
+            icd_code=similar_case.icd_code,
+            category_name=similar_case.discharge_disease,
+        )
+        if hypothesis.icd_code in seen_codes:
+            continue
+        seen_codes.add(hypothesis.icd_code)
+        merged_hypotheses.append(hypothesis)
+        if len(merged_hypotheses) == 10:
+            break
+    return [
+        hypothesis
+        for hypothesis in merged_hypotheses
+        if not any(
+            other.icd_code.startswith(hypothesis.icd_code)
+            and len(other.icd_code) > len(hypothesis.icd_code)
+            for other in merged_hypotheses
+        )
+    ]
+
+
+def _ensure_hypothesis_query_coverage(
+    hypotheses: list[HypothesisItem],
+    search_queries: list[str],
+) -> list[str]:
+    queries = [query.strip() for query in search_queries if query.strip()]
+    combined_queries = "\n".join(queries).casefold()
+    uncovered_hypotheses = [
+        hypothesis
+        for hypothesis in hypotheses
+        if hypothesis.category_name.casefold() not in combined_queries
+    ]
+
+    if len(uncovered_hypotheses) > 10 - len(queries):
+        queries = [
+            f'"{hypothesis.category_name}" diagnosis'
+            for hypothesis in hypotheses
+        ]
+    else:
+        queries.extend(
+            f'"{hypothesis.category_name}" diagnosis'
+            for hypothesis in uncovered_hypotheses
+        )
+
+    query_focuses = (
+        "diagnostic criteria",
+        "differential diagnosis",
+        "imaging findings",
+        "endoscopic findings",
+        "histopathological findings",
+    )
+    while hypotheses and len(queries) < 5:
+        query_index = len(queries)
+        hypothesis = hypotheses[query_index % len(hypotheses)]
+        queries.append(
+            f'"{hypothesis.category_name}" '
+            f'{query_focuses[query_index % len(query_focuses)]}'
+        )
+    return queries
+
+
 async def _run_search_planning_async(
     case_text: str,
+    llm_hypotheses_result: LlmHypothesesResult,
+    positive_features_result: PositiveFeaturesResult,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     model: str | Model,
     previous_search_planning_result: SearchPlanningResult | None = None,
@@ -172,16 +346,40 @@ async def _run_search_planning_async(
         model,
         native_structured_output=native_structured_output,
     )
+    merged_hypotheses = _merge_planning_hypotheses(
+        llm_hypotheses_result,
+        similar_case_retrieval_result,
+    )
+    similar_case_diagnoses = [
+        {
+            "discharge_disease": similar_case.discharge_disease,
+            "icd_code": similar_case.icd_code,
+        }
+        for similar_case in similar_case_retrieval_result.rerank
+    ]
     search_planning_prompt = (
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
-        "</PATIENT_INFORMATION>"
+        "</PATIENT_INFORMATION>\n\n"
+        "<LLM_HYPOTHESES_RESULT>\n"
+        f"{_as_json(llm_hypotheses_result)}\n"
+        "</LLM_HYPOTHESES_RESULT>\n\n"
+        "<POSITIVE_FEATURES_RESULT>\n"
+        f"{_as_json(positive_features_result)}\n"
+        "</POSITIVE_FEATURES_RESULT>\n\n"
+        "<SIMILAR_CASE_DIAGNOSES>\n"
+        f"{_as_json(similar_case_diagnoses)}\n"
+        "</SIMILAR_CASE_DIAGNOSES>\n\n"
+        "<MERGED_HYPOTHESES>\n"
+        f"{_as_json(merged_hypotheses)}\n"
+        "</MERGED_HYPOTHESES>\n\n"
+        "## Task\n\n"
+        "Copy MERGED_HYPOTHESES exactly into hypotheses and generate focused search_queries. "
+        "Set reason to null when planning completes normally."
     )
     if previous_search_planning_result and previous_diagnosis_result and diagnostic_judgement_result:
-        search_planning_prompt = (
-            "<PATIENT_INFORMATION>\n"
-            f"{case_text}\n"
-            "</PATIENT_INFORMATION>\n\n"
+        search_planning_prompt += (
+            "\n\n"
             "<PREVIOUS_SEARCH_PLANNING_RESULT>\n"
             f"{_as_json(previous_search_planning_result)}\n"
             "</PREVIOUS_SEARCH_PLANNING_RESULT>\n\n"
@@ -197,11 +395,9 @@ async def _run_search_planning_async(
             "## Task\n\n"
             "The diagnostic judgement found that search_planning_diagnoses were closer to the "
             "patient information than the previous final_diagnoses. Regenerate improved "
-            "search_queries for the next "
-            "diagnosis round. Return the complete SearchPlanningResult required by the schema, but "
-            "preserve the previous hypotheses and positive_features unless they violate the agent "
-            "instructions. Use the previous artifacts, including previous guideline evidence, only to "
-            "improve the retrieval strategy, and do not treat their contents as new patient facts. "
+            "search_queries for the next diagnosis round. Copy MERGED_HYPOTHESES exactly into "
+            "hypotheses. Use the previous artifacts, including previous guideline evidence, only to "
+            "improve the retrieval strategy, and do not treat their contents as new patient facts."
         )
 
     search_planning_prompt = _prepare_structured_prompt(
@@ -218,7 +414,15 @@ async def _run_search_planning_async(
             run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
-    result = _parse_structured_result(raw_result, SearchPlanningResult)
+    raw_planning_result = _parse_structured_result(raw_result, SearchPlanningResult)
+    result = SearchPlanningResult(
+        hypotheses=merged_hypotheses,
+        search_queries=_ensure_hypothesis_query_coverage(
+            merged_hypotheses,
+            raw_planning_result.search_queries,
+        ),
+        reason=raw_planning_result.reason,
+    )
     _publish_stage_result(
         f"Search Planning Result - Round {round_index}",
         result,
@@ -230,6 +434,9 @@ async def _run_search_planning_async(
 
 async def _run_search_planning_with_fallback(
     case_text: str,
+    llm_hypotheses_result: LlmHypothesesResult,
+    positive_features_result: PositiveFeaturesResult,
+    similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
     model: str | Model,
     previous_search_planning_result: SearchPlanningResult | None = None,
@@ -243,6 +450,9 @@ async def _run_search_planning_with_fallback(
     try:
         return await _run_search_planning_async(
             case_text,
+            llm_hypotheses_result,
+            positive_features_result,
+            similar_case_retrieval_result,
             model=model,
             previous_search_planning_result=previous_search_planning_result,
             previous_diagnosis_result=previous_diagnosis_result,
@@ -253,10 +463,16 @@ async def _run_search_planning_with_fallback(
             progress_callback=progress_callback,
         )
     except Exception as exc:
+        merged_hypotheses = _merge_planning_hypotheses(
+            llm_hypotheses_result,
+            similar_case_retrieval_result,
+        )
         result = SearchPlanningResult(
-            hypotheses=[],
-            search_queries=[],
-            positive_features=[],
+            hypotheses=merged_hypotheses,
+            search_queries=_ensure_hypothesis_query_coverage(
+                merged_hypotheses,
+                [],
+            ),
             reason=_stage_failure_reason("Search planning", exc),
         )
         _publish_stage_result(
@@ -425,7 +641,10 @@ async def _run_guideline_search_async(
         "## Skill Selection\n\n"
         "Select skills only when their disease scope directly corresponds to at least one diagnostic "
         "hypothesis. A shared broad category without a specific disease match is insufficient. Do not "
-        "select a skill from an unrelated disease category.\n\n"
+        "select a skill from an unrelated disease category. Every subtype, stage, metastatic site, "
+        "complication, procedure, or other condition required by a skill must be explicit in the "
+        "diagnostic hypothesis set; a general disease hypothesis alone does not match a narrower "
+        "skill. Do not infer these conditions from positive_features.\n\n"
         "<POSITIVE_FEATURES>\n"
         f"{_as_json(positive_features)}\n"
         "</POSITIVE_FEATURES>\n\n"
@@ -437,44 +656,27 @@ async def _run_guideline_search_async(
         "the patient features with guideline information verified against the guideline full text. "
         "Do not use hypotheses as within-skill search terms or patient evidence. Keep each skill's "
         "evidence and guideline diagnosis together in one skill_results item.\n\n"
-        "## Output Requirements\n\n"
-        "The outermost JSON value must be an object, not an array. "
+        "## Result Requirements\n\n"
         "When no guideline skill is used, set used_skill to false, explain the specific reason in "
         "unused_reason, and return an empty skill_results array. Set unused_reason to null when at "
-        "least one guideline skill is used. Set reason to null for a normally completed search."
-    )
-    guideline_prompt = _prepare_structured_prompt(
-        guideline_prompt,
-        GuidelineSearchResult,
-        native_structured_output=native_structured_output,
+        "least one guideline skill is used."
     )
     if not native_structured_output:
+        guideline_prompt = _prepare_structured_prompt(
+            guideline_prompt,
+            GuidelineSearchResult,
+            native_structured_output=False,
+        )
         guideline_prompt += (
-            "\n\n## JSON Output Requirements\n\n"
-            "Your final response must be valid json.\n\n"
-            "After all tool calls are complete, output exactly one json object and nothing else. "
-            "The first character must be { and the last character must be }. "
-            "Do not output a top-level array such as []. Do not output tool results directly. "
-            "Do not add explanations, comments, parentheses, Markdown fences, prefixes, or suffixes "
-            "outside the json object.\n\n"
-            "The json object must contain exactly these four top-level fields: "
-            '"used_skill" as a boolean, "unused_reason" as a string or null, and '
-            '"skill_results" as an array, and "reason" as null.\n\n'
-            "If no guideline skill directly matches the diagnostic hypotheses, set used_skill to "
-            "false, explain which hypotheses lack a directly corresponding skill in unused_reason, "
-            "and return an empty skill_results array.\n\n"
-            "If a guideline skill was selected and searched but no matching evidence was found, "
-            "do not output [] by itself. The following is a format example only; replace every "
-            "placeholder string with the actual result:\n\n"
-            "<OUTPUT_FORMAT_EXAMPLE>\n"
-            '{"used_skill":true,"unused_reason":null,"reason":null,'
-            '"skill_results":[{"skill_name":"selected skill name",'
-            '"disease_name":"evaluated disease","guideline_evidence":[],'
-            '"guideline_diagnosis":"Explanation of the insufficient guideline evidence."}]}\n'
-            "</OUTPUT_FORMAT_EXAMPLE>\n\n"
-            "Before producing the final response, verify silently that the entire response can be "
-            "parsed by json.loads, the outermost value is an object, and no characters appear "
-            "before { or after }."
+            "\n\n## JSON Output Example\n\n"
+            "The following example shows the required JSON structure. Replace every example value "
+            "with the actual result. Use the JSON null value, not the string \"null\".\n\n"
+            "<JSON_OUTPUT_EXAMPLE>\n"
+            '{"used_skill":true,"unused_reason":null,"skill_results":['
+            '{"skill_name":"actual selected skill name","disease_name":"evaluated disease",'
+            '"guideline_evidence":[],"guideline_diagnosis":"actual diagnostic conclusion"}],'
+            '"reason":null}\n'
+            "</JSON_OUTPUT_EXAMPLE>"
         )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
     if native_structured_output:
@@ -491,21 +693,32 @@ async def _run_guideline_search_async(
             )
         ).final_output
     else:
+        tool_state = GuidelineToolState()
         try:
             raw_result = (
                 await Runner.run(
                     guideline_agent,
                     guideline_prompt,
+                    context=tool_state,
                     max_turns=100,
                     run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
                 )
             ).final_output
         except MaxTurnsExceeded:
+            accessed_skills = sorted(tool_state.accessed_skills)
+            attempted_detail = (
+                f" Attempted skills: {', '.join(accessed_skills)}."
+                if accessed_skills
+                else ""
+            )
             result = GuidelineSearchResult(
                 used_skill=False,
-                unused_reason="Guideline search exceeded the maximum number of agent turns.",
+                unused_reason="Guideline search did not complete.",
                 skill_results=[],
-                reason="Guideline search exceeded the maximum number of agent turns.",
+                reason=(
+                    "Guideline search exceeded the maximum number of agent turns before producing "
+                    f"a final result.{attempted_detail}"
+                ),
             )
             _publish_stage_result(
                 f"Guideline Search Result - Round {round_index}",
@@ -516,15 +729,104 @@ async def _run_guideline_search_async(
             return result
     try:
         result = _parse_structured_result(raw_result, GuidelineSearchResult)
-    except ValueError:
-        result = GuidelineSearchResult(
-            used_skill=False,
-            unused_reason=(
-                "Guideline search result could not be parsed as valid structured output."
-            ),
-            skill_results=[],
-            reason="Guideline search result could not be parsed as valid structured output.",
-        )
+    except ValueError as first_exc:
+        if native_structured_output:
+            result = GuidelineSearchResult(
+                used_skill=False,
+                unused_reason="Guideline search failed.",
+                skill_results=[],
+                reason=(
+                    "Guideline search result could not be parsed as valid structured output: "
+                    f"{type(first_exc).__name__}: {first_exc}"
+                ),
+            )
+        else:
+            retry_accessed_skills: list[str] = []
+            retry_tool_state: GuidelineToolState | None = None
+            try:
+                if str(raw_result).strip():
+                    repair_agent = Agent(
+                        name="Guideline Result Repair Agent",
+                        model=model,
+                        instructions=(
+                            "Repair one invalid GuidelineSearchResult JSON object without calling "
+                            "tools. Preserve every supported skill name, disease name, and guideline "
+                            "evidence item. Add or correct only fields required by the schema. For each "
+                            "skill result, write a concise guideline_diagnosis using only the supplied "
+                            "positive features and existing guideline evidence. Return exactly one JSON "
+                            "object and no other text."
+                        ),
+                    )
+                    repair_prompt = _prepare_structured_prompt(
+                        (
+                            "<POSITIVE_FEATURES>\n"
+                            f"{_as_json(positive_features)}\n"
+                            "</POSITIVE_FEATURES>\n\n"
+                            "<INVALID_OUTPUT>\n"
+                            f"{raw_result}\n"
+                            "</INVALID_OUTPUT>\n\n"
+                            "<VALIDATION_ERROR>\n"
+                            f"{type(first_exc).__name__}: {first_exc}\n"
+                            "</VALIDATION_ERROR>"
+                        ),
+                        GuidelineSearchResult,
+                        native_structured_output=False,
+                    )
+                    retry_raw_result = (
+                        await Runner.run(
+                            repair_agent,
+                            repair_prompt,
+                            max_turns=1,
+                            run_config=RunConfig(
+                                model_settings=_diagnosis_model_settings(model)
+                            ),
+                        )
+                    ).final_output
+                else:
+                    retry_tool_state = GuidelineToolState()
+                    retry_raw_result = (
+                        await Runner.run(
+                            guideline_agent,
+                            (
+                                f"{guideline_prompt}\n\n"
+                                "## Retry Requirement\n\n"
+                                "The previous attempt returned an empty response. Repeat the bounded "
+                                "guideline search once. After the permitted tool calls, stop calling "
+                                "tools and return the complete final JSON object immediately."
+                            ),
+                            context=retry_tool_state,
+                            max_turns=100,
+                            run_config=RunConfig(
+                                model_settings=_diagnosis_model_settings(model)
+                            ),
+                        )
+                    ).final_output
+                    retry_accessed_skills = sorted(retry_tool_state.accessed_skills)
+                result = _parse_structured_result(
+                    retry_raw_result,
+                    GuidelineSearchResult,
+                )
+            except (MaxTurnsExceeded, ValueError) as retry_exc:
+                if retry_tool_state is not None:
+                    retry_accessed_skills = sorted(
+                        retry_tool_state.accessed_skills
+                    )
+                attempted_detail = (
+                    f" Attempted skills during retry: {', '.join(retry_accessed_skills)}."
+                    if retry_accessed_skills
+                    else ""
+                )
+                result = GuidelineSearchResult(
+                    used_skill=False,
+                    unused_reason="Guideline search failed after one retry.",
+                    skill_results=[],
+                    reason=(
+                        "Initial guideline result error: "
+                        f"{type(first_exc).__name__}: {first_exc}. "
+                        "Retry error: "
+                        f"{type(retry_exc).__name__}: {retry_exc}.{attempted_detail}"
+                    ),
+                )
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -559,16 +861,12 @@ async def _run_final_diagnosis_async(
     similar_case_summary = [
         {
             "rank": rank,
-            "icd_code": icd_code.strip().upper().replace(".", ""),
-            "discharge_disease": discharge_disease,
-            "matched_sections": sections,
+            "icd_code": similar_case.icd_code.strip().upper().replace(".", ""),
+            "discharge_disease": similar_case.discharge_disease,
+            "matched_sections": similar_case.sections,
         }
-        for rank, (icd_code, discharge_disease, sections) in enumerate(
-            zip(
-                similar_case_retrieval_result.icd_code,
-                similar_case_retrieval_result.discharge_disease,
-                similar_case_retrieval_result.Sections,
-            ),
+        for rank, similar_case in enumerate(
+            similar_case_retrieval_result.rerank,
             start=1,
         )
     ]
@@ -583,21 +881,6 @@ async def _run_final_diagnosis_async(
                 "source": "search_planning",
                 "icd_code": hypothesis.icd_code,
                 "category_name": hypothesis.category_name,
-            }
-        )
-    for icd_code, discharge_disease in zip(
-        similar_case_retrieval_result.icd_code,
-        similar_case_retrieval_result.discharge_disease,
-    ):
-        normalized_icd_code = icd_code.strip().upper().replace(".", "")
-        if normalized_icd_code in candidate_names:
-            continue
-        candidate_names[normalized_icd_code] = discharge_disease
-        candidate_diagnoses.append(
-            {
-                "source": "similar_case",
-                "icd_code": normalized_icd_code,
-                "category_name": discharge_disease,
             }
         )
     if len(candidate_diagnoses) < 5:
@@ -826,8 +1109,58 @@ async def make_diagnosis_pipeline_async(
 ) -> DiagnosisPipelineResult:
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
+
+    async def run_positive_feature_branch() -> tuple[
+        PositiveFeaturesResult,
+        SimilarCaseRetrievalResult,
+    ]:
+        positive_features_result = await _run_positive_feature_preprocessing_async(
+            case_text,
+            model=diagnosis_model,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+        try:
+            similar_case_retrieval_result = await asyncio.to_thread(
+                _run_similar_case_retrieval,
+                positive_features_result.positive_features,
+                debug=debug,
+                round_index=1,
+                progress_callback=progress_callback,
+            )
+        except Exception as exc:
+            similar_case_retrieval_result = SimilarCaseRetrievalResult(
+                reason=_stage_failure_reason("Similar-case retrieval", exc),
+            )
+            _publish_stage_result(
+                "Similar Case Retrieval Result - Round 1",
+                similar_case_retrieval_result,
+                debug=debug,
+                progress_callback=progress_callback,
+            )
+        return positive_features_result, similar_case_retrieval_result
+
+    (
+        llm_hypotheses_result,
+        (
+            positive_features_result,
+            similar_case_retrieval_result,
+        ),
+    ) = await asyncio.gather(
+        _run_hypothesis_preprocessing_async(
+            case_text,
+            model=diagnosis_model,
+            debug=debug,
+            progress_callback=progress_callback,
+        ),
+        run_positive_feature_branch(),
+    )
+
     search_planning_result = await _run_search_planning_with_fallback(
         case_text,
+        llm_hypotheses_result,
+        positive_features_result,
+        similar_case_retrieval_result,
         model=diagnosis_model,
         debug=debug,
         round_index=1,
@@ -840,7 +1173,6 @@ async def make_diagnosis_pipeline_async(
     for round_index in range(1, max_diagnosis_rounds + 1):
         (
             knowledge_search_outcome,
-            similar_case_retrieval_outcome,
             guideline_search_outcome,
         ) = await asyncio.gather(
             _run_knowledge_search_async(
@@ -850,16 +1182,9 @@ async def make_diagnosis_pipeline_async(
                 round_index=round_index,
                 progress_callback=progress_callback,
             ),
-            asyncio.to_thread(
-                _run_similar_case_retrieval,
-                search_planning_result.positive_features,
-                debug=debug,
-                round_index=round_index,
-                progress_callback=progress_callback,
-            ),
             _run_guideline_search_async(
                 search_planning_result.hypotheses,
-                search_planning_result.positive_features,
+                positive_features_result.positive_features,
                 model=diagnosis_model,
                 debug=debug,
                 round_index=round_index,
@@ -884,25 +1209,6 @@ async def make_diagnosis_pipeline_async(
             )
         else:
             knowledge_search_result = knowledge_search_outcome
-
-        if isinstance(similar_case_retrieval_outcome, Exception):
-            similar_case_retrieval_result = SimilarCaseRetrievalResult(
-                discharge_disease=[],
-                icd_code=[],
-                Sections=[],
-                reason=_stage_failure_reason(
-                    "Similar-case retrieval",
-                    similar_case_retrieval_outcome,
-                ),
-            )
-            _publish_stage_result(
-                f"Similar Case Retrieval Result - Round {round_index}",
-                similar_case_retrieval_result,
-                debug=debug,
-                progress_callback=progress_callback,
-            )
-        else:
-            similar_case_retrieval_result = similar_case_retrieval_outcome
 
         if isinstance(guideline_search_outcome, Exception):
             guideline_search_result = GuidelineSearchResult(
@@ -981,6 +1287,8 @@ async def make_diagnosis_pipeline_async(
             or round_index == max_diagnosis_rounds
         ):
             return DiagnosisPipelineResult(
+                llm_hypotheses_result=llm_hypotheses_result,
+                positive_features_result=positive_features_result,
                 multi_round_diagnosis=MultiRoundDiagnosisResult(
                     is_multi_round=len(diagnosis_rounds) > 1,
                     rounds=diagnosis_rounds,
@@ -991,6 +1299,9 @@ async def make_diagnosis_pipeline_async(
         previous_diagnostic_judgement_result = diagnostic_judgement_result
         search_planning_result = await _run_search_planning_with_fallback(
             case_text,
+            llm_hypotheses_result,
+            positive_features_result,
+            similar_case_retrieval_result,
             model=diagnosis_model,
             previous_search_planning_result=search_planning_result,
             previous_diagnosis_result=diagnosis_result,

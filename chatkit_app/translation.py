@@ -17,6 +17,7 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
+MAX_TRANSLATION_CHARS = 4000
 DEFAULT_DISPLAY_LANGUAGE = "zh-CN"
 DISPLAY_LANGUAGES = {
     "zh-CN": "Simplified Chinese",
@@ -93,33 +94,56 @@ class DisplayTranslator:
         if cached is not None:
             return cached
 
-        prompt = (
-            f"Target language: {DISPLAY_LANGUAGES[normalized_language]}\n\n"
-            f"Display text as JSON string:\n{json.dumps(text, ensure_ascii=False)}"
-        )
+        chunks: list[str] = []
+        current_lines: list[str] = []
+        current_length = 0
+        for line in text.split("\n"):
+            added_length = len(line) + (1 if current_lines else 0)
+            if current_lines and current_length + added_length > MAX_TRANSLATION_CHARS:
+                chunks.append("\n".join(current_lines))
+                current_lines = []
+                current_length = 0
+            current_lines.append(line)
+            current_length += len(line) + (1 if len(current_lines) > 1 else 0)
+        if current_lines:
+            chunks.append("\n".join(current_lines))
+
         try:
-            result = await Runner.run(
-                self._agent,
-                prompt,
-                run_config=RunConfig(
-                    model_settings=ModelSettings(
-                        max_tokens=8192,
-                        extra_args={"response_format": {"type": "json_object"}},
-                    )
-                ),
-            )
-            content = str(result.final_output).strip()
-            if not content:
-                raise RuntimeError("DeepSeek returned empty translation JSON output.")
-            translated_text = TranslationResult.model_validate_json(
-                content
-            ).translated_text
+            translated_chunks: list[str] = []
+            for chunk in chunks:
+                prompt = (
+                    f"Target language: {DISPLAY_LANGUAGES[normalized_language]}\n\n"
+                    f"Display text as JSON string:\n"
+                    f"{json.dumps(chunk, ensure_ascii=False)}"
+                )
+                result = await Runner.run(
+                    self._agent,
+                    prompt,
+                    run_config=RunConfig(
+                        model_settings=ModelSettings(
+                            max_tokens=16384,
+                            extra_args={"response_format": {"type": "json_object"}},
+                        )
+                    ),
+                )
+                content = str(result.final_output).strip()
+                if not content:
+                    raise RuntimeError("DeepSeek returned empty translation JSON output.")
+                translated_chunks.append(
+                    TranslationResult.model_validate_json(content).translated_text
+                )
+            translated_text = "\n".join(translated_chunks)
         except Exception:
             logger.exception(
                 "Display translation failed; returning untranslated content for language %s",
                 normalized_language,
             )
-            return text
+            failure_message = (
+                "翻译失败，以下显示原始内容。"
+                if normalized_language == "zh-CN"
+                else "Translation failed; the original content is shown below."
+            )
+            return f"> ⚠️ {failure_message}\n\n{text}"
 
         async with self._lock:
             self._cache[cache_key] = translated_text

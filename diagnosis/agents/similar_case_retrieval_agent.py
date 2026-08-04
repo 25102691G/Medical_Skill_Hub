@@ -59,6 +59,7 @@ _reranker_model: tuple[Any, Any, str] | None = None
 _reranker_model_lock = Lock()
 _corpus_embeddings: Any | None = None
 _corpus_embeddings_lock = Lock()
+_similar_case_retrieval_lock = Lock()
 
 
 @dataclass(frozen=True)
@@ -223,11 +224,29 @@ def _tokenize(text: str) -> list[str]:
 
 
 def _empty_retrieval_result() -> SimilarCaseRetrievalResult:
-    return SimilarCaseRetrievalResult(
-        discharge_disease=[],
-        icd_code=[],
-        Sections=[],
-    )
+    return SimilarCaseRetrievalResult()
+
+
+def _top_five_diseases(
+    ranking: list[tuple[int, float]],
+    cases: tuple[_CaseRecord, ...],
+) -> list[dict[str, str]]:
+    results: list[dict[str, str]] = []
+    seen_diseases: set[str] = set()
+    for case_index, _ in ranking:
+        case = cases[case_index]
+        if case.discharge_disease in seen_diseases:
+            continue
+        seen_diseases.add(case.discharge_disease)
+        results.append(
+            {
+                "discharge_disease": case.discharge_disease,
+                "icd_code": case.icd_code,
+            }
+        )
+        if len(results) == 5:
+            break
+    return results
 
 
 def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
@@ -787,7 +806,7 @@ def _rrf_rank(
     )
 
 
-def retrieve_similar_cases(
+def _retrieve_similar_cases(
     positive_features: list[str],
     *,
     debug: bool = False,
@@ -956,7 +975,7 @@ def retrieve_similar_cases(
         for case_index, score, _ in sorted(
             disease_representatives.values(),
             key=lambda item: (-item[1], item[2]),
-        )[:SIMILAR_CASE_TOP_K]
+        )[:5]
     ]
 
     if reranker_completed:
@@ -985,9 +1004,29 @@ def retrieve_similar_cases(
             ]
         )
     return SimilarCaseRetrievalResult(
-        discharge_disease=[
-            cases[index].discharge_disease for index in top_indices
+        bm25=_top_five_diseases(bm25_ranking, cases),
+        embedding=_top_five_diseases(dense_ranking, cases),
+        rrf=_top_five_diseases(rrf_ranking, cases),
+        rerank=[
+            {
+                "discharge_disease": cases[case_index].discharge_disease,
+                "icd_code": cases[case_index].icd_code,
+                "sections": sections,
+            }
+            for case_index, sections in zip(top_indices, result_sections)
         ],
-        icd_code=[cases[index].icd_code for index in top_indices],
-        Sections=result_sections,
     )
+
+
+def retrieve_similar_cases(
+    positive_features: list[str],
+    *,
+    debug: bool = False,
+    ranking_callback: RankingCallback | None = None,
+) -> SimilarCaseRetrievalResult:
+    with _similar_case_retrieval_lock:
+        return _retrieve_similar_cases(
+            positive_features,
+            debug=debug,
+            ranking_callback=ranking_callback,
+        )

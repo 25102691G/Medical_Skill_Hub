@@ -7,9 +7,20 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
 METHODS = (
     "search_planning",
-    "similar_case_retrieval",
+    "similar_case_bm25",
+    "similar_case_embedding",
+    "similar_case_rrf",
+    "similar_case_rerank",
     "final_diagnosis",
 )
+METHOD_LABELS = {
+    "search_planning": "Search planning",
+    "similar_case_bm25": "Similar BM25",
+    "similar_case_embedding": "Similar embedding",
+    "similar_case_rrf": "Similar RRF",
+    "similar_case_rerank": "Similar rerank",
+    "final_diagnosis": "Final diagnosis",
+}
 METRIC_PREFIX_LENGTHS = {
     "disease": 3,
     "subcategory": 4,
@@ -19,7 +30,7 @@ METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate three sets of top-5 principal-diagnosis ICD predictions."
+        description="Evaluate six sets of top-5 principal-diagnosis ICD predictions."
     )
     parser.add_argument(
         "--input",
@@ -127,6 +138,9 @@ def evaluate_file(input_path: Path) -> Path:
             multi_round_diagnosis = record["multi_round_diagnosis"]
             round_evaluations = []
             for round_result in multi_round_diagnosis["rounds"]:
+                similar_case_result = round_result[
+                    "similar_case_retrieval_result"
+                ]
                 predicted_icd_codes = {
                     "search_planning": [
                         hypothesis["icd_code"].strip()
@@ -134,11 +148,21 @@ def evaluate_file(input_path: Path) -> Path:
                             "search_planning_result"
                         ]["hypotheses"][:5]
                     ],
-                    "similar_case_retrieval": [
-                        icd_code.strip()
-                        for icd_code in round_result[
-                            "similar_case_retrieval_result"
-                        ]["icd_code"][:5]
+                    "similar_case_bm25": [
+                        item["icd_code"].strip()
+                        for item in similar_case_result["bm25"][:5]
+                    ],
+                    "similar_case_embedding": [
+                        item["icd_code"].strip()
+                        for item in similar_case_result["embedding"][:5]
+                    ],
+                    "similar_case_rrf": [
+                        item["icd_code"].strip()
+                        for item in similar_case_result["rrf"][:5]
+                    ],
+                    "similar_case_rerank": [
+                        item["icd_code"].strip()
+                        for item in similar_case_result["rerank"][:5]
                     ],
                     "final_diagnosis": [
                         diagnosis["icd_code"].strip()
@@ -222,19 +246,14 @@ def evaluate_file(input_path: Path) -> Path:
                 f"subject_id={record.get('subject_id')}, "
                 f"hadm_id={record.get('hadm_id')}\n"
                 + "\n".join(
-                    f"  Round {round_evaluation['round']}"
-                    f" | Search planning: ICD-3 rank="
-                    f"{round_evaluation['search_planning']['evaluated_ranks']['disease'] or 'not found'}, "
-                    f"ICD-4 rank="
-                    f"{round_evaluation['search_planning']['evaluated_ranks']['subcategory'] or 'not found'}\n"
-                    f"          | Similar cases  : ICD-3 rank="
-                    f"{round_evaluation['similar_case_retrieval']['evaluated_ranks']['disease'] or 'not found'}, "
-                    f"ICD-4 rank="
-                    f"{round_evaluation['similar_case_retrieval']['evaluated_ranks']['subcategory'] or 'not found'}\n"
-                    f"          | Final diagnosis: ICD-3 rank="
-                    f"{round_evaluation['final_diagnosis']['evaluated_ranks']['disease'] or 'not found'}, "
-                    f"ICD-4 rank="
-                    f"{round_evaluation['final_diagnosis']['evaluated_ranks']['subcategory'] or 'not found'}"
+                    f"  Round {round_evaluation['round']} | "
+                    + "\n          | ".join(
+                        f"{METHOD_LABELS[method]}: ICD-3 rank="
+                        f"{round_evaluation[method]['evaluated_ranks']['disease'] or 'not found'}, "
+                        f"ICD-4 rank="
+                        f"{round_evaluation[method]['evaluated_ranks']['subcategory'] or 'not found'}"
+                        for method in METHODS
+                    )
                     for round_evaluation in round_evaluations
                 ),
                 file=sys.stderr,

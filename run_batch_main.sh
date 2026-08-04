@@ -15,9 +15,9 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 # INPUT="database/mimic_test_case_hernia.csv"
-INPUT="database/xiangya2.csv"
-LIMIT=1
-WORKERS=2
+INPUT="database/sample5_test.csv"
+LIMIT=75
+WORKERS=10
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 # Run the Python script

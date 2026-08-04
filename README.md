@@ -43,7 +43,8 @@ DEEPSEEK_THINKING=true
 项目中的 DeepSeek Chat Completions 调用统一使用 JSON Output：请求传入
 `response_format={"type":"json_object"}` 和与用途相匹配的 `max_tokens`，提示词包含
 JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本及二分类等原始业务输出会
-先封装在 JSON 字段中，解析后再恢复为原有返回类型。
+先封装在 JSON 字段中，解析后再恢复为原有返回类型。指南检索完成本地工具调用后，在
+最终响应中输出符合 `GuidelineSearchResult` Schema 的 JSON 对象。
 
 ## 批量运行
 
@@ -58,8 +59,16 @@ JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本�
   --workers 4
 ```
 
-`--workers` 默认为 `1`。并发运行时各病例可以交错完成，但成功结果仍按输入 CSV
-顺序写入 JSONL。
+`--workers` 默认为 `1`。批处理使用常驻 worker 队列保持指定并发数，成功结果按病例
+完成顺序写入 JSONL。
+
+单个病例先由预处理模块并发执行两次相互隔离的 LLM 调用：一次仅根据原始 `case_text`
+生成 `llm_hypotheses`，另一次仍仅根据原始 `case_text` 提取 `positive_features`。随后使用
+`positive_features` 执行一次相似病例检索。Search Planning 接收原始病例、两项预处理结果
+以及相似病例的疾病名称和 ICD code，按 ICD code 将纯 LLM 候选与相似病例候选去重合并，
+并生成 5 至 10 条 PubMed 检索词。全部合并候选疾病都必须由至少一条检索词覆盖；当模型
+遗漏候选疾病时，程序会补充包含该疾病英文名称的检索词。Search Planning 完成后，PubMed
+检索与指南检索并行执行。
 
 `run_batch_main.sh` 会读取 `.env` 中的 `DIAGNOSIS_PROVIDER`，支持 `openai` 和
 `deepseek`。对应的 API Key、模型名称和 DeepSeek 地址使用项目根目录 `.env` 中的配置。
@@ -77,18 +86,22 @@ DEEPSEEK_THINKING=true
 `output/batch/<输入文件名>_<limit>_<时间戳>.jsonl`；未指定 `--limit` 时使用 `all`。
 例如输入 `mimic_test_case_hernia.csv` 且 `--limit 5` 时，输出文件名类似
 `mimic_test_case_hernia_5_20260729_145433_369954.jsonl`。每行对应一个成功完成的病例，
-包含 `subject_id`、`hadm_id`、`icd_code`、`long_title` 和
-`multi_round_diagnosis`。`multi_round_diagnosis.is_multi_round` 表示是否进入了第二轮，
+包含 `subject_id`、`hadm_id`、`icd_code`、`long_title`、`llm_hypotheses_result`、
+`positive_features_result` 和 `multi_round_diagnosis`。`multi_round_diagnosis.is_multi_round`
+表示是否进入了第二轮，
 `multi_round_diagnosis.rounds` 按轮次保存每一轮的 `round`、
 `search_planning_result`、`similar_case_retrieval_result`、按 skill 分组的
 `guideline_search_result` 和结构化 `diagnosis_result`。未使用 skill 时，
 `guideline_search_result.unused_reason` 记录具体原因；该字段仅用于观察 skill 调用过程，
-不会传给最终诊断或多轮诊断判断。如果第二轮触发纠正诊断，该轮保存纠正后的
-`diagnosis_result`。`search_planning_result.hypotheses` 和
-`diagnosis_result.topk_diagnoses` 统一以本次住院主诊断为预测目标。最终诊断只对检索规划
-候选与相似病例候选的并集进行重排，指南和 PubMed 证据仅用于解释患者信息和调整排序，
-不会生成候选集之外的新 ICD。相似病例的 `icd_code` 会与疾病名称、匹配文本一起传入最终
-诊断。未进入最终前五的检索规划候选记录在
+`guideline_search_result.skill_names` 显式列出本轮实际使用的全部 skill 名称，不会传给
+最终诊断或多轮诊断判断。如果第二轮触发纠正诊断，该轮保存纠正后的
+`diagnosis_result`。预处理结果和相似病例检索在每个病例中只执行一次，第二轮复用这些
+结果。`search_planning_result.hypotheses` 先保留最多五个纯 LLM 候选，再按检索排名追加
+相似病例候选，并按规范化 ICD code 去重；父级编码与更具体的子级编码同时出现时只保留
+子级编码，最多保留十个候选。最终诊断只对该合并候选集
+进行重排，指南和 PubMed 证据仅用于解释患者信息和调整排序，不会生成候选集之外的新
+ICD。相似病例的疾病名称、ICD code 和匹配文本仍会传入最终诊断。未进入最终前五的合并
+候选记录在
 `diagnosis_result.excluded_planning_candidates`，并包含支持排除的患者级反证。
 
 每项诊断均使用 `icd_code` 保存移除小数点后的完整三至七字符 ICD-10-CM 编码，并使用
@@ -101,10 +114,13 @@ DEEPSEEK_THINKING=true
 
 `evaluate.py` 对多轮批量诊断结果中的主诊断 ICD code 进行直接匹配。`batch_main.py` 将输入
 CSV 中代表本次住院主诊断的 `icd_code` 写入每条结果，评估脚本以该字段为金标准，并遍历
-`multi_round_diagnosis.rounds`。每一轮分别提取以下三组前五项 ICD code：
+`multi_round_diagnosis.rounds`。每一轮分别提取以下六组前五项 ICD code：
 
 - `multi_round_diagnosis.rounds[].search_planning_result.hypotheses[].icd_code`
-- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.icd_code[]`
+- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.bm25[].icd_code`
+- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.embedding[].icd_code`
+- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.rrf[].icd_code`
+- `multi_round_diagnosis.rounds[].similar_case_retrieval_result.rerank[].icd_code`
 - `multi_round_diagnosis.rounds[].diagnosis_result.topk_diagnoses[].icd_code`
 
 金标准和预测编码均先去除首尾空白、转为大写并移除小数点。`disease` 指标取前三个
@@ -127,7 +143,7 @@ bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 
 评估结果固定写入
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
-每条病例结果中的 `round_evaluations` 保存各轮三组诊断的预测 ICD code，以及
+每条病例结果中的 `round_evaluations` 保存各轮六组诊断的预测 ICD code，以及
 `disease` 和 `subcategory` 排名，分别匹配编码前三位和前四位。程序结束时会在输出文件末尾写入
 `total`、`rounds` 和
 `final_result`：`rounds` 统计实际进入各轮病例的 Recall@1、Recall@3 和 Recall@5，
@@ -164,8 +180,8 @@ OPENAI_MODEL=gpt-5.5
 
 修改 `.env` 后需要重新启动 ChatKit 后端。所选供应商用于搜索规划、知识检索、指南检索、
 最终诊断和诊断结果判断等完整诊断流程。
-OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 使用 API JSON Output，并在本地按
-相同的 Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
+OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 使用 API JSON Output，并在本地按相同的
+Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
 指南检索阶段中，OpenAI 使用 Sandbox Skills 读取本地指南，DeepSeek 使用标准 function
 tools 搜索和读取同一套 `skills/` 资源；两条路径生成相同的 `GuidelineSearchResult`。
 
@@ -192,8 +208,9 @@ npm run dev
 
 展示翻译不会修改诊断流水线的原始结构化结果。URL、数值、计量单位、医学
 编码、枚举值、住院号和 `skill_names` 等机器标识保持不变，其余可见内容按目标语言
-翻译。翻译失败时会回退到未翻译内容，不会中断诊断流水线。翻译固定使用 DeepSeek，
-不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env` 单独设置模型：
+翻译。长文本会按完整行分段翻译；翻译失败时会显示提示并附上未翻译原文，不会中断
+诊断流水线。翻译固定使用 DeepSeek，不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env`
+单独设置模型：
 
 ```dotenv
 CHATKIT_TRANSLATION_MODEL=deepseek-v4-pro
@@ -209,7 +226,7 @@ ChatKit 展示翻译仍然使用 DeepSeek。
 
 医学知识检索通过 NCBI E-utilities 查询 PubMed。建议在项目根目录的 `.env` 中配置：
 
-每轮知识检索使用全部最多 5 条文献查询并发检索，每条最多返回 3 篇文献。检索结果只保留
+每轮知识检索使用全部 5 至 10 条文献查询并发检索，每条最多返回 3 篇文献。检索结果只保留
 PMID、标题、独立摘要 section 和 URL；非结构化 `AbstractText` 作为唯一 section 保留，
 结构化 `AbstractText` 按原顺序保留各 section 的未经改写正文，不拼接 section，也不保留
 Label 或 NlmCategory。Python 会删除 PMID、标题或摘要 section 为空的整条结果，但不删除
@@ -272,16 +289,29 @@ skills/<PDF 文件名>/
 
 指南检索使用 `search_planning_result.hypotheses` 选择所有与候选疾病直接对应的 skills，
 不设置固定 skill 数量，也不会仅因症状、检查结果或宽泛的消化内科词汇重合而选择其他
-疾病类别的 skill。选择完成后，仅使用 `positive_features` 在这些 skills 内定位诊断标准、
+疾病类别的 skill。skill 所要求的早期、遗传性、转移部位、并发症、操作或其他限定条件
+必须明确出现在候选诊断集合中；只有一般疾病候选时不会触发范围更窄的 skill，也不会从阳性
+特征中推断这些限定条件。选择完成后，仅使用
+`positive_features_result.positive_features` 在这些 skills 内定位诊断标准、
 鉴别诊断、确认或排除检查及下一步建议；推荐索引只用于定位，证据和指南诊断结论均以
 `guideline-full-text.md` 核实后的内容为依据。每个 skill 的 `guideline_evidence` 和
 `guideline_diagnosis` 保存在同一个 `skill_results` 项目中。`search_queries` 只用于
-PubMed 检索。最终诊断阶段不接收当前或上一轮 `hypotheses`，而是使用患者信息、PubMed
-证据、相似病例和完整指南结果独立生成诊断候选。
+PubMed 检索。最终诊断使用 Search Planning 的合并候选集，并结合患者信息、PubMed 证据、
+相似病例匹配文本和完整指南结果进行排序。
+
+DeepSeek function tools 在每次指南检索中只允许列举一次 skill；每个选中 skill 只允许
+读取一次 `SKILL.md`、搜索一次推荐索引、额外搜索一次指南全文，并最多读取两个指南全文
+区间。重复或超额调用会被拒绝并要求立即提交已有结果。单次关键词搜索最多返回 120 行，
+避免宽泛阳性特征使工具上下文无限增长。达到 agent turn 上限时，该阶段明确记录为检索
+未完成，并在失败原因中保留已经访问过的 skill 名称。
+
+DeepSeek 指南结果首次解析失败时固定重试一次。非空但不符合 Schema 的结果只进行一次
+无工具 JSON 修复，保留已有 skill、指南证据并补齐缺失字段；空响应使用新的工具调用状态
+完整重跑一次指南检索。agent turn 超限不会重试，第二次仍无法解析时记录首次与重试错误。
 
 ## 相似病例检索
 
-检索规划阶段生成 `positive_features` 英文短语列表，其中同时包含病例中明确记录的
+预处理模块的独立特征提取调用生成 `positive_features` 英文短语列表，其中同时包含病例中明确记录的
 阳性临床表现和阳性辅助检查结果。临床表现包括阳性症状、异常生命体征和体格检查阳性
 体征；辅助检查结果包括实验室、影像、内镜、病理和微生物检查结果。相似病例库使用
 `database/mimic_similar_case.csv`，并使用其中结构化出院记录 section 的非空内容，不再
@@ -296,20 +326,25 @@ RRF 生成 Top-20 候选病例，再使用 `ncbi/MedCPT-Cross-Encoder` 对全部
 排序。每个候选病例的 reranker 文档仅由检索命中的 Top-2 chunks 组成：先按 BM25 和
 Dense 的 chunk 排名执行 RRF，再去重选出前两个 chunk；reranker 不读取或输入完整
 `discharge_text`。reranker 完成后按 `discharge_disease` 聚合，相同诊断标签保留分数
-最高的代表病例，最终输出前五个不同诊断标签。结果中的 `icd_code` 与
-`discharge_disease`、`Sections` 按下标一一对应。`Sections` 是各标签代表病例实际参与
-reranker 的 Top-2 chunks，包含原 section 名称和 chunk 内容，并作为外部参考证据传入
-最终诊断和诊断判断阶段，不会被视为当前患者已经存在的临床事实。reranker
+最高的代表病例，最终输出前五个不同诊断标签。批量诊断结果中的
+`similar_case_retrieval_result` 按 `bm25`、`embedding`、`rrf` 和 `rerank` 保存四个阶段
+各自的 Top 5 疾病及对应 ICD code；前三个阶段不保存 section，只有 `rerank` 中的每个结果
+额外保存实际用于重排的 `sections`。主诊断流程只读取 `rerank`，新增的前三组结果仅用于
+观察、调试和评估。`sections` 是各标签代表病例实际参与 reranker 的 Top-2 chunks，包含原
+section 名称和 chunk 内容，并作为外部参考证据传入最终诊断和诊断判断阶段，不会被视为
+当前患者已经存在的临床事实。reranker
 模型加载或推理失败时会记录错误日志，回退到 RRF 排名后执行相同的标签级聚合。
+批量运行时，相似病例检索在进程内串行使用共享 tokenizer 和模型，其他诊断阶段仍按
+`--workers` 设置并发执行。
 启用 `--debug` 时，终端的标准错误流会输出 BM25、Dense、RRF 和 Reranker 排名。
 BM25/Dense 明细包括查询文本、住院号、出院疾病、病例聚合分数及命中的 Top-2
 chunks；RRF 明细额外包括最终 RRF 分数、两路候选排名及两路各自命中的 Top-2
 chunks，未进入某路候选排名时该路排名为 `null`；Reranker 明细包括标签级代表病例的
 相关性分数和实际输入模型的 chunks。未执行的检索分支会输出跳过原因。
-ChatKit 前端也会在每轮相似病例检索完成后展示同一组排名及跳过原因，该展示通过
+ChatKit 前端也会在相似病例检索完成后展示排名及跳过原因，该展示通过
 阶段进度事件传递，不要求后端启用 `debug`。
 
-如需单独测试“检索规划 → 相似病例检索”模块，可在 `.env` 中通过 `INPUT` 指定输入
+如需单独测试“阳性特征预处理 → 相似病例检索”模块，可在 `.env` 中通过 `INPUT` 指定输入
 CSV，然后运行：
 
 ```bash
@@ -322,13 +357,13 @@ CSV 数据条数和并行病例数。直接运行 Python 入口时，`--limit` �
 运行时，终端中的 BM25/Dense 排名调试信息可能交错显示。
 
 输入 CSV 需要包含 `subject_id`、`hadm_id`、`long_title` 和
-`discharge_text_before_disposition`。程序先调用检索规划 Agent 生成
+`discharge_text_before_disposition`。程序先调用预处理模块生成
 `positive_features`，再执行 BM25、Dense Retriever、RRF 和 Reranker，结果写入
 `output/similar_case/similar_case_results_<timestamp>.jsonl`。每条成功记录包含原病例标识、
-`search_planning_result.positive_features`、BM25/Dense/RRF/Reranker 排名明细
+`positive_features_result.positive_features`、BM25/Dense/RRF/Reranker 排名明细
 `similar_case_retrieval_rankings`，以及 Reranker 排序后的 `discharge_disease`、
 `icd_code` 和 `Sections`。
-独立模块的输出不保存规划阶段的 `hypotheses`、`search_queries`，也不保存相似病例的
+独立模块的输出不保存 `llm_hypotheses`、`search_queries`，也不保存相似病例的
 完整 `discharge_text`。运行时终端仍会输出四路排名明细及跳过原因。
 
 可运行以下脚本，使用与 `evaluate.py` 相同的模型判断提示词，分别评估 BM25、Dense 和

@@ -51,6 +51,8 @@ CLEAR_COMMANDS = {
 }
 AGENT_DISPLAY_NAMES = {
     "zh-CN": {
+        "Diagnostic Hypothesis Preprocessing Agent": "诊断假设预处理",
+        "Positive Feature Preprocessing Agent": "阳性特征预处理",
         "Search Planning Agent": "检索规划",
         "Knowledge Searcher Agent": "医学知识检索",
         "Similar Case Retrieval Agent": "相似病例检索",
@@ -59,6 +61,8 @@ AGENT_DISPLAY_NAMES = {
         "Diagnostic Judgement Agent": "诊断结果评估",
     },
     "en": {
+        "Diagnostic Hypothesis Preprocessing Agent": "diagnostic hypothesis preprocessing",
+        "Positive Feature Preprocessing Agent": "positive feature preprocessing",
         "Search Planning Agent": "search planning",
         "Knowledge Searcher Agent": "medical knowledge retrieval",
         "Similar Case Retrieval Agent": "similar-case retrieval",
@@ -68,6 +72,8 @@ AGENT_DISPLAY_NAMES = {
     },
 }
 STAGE_DISPLAY_NAMES = {
+    "LLM Hypotheses Preprocessing Result": "LLM Hypotheses Preprocessing Result",
+    "Positive Features Preprocessing Result": "Positive Features Preprocessing Result",
     "Search Planning Result": "Search Planning Result",
     "Knowledge Search Result": "Medical Knowledge Search Result",
     "Similar Case Retrieval Rankings": "Similar-Case Retrieval Rankings",
@@ -76,14 +82,17 @@ STAGE_DISPLAY_NAMES = {
     "Diagnostic Judgement Result": "Diagnostic Result Assessment",
 }
 STAGE_OUTPUT_ORDER = {
-    "Search Planning Result": 0,
-    "Knowledge Search Result": 1,
+    "LLM Hypotheses Preprocessing Result": 0,
+    "Positive Features Preprocessing Result": 1,
     "Similar Case Retrieval Rankings": 2,
-    "Guideline Search Result": 3,
-    "Final Diagnosis Result": 4,
-    "Diagnostic Judgement Result": 5,
+    "Search Planning Result": 3,
+    "Knowledge Search Result": 4,
+    "Guideline Search Result": 5,
+    "Final Diagnosis Result": 6,
+    "Diagnostic Judgement Result": 7,
 }
 FIELD_DISPLAY_NAMES = {
+    "llm_hypotheses": "Direct LLM Candidate Diagnoses",
     "hypotheses": "Candidate Diagnoses",
     "search_queries": "Literature Search Queries",
     "positive_features": "Positive Patient Features",

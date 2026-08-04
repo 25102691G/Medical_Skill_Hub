@@ -135,45 +135,43 @@ async def _run_batch_async(
         reader = csv.DictReader(input_file)
         _validate_columns(reader.fieldnames)
 
-        pending_rows: list[tuple[int, int, dict[str, str | None]]] = []
+        row_queue: asyncio.Queue[
+            tuple[int, int, dict[str, str | None]] | None
+        ] = asyncio.Queue(maxsize=workers)
+
+        async def worker() -> None:
+            nonlocal success_count
+            while True:
+                pending_row = await row_queue.get()
+                if pending_row is None:
+                    return
+                attempted_index, pending_row_number, row = pending_row
+                output_record = await diagnose_row(
+                    attempted_index,
+                    pending_row_number,
+                    row,
+                )
+                if output_record is not None:
+                    output_file.write(
+                        json.dumps(output_record, ensure_ascii=False) + "\n"
+                    )
+                    output_file.flush()
+                    success_count += 1
+
+        worker_tasks = [
+            asyncio.create_task(worker())
+            for _ in range(workers)
+        ]
         for row_number, row in enumerate(reader, start=2):
             if limit is not None and attempted_count >= limit:
                 break
 
             attempted_count += 1
-            pending_rows.append((attempted_count, row_number, row))
-            if len(pending_rows) < workers:
-                continue
+            await row_queue.put((attempted_count, row_number, row))
 
-            results = await asyncio.gather(
-                *(
-                    diagnose_row(attempted_index, pending_row_number, pending_row)
-                    for attempted_index, pending_row_number, pending_row in pending_rows
-                )
-            )
-            for output_record in results:
-                if output_record is not None:
-                    output_file.write(
-                        json.dumps(output_record, ensure_ascii=False) + "\n"
-                    )
-                    output_file.flush()
-                    success_count += 1
-            pending_rows.clear()
-
-        if pending_rows:
-            results = await asyncio.gather(
-                *(
-                    diagnose_row(attempted_index, pending_row_number, pending_row)
-                    for attempted_index, pending_row_number, pending_row in pending_rows
-                )
-            )
-            for output_record in results:
-                if output_record is not None:
-                    output_file.write(
-                        json.dumps(output_record, ensure_ascii=False) + "\n"
-                    )
-                    output_file.flush()
-                    success_count += 1
+        for _ in worker_tasks:
+            await row_queue.put(None)
+        await asyncio.gather(*worker_tasks)
 
     print(
         f"Batch completed: attempted={attempted_count}, succeeded={success_count}, "

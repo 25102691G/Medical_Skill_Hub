@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    computed_field,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 
 def _normalize_icd_code(icd_code: str) -> str:
@@ -215,6 +222,30 @@ class GuidelineSearchResult(BaseModel):
         description="Failure reason when guideline search returns an empty result",
     )
 
+    @computed_field
+    @property
+    def skill_names(self) -> list[str]:
+        return list(
+            dict.fromkeys(
+                skill_result.skill_name
+                for skill_result in self.skill_results
+            )
+        )
+
+    @model_serializer(mode="wrap")
+    def serialize_with_skill_names_before_results(self, handler):
+        serialized = handler(self)
+        if "skill_names" not in serialized or "skill_results" not in serialized:
+            return serialized
+
+        skill_names = serialized.pop("skill_names")
+        ordered = {}
+        for field_name, value in serialized.items():
+            if field_name == "skill_results":
+                ordered["skill_names"] = skill_names
+            ordered[field_name] = value
+        return ordered
+
 
 class HypothesisItem(BaseModel):
     icd_code: str = Field(
@@ -232,17 +263,38 @@ class HypothesisItem(BaseModel):
     )
 
 
-class SearchPlanningResult(BaseModel):
-    hypotheses: list[HypothesisItem] = Field(
+class LlmHypothesesResult(BaseModel):
+    llm_hypotheses: list[HypothesisItem] = Field(
         max_length=5,
-        description="Up to 5 major candidate diagnoses using the most specific available ICD-10-CM code",
+        description=(
+            "Up to 5 principal-diagnosis hypotheses generated directly from the original case text"
+        ),
     )
-    search_queries: list[str] = Field(max_length=5, description="Up to 5 medical literature search queries")
+
+
+class PositiveFeaturesResult(BaseModel):
     positive_features: list[str] = Field(
         description=(
             "Explicitly documented positive clinical manifestations and examination results "
-            "for similar-case retrieval and guideline evidence search"
+            "extracted directly from the original case text"
         )
+    )
+
+
+class SearchPlanningResult(BaseModel):
+    hypotheses: list[HypothesisItem] = Field(
+        max_length=10,
+        description=(
+            "Up to 10 unique principal-diagnosis candidates merged from direct LLM hypotheses "
+            "and similar cases"
+        ),
+    )
+    search_queries: list[str] = Field(
+        max_length=10,
+        description=(
+            "Five to ten medical literature search queries that collectively cover every hypothesis; "
+            "may be empty only when search planning fails"
+        ),
     )
     reason: str | None = Field(
         default=None,
@@ -255,20 +307,37 @@ class SimilarCaseSection(BaseModel):
     content: str = Field(description="Matched discharge summary section content")
 
 
+class SimilarCaseCandidate(BaseModel):
+    discharge_disease: str = Field(description="Discharge disease of the similar case")
+    icd_code: str = Field(description="ICD code corresponding to the discharge disease")
+
+
+class RerankedSimilarCase(SimilarCaseCandidate):
+    sections: list[SimilarCaseSection] = Field(
+        description="Matched discharge summary sections used by the reranker"
+    )
+
+
 class SimilarCaseRetrievalResult(BaseModel):
-    discharge_disease: list[str] = Field(
-        max_length=10,
-        description="Discharge diseases from the top 10 similar cases in retrieval rank order",
+    bm25: list[SimilarCaseCandidate] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Top five diseases after BM25 retrieval",
     )
-    icd_code: list[str] = Field(
-        max_length=10,
-        description="ICD codes corresponding to the retrieved similar cases in retrieval rank order",
+    embedding: list[SimilarCaseCandidate] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Top five diseases after dense embedding retrieval",
     )
-    Sections: list[list[SimilarCaseSection]] = Field(
-        max_length=10,
-        description=(
-            "Matched discharge summary sections for each similar case in retrieval rank order"
-        ),
+    rrf: list[SimilarCaseCandidate] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Top five diseases after reciprocal rank fusion",
+    )
+    rerank: list[RerankedSimilarCase] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Top five diseases and matched sections after reranking",
     )
     reason: str | None = Field(
         default=None,
@@ -290,6 +359,8 @@ class MultiRoundDiagnosisResult(BaseModel):
 
 
 class DiagnosisPipelineResult(BaseModel):
+    llm_hypotheses_result: LlmHypothesesResult
+    positive_features_result: PositiveFeaturesResult
     multi_round_diagnosis: MultiRoundDiagnosisResult
 
 
