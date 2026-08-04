@@ -177,7 +177,7 @@ async def _run_batch_async(
 
     print(
         f"Batch completed: attempted={attempted_count}, succeeded={success_count}, "
-        f"output={output_path}",
+        f"output={output_path.relative_to(PROJECT_ROOT)}",
         file=sys.stderr,
     )
     return output_path

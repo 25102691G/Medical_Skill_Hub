@@ -25,13 +25,7 @@ HF_ENDPOINT=https://hf-mirror.com \
 
 ## 运行方式
 
-在 `run_main.sh` 中配置病例文本和诊断数量、在 `.env` 中配置模型供应商后运行：
-
-```bash
-./run_main.sh
-```
-
-`run_main.sh` 和 `run_chatkit.sh` 共用项目根目录 `.env` 中的
+`run_batch_main.sh` 和 `run_chatkit.sh` 共用项目根目录 `.env` 中的
 `DIAGNOSIS_PROVIDER`，可设置为 `openai` 或 `deepseek`。
 两个入口也共用对应的 API Key 和模型名称：OpenAI 使用 `OPENAI_API_KEY` 和
 `OPENAI_MODEL`，DeepSeek 使用 `DEEPSEEK_API_KEY`、`DEEPSEEK_MODEL` 和
@@ -51,17 +45,6 @@ DEEPSEEK_THINKING=true
 JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本及二分类等原始业务输出会
 先封装在 JSON 字段中，解析后再恢复为原有返回类型。
 
-也可以直接调用 Python 入口：
-
-```bash
-.venv/bin/python main.py \
-  --model deepseek \
-  --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
-  --deepseek_model "${DEEPSEEK_MODEL:-}" \
-  --case "病例文本" \
-  --debug
-```
-
 ## 批量运行
 
 `batch_main.py` 读取通过 `--input` 指定的 CSV，使用
@@ -79,7 +62,7 @@ JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本�
 顺序写入 JSONL。
 
 `run_batch_main.sh` 会读取 `.env` 中的 `DIAGNOSIS_PROVIDER`，支持 `openai` 和
-`deepseek`。对应的 API Key、模型名称和 DeepSeek 地址与 `run_main.sh` 使用相同配置。
+`deepseek`。对应的 API Key、模型名称和 DeepSeek 地址使用项目根目录 `.env` 中的配置。
 例如切换为 DeepSeek：
 
 ```dotenv
@@ -154,7 +137,7 @@ bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 
 ## ChatKit 聊天界面
 
-项目提供基于 ChatKit 的自托管聊天界面。现有 `make_diagnosis()` 诊断流水线保持不变，FastAPI 适配层位于 `chatkit_app/`，React 前端位于 `chatkit_frontend/`。
+项目提供基于 ChatKit 的自托管聊天界面。FastAPI 适配层位于 `chatkit_app/`，React 前端位于 `chatkit_frontend/`。
 
 先安装后端和前端依赖：
 
@@ -172,14 +155,14 @@ cd ..
 ./run_chatkit.sh
 ```
 
-诊断供应商和模型与 `run_main.sh` 共用 `.env` 配置。例如：
+诊断供应商和模型使用项目根目录的 `.env` 配置。例如：
 
 ```dotenv
 DIAGNOSIS_PROVIDER=openai
 OPENAI_MODEL=gpt-5.5
 ```
 
-修改 `.env` 后需要重新启动两个入口。所选供应商用于搜索规划、知识检索、指南检索、
+修改 `.env` 后需要重新启动 ChatKit 后端。所选供应商用于搜索规划、知识检索、指南检索、
 最终诊断和诊断结果判断等完整诊断流程。
 OpenAI 使用 Agents SDK 原生结构化输出；DeepSeek 使用 API JSON Output，并在本地按
 相同的 Pydantic Schema 解析，因此两种供应商保持相同的阶段输出结构。
@@ -200,14 +183,14 @@ npm run dev
 ```
 
 前端开发服务器固定使用 `43179` 端口，启动后访问 `http://localhost:43179`。
-远程使用时，需要同时转发前端 `43179` 端口和后端 `8000` 端口。
+远程使用时，需要同时转发前端 `43179` 端口和后端 `8005` 端口。
 
 前端右上角可选择简体中文或英文作为显示语言。选择结果会同时控制 ChatKit 自带界面、
 页面静态文字以及后端消息的展示翻译。前端通过 `X-Display-Language` 请求头传递目标
 语言；每个 Agent 完成后，ChatKit 服务端会翻译该阶段的字段标签和字符串内容，再立即
 追加到聊天界面。如果切换显示语言，当前线程会按新语言重新加载已有助手消息。
 
-展示翻译不会修改 `make_diagnosis()` 的原始结构化结果。URL、数值、计量单位、医学
+展示翻译不会修改诊断流水线的原始结构化结果。URL、数值、计量单位、医学
 编码、枚举值、住院号和 `skill_names` 等机器标识保持不变，其余可见内容按目标语言
 翻译。翻译失败时会回退到未翻译内容，不会中断诊断流水线。翻译固定使用 DeepSeek，
 不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env` 单独设置模型：

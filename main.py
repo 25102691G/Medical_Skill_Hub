@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import asyncio
 import json
 import os
@@ -56,17 +55,6 @@ from schemas import (
 
 DiagnosisProgressCallback = Callable[[str, str, str | None], None]
 StructuredResultT = TypeVar("StructuredResultT", bound=BaseModel)
-
-
-def _read_case_text(args: argparse.Namespace) -> str:
-    if args.case:
-        return args.case.strip()
-
-    if not sys.stdin.isatty():
-        return sys.stdin.read().strip()
-
-    print("Enter the case information, then press Ctrl+D when finished:")
-    return sys.stdin.read().strip()
 
 
 def _to_jsonable(value: object) -> object:
@@ -278,33 +266,6 @@ async def _run_search_planning_with_fallback(
             progress_callback=progress_callback,
         )
         return result
-
-
-def _run_search_planning(
-    case_text: str,
-    *,
-    model: str | Model,
-    previous_search_planning_result: SearchPlanningResult | None = None,
-    previous_diagnosis_result: DiagnosisResult | None = None,
-    diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
-    previous_guideline_evidence: list[str] | None = None,
-    debug: bool = False,
-    round_index: int | None = None,
-    progress_callback: DiagnosisProgressCallback | None = None,
-) -> SearchPlanningResult:
-    return asyncio.run(
-        _run_search_planning_with_fallback(
-            case_text,
-            model=model,
-            previous_search_planning_result=previous_search_planning_result,
-            previous_diagnosis_result=previous_diagnosis_result,
-            diagnostic_judgement_result=diagnostic_judgement_result,
-            previous_guideline_evidence=previous_guideline_evidence,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
-        )
-    )
 
 
 async def _run_knowledge_search_async(
@@ -1044,26 +1005,6 @@ async def make_diagnosis_pipeline_async(
             progress_callback=progress_callback,
         )
 
-    raise RuntimeError("Diagnosis loop ended without producing a diagnosis result.")
-
-
-def make_diagnosis_pipeline(
-    case_text: str,
-    *,
-    model: str | Model | None = None,
-    debug: bool = False,
-    progress_callback: DiagnosisProgressCallback | None = None,
-) -> DiagnosisPipelineResult:
-    return asyncio.run(
-        make_diagnosis_pipeline_async(
-            case_text,
-            model=model,
-            debug=debug,
-            progress_callback=progress_callback,
-        )
-    )
-
-
 async def make_diagnosis_async(
     case_text: str,
     *,
@@ -1072,22 +1013,6 @@ async def make_diagnosis_async(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> DiagnosisResult:
     pipeline_result = await make_diagnosis_pipeline_async(
-        case_text,
-        model=model,
-        debug=debug,
-        progress_callback=progress_callback,
-    )
-    return pipeline_result.multi_round_diagnosis.rounds[-1].diagnosis_result
-
-
-def make_diagnosis(
-    case_text: str,
-    *,
-    model: str | Model | None = None,
-    debug: bool = False,
-    progress_callback: DiagnosisProgressCallback | None = None,
-) -> DiagnosisResult:
-    pipeline_result = make_diagnosis_pipeline(
         case_text,
         model=model,
         debug=debug,
@@ -1125,53 +1050,3 @@ def build_diagnosis_model(
             ),
         )
     raise ValueError("Model provider must be openai or deepseek.")
-
-
-def _configure_cli_model(args: argparse.Namespace) -> Model:
-    return build_diagnosis_model(
-        args.model,
-        openai_api_key=args.openai_apikey or "",
-        openai_model=args.openai_model or "",
-        deepseek_api_key=args.deepseek_apikey or "",
-        deepseek_model=args.deepseek_model or "",
-    )
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Gastroenterology medical diagnosis Agent demo")
-    parser.add_argument(
-        "--model",
-        choices=("openai", "deepseek"),
-        default="openai",
-        help="LLM provider. Default: openai.",
-    )
-    parser.add_argument("--openai_apikey")
-    parser.add_argument("--openai_model")
-    parser.add_argument("--deepseek_apikey")
-    parser.add_argument("--deepseek_model")
-    parser.add_argument("--case", help="Case text. If omitted, input is read from standard input.")
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Print search planning, retrieval, diagnosis, and judgement details.",
-    )
-    args = parser.parse_args()
-
-    case_text = _read_case_text(args)
-    if not case_text:
-        print("Error: case information cannot be empty.", file=sys.stderr)
-        return 1
-
-    try:
-        diagnosis_model = _configure_cli_model(args)
-    except ValueError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
-
-    result = make_diagnosis(case_text, model=diagnosis_model, debug=args.debug)
-    # print(_as_json(result))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
