@@ -102,16 +102,22 @@ DEEPSEEK_THINKING=true
 `guideline_search_result.unused_reason` 记录具体原因；该字段仅用于观察 skill 调用过程，
 不会传给最终诊断或多轮诊断判断。如果第二轮触发纠正诊断，该轮保存纠正后的
 `diagnosis_result`。`search_planning_result.hypotheses` 和
-`diagnosis_result.topk_diagnoses` 中的每项诊断均使用 `icd_code` 优先保存四字符 ICD-10-CM
-子类编码；仅当对应类别不存在四字符子类（如 `I10`）时保存三字符类别编码，并使用
-`category_name` 保存对应的规范英文名称。单个病例失败时，错误
+`diagnosis_result.topk_diagnoses` 统一以本次住院主诊断为预测目标。最终诊断只对检索规划
+候选与相似病例候选的并集进行重排，指南和 PubMed 证据仅用于解释患者信息和调整排序，
+不会生成候选集之外的新 ICD。相似病例的 `icd_code` 会与疾病名称、匹配文本一起传入最终
+诊断。未进入最终前五的检索规划候选记录在
+`diagnosis_result.excluded_planning_candidates`，并包含支持排除的患者级反证。
+
+每项诊断均使用 `icd_code` 保存移除小数点后的完整三至七字符 ICD-10-CM 编码，并使用
+`category_name` 保存候选集中与该编码对应的英文名称。最终结果固定包含五个按 1 至 5 排序
+且 ICD 编码互不重复的候选；编码及名称必须原样来自候选并集。单个病例失败时，错误
 会输出到终端，脚本继续处理下一条病例。单个 PubMed 查询在完成配置的重试后仍遇到网络错误时，
 该查询按空结果处理，不会导致整个病例失败。
 
 ## 诊断结果评估
 
-`evaluate.py` 对多轮批量诊断结果中的 ICD code 进行直接匹配。`batch_main.py` 将输入
-CSV 中的 `icd_code` 写入每条结果，评估脚本以该字段为金标准，并遍历
+`evaluate.py` 对多轮批量诊断结果中的主诊断 ICD code 进行直接匹配。`batch_main.py` 将输入
+CSV 中代表本次住院主诊断的 `icd_code` 写入每条结果，评估脚本以该字段为金标准，并遍历
 `multi_round_diagnosis.rounds`。每一轮分别提取以下三组前五项 ICD code：
 
 - `multi_round_diagnosis.rounds[].search_planning_result.hypotheses[].icd_code`

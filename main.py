@@ -26,7 +26,6 @@ from config import (
     DEEPSEEK_BASE_URL,
     DEEPSEEK_MODEL,
     DEEPSEEK_THINKING,
-    DIAGNOSIS_TOPK,
     OPENAI_MODEL,
 )
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
@@ -576,6 +575,7 @@ async def _run_guideline_search_async(
 
 async def _run_final_diagnosis_async(
     case_text: str,
+    search_planning_result: SearchPlanningResult,
     knowledge_search_result: KnowledgeSearchResult,
     guideline_search_result: GuidelineSearchResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
@@ -598,17 +598,52 @@ async def _run_final_diagnosis_async(
     similar_case_summary = [
         {
             "rank": rank,
+            "icd_code": icd_code.strip().upper().replace(".", ""),
             "discharge_disease": discharge_disease,
             "matched_sections": sections,
         }
-        for rank, (discharge_disease, sections) in enumerate(
+        for rank, (icd_code, discharge_disease, sections) in enumerate(
             zip(
+                similar_case_retrieval_result.icd_code,
                 similar_case_retrieval_result.discharge_disease,
                 similar_case_retrieval_result.Sections,
             ),
             start=1,
         )
     ]
+    candidate_diagnoses = []
+    candidate_names: dict[str, str] = {}
+    for hypothesis in search_planning_result.hypotheses:
+        if hypothesis.icd_code in candidate_names:
+            continue
+        candidate_names[hypothesis.icd_code] = hypothesis.category_name
+        candidate_diagnoses.append(
+            {
+                "source": "search_planning",
+                "icd_code": hypothesis.icd_code,
+                "category_name": hypothesis.category_name,
+            }
+        )
+    for icd_code, discharge_disease in zip(
+        similar_case_retrieval_result.icd_code,
+        similar_case_retrieval_result.discharge_disease,
+    ):
+        normalized_icd_code = icd_code.strip().upper().replace(".", "")
+        if normalized_icd_code in candidate_names:
+            continue
+        candidate_names[normalized_icd_code] = discharge_disease
+        candidate_diagnoses.append(
+            {
+                "source": "similar_case",
+                "icd_code": normalized_icd_code,
+                "category_name": discharge_disease,
+            }
+        )
+    if len(candidate_diagnoses) < 5:
+        raise ValueError(
+            "Final diagnosis requires at least 5 unique candidates, "
+            f"but received {len(candidate_diagnoses)}."
+        )
     pubmed_results = _format_pubmed_results(knowledge_search_result)
     guideline_evidence = [
         f"{skill_result.skill_name}：{evidence}"
@@ -647,6 +682,12 @@ async def _run_final_diagnosis_async(
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>\n\n"
+        "<CANDIDATE_DIAGNOSES>\n"
+        f"{_as_json(candidate_diagnoses)}\n"
+        "</CANDIDATE_DIAGNOSES>\n\n"
+        "<SEARCH_PLANNING_CANDIDATES>\n"
+        f"{_as_json(search_planning_result.hypotheses)}\n"
+        "</SEARCH_PLANNING_CANDIDATES>\n\n"
         "<NUMBERED_EVIDENCE>\n"
         f"{_as_json(numbered_evidence)}\n"
         "</NUMBERED_EVIDENCE>\n\n"
@@ -658,7 +699,7 @@ async def _run_final_diagnosis_async(
         "</SIMILAR_CASES>\n\n"
         f"{revision_context}"
         "## Task\n\n"
-        f"Please output the top {DIAGNOSIS_TOPK} suspected diagnoses."
+        "Please output exactly five ranked principal-diagnosis candidates."
     )
     diagnosis_prompt = _prepare_structured_prompt(
         diagnosis_prompt,
@@ -679,6 +720,56 @@ async def _run_final_diagnosis_async(
         )
     ).final_output
     diagnosis_content = _parse_structured_result(raw_result, FinalDiagnosisContent)
+    for diagnosis in diagnosis_content.topk_diagnoses:
+        expected_category_name = candidate_names.get(diagnosis.icd_code)
+        if expected_category_name is None:
+            raise ValueError(
+                f"Final diagnosis returned ICD code outside the candidate set: "
+                f"{diagnosis.icd_code}"
+            )
+        if diagnosis.category_name != expected_category_name:
+            raise ValueError(
+                f"Final diagnosis changed the candidate name for {diagnosis.icd_code}: "
+                f"expected {expected_category_name!r}, got {diagnosis.category_name!r}"
+            )
+
+    selected_codes = {
+        diagnosis.icd_code for diagnosis in diagnosis_content.topk_diagnoses
+    }
+    planning_candidates = {
+        hypothesis.icd_code: hypothesis.category_name
+        for hypothesis in search_planning_result.hypotheses
+    }
+    excluded_candidates = {
+        candidate.icd_code: candidate
+        for candidate in diagnosis_content.excluded_planning_candidates
+    }
+    expected_excluded_codes = set(planning_candidates) - selected_codes
+    missing_excluded_codes = expected_excluded_codes - set(excluded_candidates)
+    if missing_excluded_codes:
+        raise ValueError(
+            "Every search planning candidate omitted from the final top five must include patient "
+            "contrary evidence. "
+            f"Missing {sorted(missing_excluded_codes)}; "
+            f"final top five contains {sorted(selected_codes)}."
+        )
+    validated_excluded_candidates = []
+    for icd_code in planning_candidates:
+        if icd_code not in expected_excluded_codes:
+            continue
+        candidate = excluded_candidates[icd_code]
+        if candidate.category_name != planning_candidates[icd_code]:
+            raise ValueError(
+                f"Excluded planning candidate changed the candidate name for {icd_code}."
+            )
+        if not all(
+            evidence.strip() for evidence in candidate.patient_contrary_evidence
+        ):
+            raise ValueError(
+                f"Excluded planning candidate {icd_code} has empty contrary evidence."
+            )
+        validated_excluded_candidates.append(candidate)
+
     skill_names = [
         skill_result.skill_name
         for skill_result in guideline_search_result.skill_results
@@ -687,6 +778,7 @@ async def _run_final_diagnosis_async(
         used_skill=guideline_search_result.used_skill,
         skill_names=skill_names,
         topk_diagnoses=diagnosis_content.topk_diagnoses,
+        excluded_planning_candidates=validated_excluded_candidates,
         summary=diagnosis_content.summary,
         evidence=numbered_evidence,
     )
@@ -872,6 +964,7 @@ async def make_diagnosis_pipeline_async(
 
         diagnosis_result = await _run_final_diagnosis_async(
             case_text,
+            search_planning_result,
             knowledge_search_result,
             guideline_search_result,
             similar_case_retrieval_result,
@@ -899,6 +992,7 @@ async def make_diagnosis_pipeline_async(
         ):
             diagnosis_result = await _run_final_diagnosis_async(
                 case_text,
+                search_planning_result,
                 knowledge_search_result,
                 guideline_search_result,
                 similar_case_retrieval_result,

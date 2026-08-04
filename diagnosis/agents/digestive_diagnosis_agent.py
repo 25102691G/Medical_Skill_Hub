@@ -29,8 +29,9 @@ FINAL_DIAGNOSIS_INSTRUCTIONS = """
 
 This is the final diagnosis stage.
 
-Generate exactly the requested number of unique diagnoses, ranked by their overall consistency with the
-current patient's documented clinical information.
+Generate exactly five unique ICD-10-CM candidates for the principal diagnosis of the current
+hospitalization, ranked by their consistency with the current patient's documented clinical information
+and the condition chiefly responsible for the admission or the main condition evaluated and treated.
 
 The input may contain:
 
@@ -44,9 +45,14 @@ The input may contain:
 Guideline diagnostic results, retrieved diagnoses, and previous-round outputs are candidate sources
 only. They are not presumed to be correct.
 
+The supplied candidate_diagnoses list is the complete allowed candidate set. Select every final
+diagnosis from that list and copy its icd_code and category_name exactly. Do not create a diagnosis or
+recode a candidate outside that list.
+
 ### 2. Candidate Evaluation
 
-Construct a combined candidate set from all supplied sources.
+Rerank the supplied candidate_diagnoses. Use guideline and literature evidence only to interpret the
+current patient's findings and rank those candidates, not to create additional ICD candidates.
 
 Evaluate each clinically plausible candidate against the current patient's documented:
 
@@ -60,8 +66,27 @@ Evaluate each clinically plausible candidate against the current patient's docum
 * complications;
 * relevant negative findings.
 
-Retain, refine, demote, remove, or add candidates according to their consistency with the current
-patient.
+Retain, promote, demote, or exclude supplied candidates according to their consistency with the current
+patient and their likelihood of being the principal diagnosis.
+
+Do not rank chronic comorbidities, incidental findings, or secondary conditions merely because they are
+documented. Include them only when they are plausible principal diagnoses for the current
+hospitalization.
+
+Do not automatically replace the main condition evaluated or treated during the hospitalization with a
+suspected deeper etiology. Rank the diagnosis that best represents the hospitalization's principal
+diagnostic target.
+
+Every search planning candidate omitted from the final top five must appear once in
+excluded_planning_candidates. Copy its icd_code and category_name exactly and provide one or more
+explicit current-patient findings that contradict it or make it unsuitable as the principal diagnosis.
+Do not use missing information, external evidence, or the need to make room for another candidate as
+contrary evidence.
+
+Always return excluded_planning_candidates. After selecting the final top five, compare their ICD codes
+with search_planning_candidates. If every search planning candidate is selected, return an empty array.
+Otherwise, return exactly the set difference search_planning_candidates minus topk_diagnoses. Never
+include a candidate whose ICD code appears in topk_diagnoses.
 
 Rank diagnoses according to patient-level evidence, not according to which source proposed them.
 
@@ -119,29 +144,22 @@ ranking errors while reassessing all candidates against the current patient info
 
 For each diagnosis:
 
-* prefer the four-character ICD-10-CM subcategory code without a decimal point;
-* use a three-character ICD-10-CM category code only when that category has no four-character
-  subcategory, such as I10;
+* copy the complete ICD-10-CM code without a decimal point from candidate_diagnoses;
 * set category_name to the canonical English description corresponding to that code.
 
-Do not use a three-character category code merely because the patient information lacks a more specific
-subtype. When the category has four-character subcategories, select the appropriate unspecified or other
-subcategory if the documented information does not support a more specific one.
-
-Include only diagnostic details represented by the selected ICD-10-CM code. Do not add
-details that require a more specific ICD-10-CM code, including:
+Include only diagnostic details represented by the selected complete ICD-10-CM code. Do not add
+unsupported details, including:
 
 * additional anatomical refinement or subtype;
 * additional complication details;
 * severity;
 * disease behavior;
-* other details beyond the four-character level.
+* other details not documented for the current patient.
 
 Clinical location and complications may be used for diagnostic reasoning and may appear in
 category_name only when they are part of the canonical description of the selected code.
 
-The icd_code and category_name in each diagnosis must identify the same ICD-10-CM category or
-subcategory.
+The icd_code and category_name in each diagnosis must exactly match one candidate_diagnoses item.
 
 Do not output duplicate icd_code values.
 

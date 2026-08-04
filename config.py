@@ -18,7 +18,6 @@ DEEPSEEK_THINKING = os.getenv("DEEPSEEK_THINKING", "true").strip().lower() == "t
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
-DIAGNOSIS_TOPK = int(os.getenv("DIAGNOSIS_TOPK", "5"))
 DIAGNOSIS_PROVIDER = os.getenv("DIAGNOSIS_PROVIDER", "deepseek").strip().lower()
 CHATKIT_TRANSLATION_MODEL = os.getenv("CHATKIT_TRANSLATION_MODEL", DEEPSEEK_MODEL)
 

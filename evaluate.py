@@ -19,7 +19,7 @@ METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate three sets of top-5 ICD diagnosis results."
+        description="Evaluate three sets of top-5 principal-diagnosis ICD predictions."
     )
     parser.add_argument(
         "--input",

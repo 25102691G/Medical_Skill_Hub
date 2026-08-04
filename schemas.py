@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 def _normalize_icd_code(icd_code: str) -> str:
@@ -81,14 +81,13 @@ class KnowledgeSearchResult(BaseModel):
 
 
 class DiagnosisItem(BaseModel):
-    rank: int = Field(description="Diagnosis ranking, starting from 1")
+    rank: int = Field(ge=1, le=5, description="Diagnosis ranking, starting from 1")
     icd_code: str = Field(
         min_length=3,
-        max_length=4,
-        pattern=r"^[A-Z][0-9][0-9A-Z]{1,2}$",
+        max_length=7,
+        pattern=r"^[A-Z][0-9][0-9A-Z]{1,5}$",
         description=(
-            "Prefer the four-character ICD-10-CM subcategory code without a decimal point; "
-            "use the three-character category code only when it has no four-character subcategory"
+            "Complete three-to-seven-character ICD-10-CM code without a decimal point"
         ),
     )
     category_name: str = Field(
@@ -115,15 +114,68 @@ class DiagnosisItem(BaseModel):
     )
 
 
+class ExcludedPlanningCandidate(BaseModel):
+    icd_code: str = Field(
+        min_length=3,
+        max_length=7,
+        pattern=r"^[A-Z][0-9][0-9A-Z]{1,5}$",
+        description="Complete ICD-10-CM code copied from a search planning candidate",
+    )
+    category_name: str = Field(
+        description="Category name copied from the corresponding search planning candidate"
+    )
+    patient_contrary_evidence: list[str] = Field(
+        min_length=1,
+        description=(
+            "Explicit current-patient findings that justify excluding this planning candidate "
+            "from the final top five"
+        ),
+    )
+
+    normalize_icd_code = field_validator("icd_code", mode="before")(
+        _normalize_icd_code
+    )
+
+
 class FinalDiagnosisContent(BaseModel):
-    topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
+    topk_diagnoses: list[DiagnosisItem] = Field(
+        min_length=5,
+        max_length=5,
+        description="Exactly five ranked principal-diagnosis ICD candidates",
+    )
+    excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
+        description=(
+            "Search planning candidates omitted from the final top five, each supported by explicit "
+            "contrary evidence from the current patient"
+        ),
+    )
     summary: str = Field(description="Brief diagnostic analysis summary")
+
+    @model_validator(mode="after")
+    def validate_rankings(self) -> "FinalDiagnosisContent":
+        diagnosis_codes = [item.icd_code for item in self.topk_diagnoses]
+        if len(diagnosis_codes) != len(set(diagnosis_codes)):
+            raise ValueError("Final diagnosis ICD codes must be unique.")
+        if [item.rank for item in self.topk_diagnoses] != [1, 2, 3, 4, 5]:
+            raise ValueError("Final diagnosis ranks must be exactly 1 through 5 in list order.")
+        excluded_codes = [
+            item.icd_code for item in self.excluded_planning_candidates
+        ]
+        if len(excluded_codes) != len(set(excluded_codes)):
+            raise ValueError("Excluded planning candidate ICD codes must be unique.")
+        return self
 
 
 class DiagnosisResult(BaseModel):
     used_skill: bool = Field(description="Whether a guideline skill was used before the final diagnosis stage")
     skill_names: list[str] = Field(description="List of skill names actually used")
-    topk_diagnoses: list[DiagnosisItem] = Field(description="Top-K suspected diagnoses")
+    topk_diagnoses: list[DiagnosisItem] = Field(
+        description="Five ranked principal-diagnosis ICD candidates"
+    )
+    excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
+        default_factory=list,
+        description="Search planning candidates excluded from the final top five",
+    )
     summary: str = Field(description="Brief diagnostic analysis summary")
     evidence: list[str] = Field(
         default_factory=list,
@@ -167,12 +219,9 @@ class GuidelineSearchResult(BaseModel):
 class HypothesisItem(BaseModel):
     icd_code: str = Field(
         min_length=3,
-        max_length=4,
-        pattern=r"^[A-Z][0-9][0-9A-Z]{1,2}$",
-        description=(
-            "Prefer the four-character ICD-10-CM subcategory code without a decimal point; "
-            "use the three-character category code only when it has no four-character subcategory"
-        ),
+        max_length=7,
+        pattern=r"^[A-Z][0-9][0-9A-Z]{1,5}$",
+        description="Complete three-to-seven-character ICD-10-CM code without a decimal point",
     )
     category_name: str = Field(
         description="Canonical English description corresponding to the ICD-10-CM code"

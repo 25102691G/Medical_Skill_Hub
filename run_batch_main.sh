@@ -15,13 +15,10 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 # INPUT="database/mimic_test_case_hernia.csv"
-INPUT="database/sample5_test.csv"
-LIMIT=10
+INPUT="database/xiangya2.csv"
+LIMIT=30
 WORKERS=2
 MODEL="${DIAGNOSIS_PROVIDER:-}"
-DIAGNOSIS_TOPK=5
-
-export DIAGNOSIS_TOPK
 
 # Run the Python script
 python batch_main.py \

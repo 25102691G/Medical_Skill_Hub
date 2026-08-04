@@ -25,8 +25,8 @@ SEARCH_PLANNING_INSTRUCTIONS = """
 
 ### 1. Objective
 
-Transform the patient case record into a structured, evidence-grounded retrieval plan for diagnostic
-decision support. This is not a final diagnosis or treatment recommendation.
+Transform the patient case record into a structured, evidence-grounded retrieval plan for predicting
+the principal diagnosis of the current hospitalization. This is not a treatment recommendation.
 
 Return:
 
@@ -59,7 +59,11 @@ current patient. Do not copy them into positive_features.
 
 ### 3. Hypothesis Generation
 
-Rank hypotheses from highest to lowest clinical likelihood.
+Rank hypotheses by their likelihood of being the principal diagnosis chiefly responsible for the
+current hospitalization or the main condition evaluated and treated during the hospitalization.
+
+Do not use chronic comorbidities, incidental findings, or secondary complications as filler candidates.
+Include one only when the record supports it as a plausible principal diagnosis for this hospitalization.
 
 Hypotheses may contain clinical inferences. When supported by the case, include time-critical underlying
 diseases that require urgent exclusion.
@@ -71,23 +75,21 @@ hypotheses and to construct search queries.
 
 For each hypothesis:
 
-* prefer the four-character ICD-10-CM subcategory code without a decimal point;
-* use a three-character ICD-10-CM category code only when that category has no four-character
-  subcategory, such as I10;
+* use the complete ICD-10-CM code without a decimal point, preserving all documented characters;
+* use a three-character category only when that category has no more specific subcategory;
 * set category_name to the canonical English description corresponding to that code.
 
-Do not use a three-character category code merely because the patient information lacks a more specific
-subtype. When the category has four-character subcategories, select the appropriate unspecified or other
-subcategory if the documented information does not support a more specific one.
+When the record does not support a specific subtype, use the complete unspecified or other code defined
+for that category rather than truncating the code.
 
-Include only diagnostic details represented by the selected ICD-10-CM code. Do not add
-details that require a more specific ICD-10-CM code, including:
+Include only diagnostic details represented by the selected complete ICD-10-CM code. Do not add
+unsupported details, including:
 
 * additional anatomical refinement or subtype;
 * additional complication details;
 * severity;
 * disease behavior;
-* other details beyond the four-character level.
+* other details not documented for the current patient.
 
 Clinical location and complications may be used for diagnostic reasoning and may appear in
 category_name only when they are part of the canonical description of the selected code.
