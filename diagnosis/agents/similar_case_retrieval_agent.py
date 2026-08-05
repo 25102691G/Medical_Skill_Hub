@@ -227,13 +227,15 @@ def _empty_retrieval_result() -> SimilarCaseRetrievalResult:
     return SimilarCaseRetrievalResult()
 
 
-def _top_five_diseases(
+def _top_five_retrieval_results(
     ranking: list[tuple[int, float]],
     cases: tuple[_CaseRecord, ...],
-) -> list[dict[str, str]]:
-    results: list[dict[str, str]] = []
+    sections: tuple[_SectionRecord, ...],
+    hits: dict[int, list[tuple[int, float]]],
+) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
     seen_diseases: set[str] = set()
-    for case_index, _ in ranking:
+    for case_index, score in ranking:
         case = cases[case_index]
         if case.discharge_disease in seen_diseases:
             continue
@@ -242,6 +244,56 @@ def _top_five_diseases(
             {
                 "discharge_disease": case.discharge_disease,
                 "icd_code": case.icd_code,
+                "hadm_id": case.hadm_id,
+                "score": score,
+                "sections": _section_hit_details(
+                    hits.get(case_index, []),
+                    sections,
+                ),
+            }
+        )
+        if len(results) == 5:
+            break
+    return results
+
+
+def _top_five_rrf_results(
+    ranking: list[tuple[int, float]],
+    cases: tuple[_CaseRecord, ...],
+    sections: tuple[_SectionRecord, ...],
+    bm25_ranks: dict[int, int],
+    dense_ranks: dict[int, int],
+    bm25_hits: dict[int, list[tuple[int, float]]],
+    dense_hits: dict[int, list[tuple[int, float]]],
+    reranker_hits: dict[int, list[tuple[int, float]]],
+) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    seen_diseases: set[str] = set()
+    for case_index, score in ranking:
+        case = cases[case_index]
+        if case.discharge_disease in seen_diseases:
+            continue
+        seen_diseases.add(case.discharge_disease)
+        results.append(
+            {
+                "discharge_disease": case.discharge_disease,
+                "icd_code": case.icd_code,
+                "hadm_id": case.hadm_id,
+                "rrf_score": score,
+                "bm25_rank": bm25_ranks.get(case_index),
+                "embedding_rank": dense_ranks.get(case_index),
+                "bm25_sections": _section_hit_details(
+                    bm25_hits.get(case_index, []),
+                    sections,
+                ),
+                "embedding_sections": _section_hit_details(
+                    dense_hits.get(case_index, []),
+                    sections,
+                ),
+                "sections": _section_hit_details(
+                    reranker_hits.get(case_index, []),
+                    sections,
+                ),
             }
         )
         if len(results) == 5:
@@ -1004,9 +1056,28 @@ def _retrieve_similar_cases(
             ]
         )
     return SimilarCaseRetrievalResult(
-        bm25=_top_five_diseases(bm25_ranking, cases),
-        embedding=_top_five_diseases(dense_ranking, cases),
-        rrf=_top_five_diseases(rrf_ranking, cases),
+        bm25=_top_five_retrieval_results(
+            bm25_ranking,
+            cases,
+            sections,
+            bm25_hits,
+        ),
+        embedding=_top_five_retrieval_results(
+            dense_ranking,
+            cases,
+            sections,
+            dense_hits,
+        ),
+        rrf=_top_five_rrf_results(
+            rrf_ranking,
+            cases,
+            sections,
+            bm25_ranks,
+            dense_ranks,
+            bm25_hits,
+            dense_hits,
+            reranker_hits,
+        ),
         rerank=[
             {
                 "discharge_disease": cases[case_index].discharge_disease,

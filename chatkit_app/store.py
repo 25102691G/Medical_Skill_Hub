@@ -129,7 +129,7 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         item: ThreadItem,
         context: dict[str, Any],
     ) -> None:
-        self.items[thread_id].append(item)
+        await self.save_item(thread_id, item, context)
 
     async def save_item(
         self,

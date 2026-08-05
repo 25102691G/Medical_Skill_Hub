@@ -323,9 +323,39 @@ class SimilarCaseSection(BaseModel):
     content: str = Field(description="Matched discharge summary section content")
 
 
+class ScoredSimilarCaseSection(SimilarCaseSection):
+    score: float = Field(description="Section retrieval score")
+
+
 class SimilarCaseCandidate(BaseModel):
     discharge_disease: str = Field(description="Discharge disease of the similar case")
     icd_code: str = Field(description="ICD code corresponding to the discharge disease")
+
+
+class RetrievedSimilarCase(SimilarCaseCandidate):
+    hadm_id: str = Field(description="Hospital admission ID of the similar case")
+    score: float = Field(description="Aggregated case retrieval score")
+    sections: list[ScoredSimilarCaseSection] = Field(
+        description="Top matched sections in this retrieval branch"
+    )
+
+
+class FusedSimilarCase(SimilarCaseCandidate):
+    hadm_id: str = Field(description="Hospital admission ID of the similar case")
+    rrf_score: float = Field(description="Reciprocal rank fusion score")
+    bm25_rank: int | None = Field(description="Case rank in the BM25 branch")
+    embedding_rank: int | None = Field(
+        description="Case rank in the dense embedding branch"
+    )
+    bm25_sections: list[ScoredSimilarCaseSection] = Field(
+        description="Top sections matched by BM25"
+    )
+    embedding_sections: list[ScoredSimilarCaseSection] = Field(
+        description="Top sections matched by dense embedding retrieval"
+    )
+    sections: list[ScoredSimilarCaseSection] = Field(
+        description="Top fused sections selected for the reranker"
+    )
 
 
 class RerankedSimilarCase(SimilarCaseCandidate):
@@ -335,20 +365,22 @@ class RerankedSimilarCase(SimilarCaseCandidate):
 
 
 class SimilarCaseRetrievalResult(BaseModel):
-    bm25: list[SimilarCaseCandidate] = Field(
+    bm25: list[RetrievedSimilarCase] = Field(
         default_factory=list,
         max_length=5,
-        description="Top five diseases after BM25 retrieval",
+        description="Top five diseases and matched sections after BM25 retrieval",
     )
-    embedding: list[SimilarCaseCandidate] = Field(
+    embedding: list[RetrievedSimilarCase] = Field(
         default_factory=list,
         max_length=5,
-        description="Top five diseases after dense embedding retrieval",
+        description=(
+            "Top five diseases and matched sections after dense embedding retrieval"
+        ),
     )
-    rrf: list[SimilarCaseCandidate] = Field(
+    rrf: list[FusedSimilarCase] = Field(
         default_factory=list,
         max_length=5,
-        description="Top five diseases after reciprocal rank fusion",
+        description="Top five diseases and retrieval details after rank fusion",
     )
     rerank: list[RerankedSimilarCase] = Field(
         default_factory=list,

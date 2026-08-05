@@ -207,13 +207,17 @@ npm run dev
 
 前端右上角可选择简体中文或英文作为显示语言。选择结果会同时控制 ChatKit 自带界面、
 页面静态文字以及后端消息的展示翻译。前端通过 `X-Display-Language` 请求头传递目标
-语言；每个 Agent 完成后，ChatKit 服务端会翻译该阶段的字段标签和字符串内容，再立即
-追加到聊天界面。如果切换显示语言，当前线程会按新语言重新加载已有助手消息。
+语言。如果切换显示语言，当前线程会按新语言重新加载已有助手消息。
 
 显示语言下方可选择正常模式或 Debug 模式，选择结果通过 `X-Display-Mode` 请求头传递并
-保存在浏览器本地。正常模式显示各 Agent 的运行进度，并在流水线结束后只展示最后生成的
-“诊断分析结果”；Debug 模式保持完整过程展示，包括各轮进度和阶段结果。病例录入确认、
-清空结果和错误提示不受显示模式影响。
+保存在浏览器本地。正常模式在每个 Agent 开始时显示当前阶段，完成后根据该阶段的结构化
+输出更新该任务的精简结果。诊断过程使用 ChatKit 原生 custom 工作流展示，顶部“已处理”
+与耗时由独立文本节点显示，运行期间每秒只更新耗时；阶段任务也通过增量事件更新，避免
+刷新整个工作流。工作流顶部使用诊断预处理、检索、诊断和诊断结果评估四类概括阶段名，
+展开后的运行任务显示具体 Agent 进度。结构化诊断完成后，工作流继续显示
+“正在翻译并生成诊断分析结果”，翻译完成才显示精确总耗时并自动折叠，随后立即输出最终
+结果。用户可以点击展开查看全部阶段。Debug 模式除相同的可折叠工作流外，还会展示各阶段
+的完整结构化结果。病例录入确认、清空结果和错误提示不受显示模式影响。
 
 展示翻译不会修改诊断流水线的原始结构化结果。URL、数值、计量单位、医学
 编码、枚举值、住院号、`skill_names` 等机器标识以及 `diagnosis_result.evidence` 保持不变，
@@ -228,8 +232,9 @@ CHATKIT_TRANSLATION_MODEL=deepseek-v4-pro
 翻译使用 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL`。因此即使诊断切换为 OpenAI，
 ChatKit 展示翻译仍然使用 DeepSeek。
 
-当前实时粒度为阶段级：`main.py` 产生 `stage_completed` 事件后翻译并展示完整阶段结果，
-不进行逐 token 翻译。
+当前实时粒度为阶段级：`main.py` 产生 `stage_completed` 事件后，正常模式直接根据结构化
+结果生成阶段摘要，不额外调用模型；Debug 模式还会翻译并展示完整阶段结果，不进行逐
+token 翻译。
 
 ## PubMed 检索配置
 
@@ -340,11 +345,13 @@ Dense 的 chunk 排名执行 RRF，再去重选出前两个 chunk；reranker 不
 `discharge_text`。reranker 完成后按 `discharge_disease` 聚合，相同诊断标签保留分数
 最高的代表病例，最终输出前五个不同诊断标签。批量诊断结果中的
 `similar_case_retrieval_result` 按 `bm25`、`embedding`、`rrf` 和 `rerank` 保存四个阶段
-各自的 Top 5 疾病及对应 ICD code；前三个阶段不保存 section，只有 `rerank` 中的每个结果
-额外保存实际用于重排的 `sections`。主诊断流程只读取 `rerank`，新增的前三组结果仅用于
-观察、调试和评估。`sections` 是各标签代表病例实际参与 reranker 的 Top-2 chunks，包含原
-section 名称和 chunk 内容，并作为外部参考证据传入最终诊断和诊断判断阶段，不会被视为
-当前患者已经存在的临床事实。reranker
+各自的 Top 5 疾病及对应 ICD code。`bm25` 和 `embedding` 额外保存代表病例的 `hadm_id`、
+病例聚合 `score`，以及各自命中的 Top-2 `sections`；每个 section 包含 section 名称、chunk
+内容和检索分数。`rrf` 额外保存 `rrf_score`、病例在两路检索中的排名、两路各自命中的
+Top-2 sections，以及融合后为 reranker 选出的 Top-2 `sections`。前三个阶段的新增信息仅用于
+观察、调试和评估，主诊断流程仍然只读取 `rerank`。`rerank.sections` 是各标签代表病例实际
+参与 reranker 的 Top-2 chunks，包含原 section 名称和 chunk 内容，并作为外部参考证据传入
+最终诊断和诊断判断阶段，不会被视为当前患者已经存在的临床事实。reranker
 模型加载或推理失败时会记录错误日志，回退到 RRF 排名后执行相同的标签级聚合。
 批量运行时，相似病例检索在进程内串行使用共享 tokenizer 和模型，其他诊断阶段仍按
 `--workers` 设置并发执行。
