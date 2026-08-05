@@ -14,7 +14,6 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
     set +a
 fi
 
-# INPUT="database/mimic_test_case_hernia.csv"
 INPUT="database/sample5_test.csv"
 LIMIT=75
 WORKERS=10

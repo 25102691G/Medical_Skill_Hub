@@ -766,7 +766,6 @@ async def _run_final_diagnosis_async(
     native_structured_output = _uses_native_structured_output(model)
     diagnosis_agent = build_digestive_diagnosis_agent(
         FinalDiagnosisContent,
-        phase="final_diagnosis",
         model=model,
         native_structured_output=native_structured_output,
     )
@@ -841,9 +840,6 @@ async def _run_final_diagnosis_async(
         "<CANDIDATE_DIAGNOSES>\n"
         f"{_as_json(candidate_diagnoses)}\n"
         "</CANDIDATE_DIAGNOSES>\n\n"
-        "<SEARCH_PLANNING_CANDIDATES>\n"
-        f"{_as_json(search_planning_result.hypotheses)}\n"
-        "</SEARCH_PLANNING_CANDIDATES>\n\n"
         "<NUMBERED_EVIDENCE>\n"
         f"{_as_json(numbered_evidence)}\n"
         "</NUMBERED_EVIDENCE>\n\n"

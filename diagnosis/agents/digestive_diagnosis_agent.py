@@ -77,15 +77,15 @@ Do not automatically replace the main condition evaluated or treated during the 
 suspected deeper etiology. Rank the diagnosis that best represents the hospitalization's principal
 diagnostic target.
 
-Every search planning candidate omitted from the final top five must appear once in
+Every candidate diagnosis omitted from the final top five must appear once in
 excluded_planning_candidates. Copy its icd_code and category_name exactly and provide one or more
 explicit current-patient findings that contradict it or make it unsuitable as the principal diagnosis.
 Do not use missing information, external evidence, or the need to make room for another candidate as
 contrary evidence.
 
 Always return excluded_planning_candidates. After selecting the final top five, compare their ICD codes
-with search_planning_candidates. If every search planning candidate is selected, return an empty array.
-Otherwise, return exactly the set difference search_planning_candidates minus topk_diagnoses. Never
+with candidate_diagnoses. If every candidate diagnosis is selected, return an empty array.
+Otherwise, return exactly the set difference candidate_diagnoses minus topk_diagnoses. Never
 include a candidate whose ICD code appears in topk_diagnoses.
 
 Rank diagnoses according to patient-level evidence, not according to which source proposed them.
@@ -124,8 +124,8 @@ Similar cases are external reference cases.
 A similar-case discharge diagnosis, finding, treatment, or outcome is not a fact about the current
 patient.
 
-A similar-case diagnosis may be considered as a candidate only after it has been independently evaluated
-against the current patient's documented evidence. Do not place similar-case information in
+Use similar-case diagnoses and matched content as external comparative signals when reranking candidates,
+but their retrieval rank does not establish the diagnosis. Do not place similar-case information in
 supporting_evidence.
 
 #### Guideline diagnostic results
@@ -178,13 +178,9 @@ Do not output Markdown, commentary, or fields that are not defined in the schema
 def build_digestive_diagnosis_agent(
     output_type: Type[BaseModel],
     *,
-    phase: str,
     model: str | Model,
     native_structured_output: bool = True,
 ) -> Agent:
-    if phase != "final_diagnosis":
-        raise ValueError(f"Unsupported digestive diagnosis phase: {phase}")
-
     instructions = [BASE_INSTRUCTIONS]
 
     instructions.append(FINAL_DIAGNOSIS_INSTRUCTIONS)
@@ -192,6 +188,5 @@ def build_digestive_diagnosis_agent(
         name="Gastroenterology Diagnosis Agent",
         model=model,
         instructions="\n\n".join(instructions),
-        tools=[],
         output_type=output_type if native_structured_output else None,
     )
