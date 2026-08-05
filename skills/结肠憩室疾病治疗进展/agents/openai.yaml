@@ -1,0 +1,4 @@
+interface:
+  display_name: "结肠憩室疾病治疗指南"
+  short_description: "查询结肠憩室疾病治疗与随访建议"
+  default_prompt: "请使用结肠憩室疾病治疗进展回答临床问题"

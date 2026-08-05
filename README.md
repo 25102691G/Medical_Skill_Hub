@@ -221,9 +221,10 @@ npm run dev
 
 展示翻译不会修改诊断流水线的原始结构化结果。URL、数值、计量单位、医学
 编码、枚举值、住院号、`skill_names` 等机器标识以及 `diagnosis_result.evidence` 保持不变，
-其余可见内容按目标语言翻译。长文本会按完整行分段翻译；翻译失败时会显示提示并附上未翻译原文，不会中断
-诊断流水线。翻译固定使用 DeepSeek，不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env`
-单独设置模型：
+正常模式的诊断假设、相似病例诊断、检索式和候选诊断按目标语言翻译；本地指南名称和
+PubMed 文献标题保持原文。其余可见内容按目标语言翻译。长文本会按完整行分段翻译；
+翻译失败时会显示提示并附上未翻译原文，不会中断诊断流水线。翻译固定使用 DeepSeek，
+不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env` 单独设置模型：
 
 ```dotenv
 CHATKIT_TRANSLATION_MODEL=deepseek-v4-pro

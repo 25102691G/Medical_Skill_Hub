@@ -138,6 +138,13 @@ STAGE_AGENT_NAMES = {
     "Corrective Final Diagnosis Result": "Corrective Digestive Diagnosis Agent",
     "Diagnostic Judgement Result": "Diagnostic Judgement Agent",
 }
+TRANSLATED_PROGRESS_STAGES = {
+    "Preprocessing Result",
+    "Similar Case Retrieval Result",
+    "Search Planning Result",
+    "Final Diagnosis Result",
+    "Corrective Final Diagnosis Result",
+}
 FIELD_DISPLAY_NAMES = {
     "llm_hypotheses": "Direct LLM Candidate Diagnoses",
     "hypotheses": "Candidate Diagnoses",
@@ -372,6 +379,20 @@ def _format_stage_result(title: str, content: str) -> str:
     return f"{heading}\n\n```json\n{formatted_content}\n```"
 
 
+def _format_numbered_details(
+    label: str,
+    items: list[str],
+    overflow_marker: str | None = None,
+) -> str:
+    if not items:
+        return ""
+
+    lines = [f"{index}. {item}" for index, item in enumerate(items, start=1)]
+    if overflow_marker:
+        lines.append(overflow_marker)
+    return f"\n\n{label}\n\n" + "\n".join(lines)
+
+
 def _format_stage_progress(title: str, content: str, language: str) -> str | None:
     stage_name, separator, round_index = title.partition(" - Round ")
     parsed_content = json.loads(content)
@@ -384,67 +405,86 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
     )
 
     if stage_name == "Preprocessing Result":
-        hypothesis_count = len(parsed_content.get("llm_hypotheses", []))
+        hypotheses = parsed_content.get("llm_hypotheses", [])
+        hypothesis_count = len(hypotheses)
+        hypothesis_names = [hypothesis["category_name"] for hypothesis in hypotheses]
         feature_count = len(parsed_content.get("positive_features", []))
         if language == "zh-CN":
+            detail = _format_numbered_details("诊断假设：", hypothesis_names)
             return (
                 f"诊断预处理完成：生成 {hypothesis_count} 个诊断假设，"
-                f"提取 {feature_count} 项阳性特征"
+                f"提取 {feature_count} 项阳性特征{detail}"
             )
+        detail = _format_numbered_details("Diagnostic hypotheses:", hypothesis_names)
         return (
             f"Case preprocessing completed: generated {hypothesis_count} diagnostic hypotheses "
-            f"and extracted {feature_count} positive features"
+            f"and extracted {feature_count} positive features{detail}"
         )
 
     if stage_name == "Similar Case Retrieval Result":
         ranking = parsed_content.get("rerank", [])
-        first_diagnosis = ranking[0].get("discharge_disease") if ranking else None
+        diagnosis_names = [case["discharge_disease"] for case in ranking]
         if language == "zh-CN":
-            detail = f"，首位为 {first_diagnosis}" if first_diagnosis else ""
+            detail = _format_numbered_details("病例诊断：", diagnosis_names)
             return f"{round_prefix}相似病例检索完成：找到 {len(ranking)} 例{detail}"
-        detail = f"; top result: {first_diagnosis}" if first_diagnosis else ""
+        detail = _format_numbered_details("Case diagnoses:", diagnosis_names)
         return f"{round_prefix}Similar-case retrieval completed: found {len(ranking)} cases{detail}"
 
     if stage_name == "Search Planning Result":
         hypothesis_count = len(parsed_content.get("hypotheses", []))
-        query_count = len(parsed_content.get("search_queries", []))
+        search_queries = parsed_content.get("search_queries", [])
+        query_count = len(search_queries)
         if language == "zh-CN":
+            detail = _format_numbered_details("检索式：", search_queries)
             return (
                 f"{round_prefix}检索规划完成：合并 {hypothesis_count} 个候选诊断，"
-                f"生成 {query_count} 条检索式"
+                f"生成 {query_count} 条检索式{detail}"
             )
+        detail = _format_numbered_details("Queries:", search_queries)
         return (
             f"{round_prefix}Search planning completed: merged {hypothesis_count} diagnostic "
-            f"candidates and generated {query_count} queries"
+            f"candidates and generated {query_count} queries{detail}"
         )
 
     if stage_name == "Knowledge Search Result":
         query_results = parsed_content.get("relevant_pubmed_results", [])
-        pmids = {
-            result.get("pmid")
-            for query_result in query_results
-            for result in query_result.get("results", [])
-        }
+        publications = {}
+        for query_result in query_results:
+            for result in query_result.get("results", []):
+                publications.setdefault(result["pmid"], result["title"])
         section_count = sum(
             len(result.get("abstract_sections", []))
             for query_result in query_results
             for result in query_result.get("results", [])
         )
         if language == "zh-CN":
-            if not pmids:
+            if not publications:
                 return f"{round_prefix}医学知识检索完成：未检索到相关 PubMed 文献"
+            publication_titles = list(publications.values())[:5]
+            detail = _format_numbered_details(
+                "PubMed 文献：",
+                publication_titles,
+                "……" if len(publications) > 5 else None,
+            )
             return (
                 f"{round_prefix}医学知识检索完成：匹配 {len(query_results)} 条检索式，"
-                f"保留 {len(pmids)} 篇 PubMed 文献、{section_count} 个摘要片段"
+                f"保留 {len(publications)} 篇 PubMed 文献、{section_count} 个摘要片段{detail}"
             )
-        if not pmids:
+        if not publications:
             return (
                 f"{round_prefix}Medical knowledge retrieval completed: "
                 "no relevant PubMed articles found"
             )
+        publication_titles = list(publications.values())[:5]
+        detail = _format_numbered_details(
+            "PubMed publications:",
+            publication_titles,
+            "..." if len(publications) > 5 else None,
+        )
         return (
             f"{round_prefix}Medical knowledge retrieval completed: matched {len(query_results)} "
-            f"queries and retained {len(pmids)} PubMed articles with {section_count} abstract sections"
+            f"queries and retained {len(publications)} PubMed articles with "
+            f"{section_count} abstract sections{detail}"
         )
 
     if stage_name == "Guideline Search Result":
@@ -456,37 +496,49 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
         if language == "zh-CN":
             if not skill_results:
                 return f"{round_prefix}本地指南检索完成：未匹配到可用指南"
+            guideline_names = [result["skill_name"] for result in skill_results[:5]]
+            detail = _format_numbered_details(
+                "指南：",
+                guideline_names,
+                "……" if len(skill_results) > 5 else None,
+            )
             return (
                 f"{round_prefix}本地指南检索完成：使用 {len(skill_results)} 份指南，"
-                f"提取 {evidence_count} 条相关证据"
+                f"提取 {evidence_count} 条相关证据{detail}"
             )
         if not skill_results:
             return (
                 f"{round_prefix}Local guideline retrieval completed: "
                 "no applicable guideline found"
             )
+        guideline_names = [result["skill_name"] for result in skill_results[:5]]
+        detail = _format_numbered_details(
+            "Guidelines:",
+            guideline_names,
+            "..." if len(skill_results) > 5 else None,
+        )
         return (
             f"{round_prefix}Local guideline retrieval completed: used {len(skill_results)} "
-            f"guidelines and extracted {evidence_count} relevant evidence items"
+            f"guidelines and extracted {evidence_count} relevant evidence items{detail}"
         )
 
     if stage_name in {"Final Diagnosis Result", "Corrective Final Diagnosis Result"}:
         diagnoses = parsed_content.get("topk_diagnoses", [])
-        first_diagnosis = diagnoses[0].get("category_name") if diagnoses else None
+        diagnosis_names = [diagnosis["category_name"] for diagnosis in diagnoses]
         stage_label = (
             "消化内科诊断修正"
             if stage_name.startswith("Corrective")
             else "消化内科诊断分析"
         )
         if language == "zh-CN":
-            detail = f"，首位为 {first_diagnosis}" if first_diagnosis else ""
+            detail = _format_numbered_details("候选诊断：", diagnosis_names)
             return f"{round_prefix}{stage_label}完成：输出 {len(diagnoses)} 个候选诊断{detail}"
         stage_label = (
             "Gastroenterology diagnosis correction"
             if stage_name.startswith("Corrective")
             else "Gastroenterology diagnosis analysis"
         )
-        detail = f"; top result: {first_diagnosis}" if first_diagnosis else ""
+        detail = _format_numbered_details("Candidate diagnoses:", diagnosis_names)
         return (
             f"{round_prefix}{stage_label} completed: produced {len(diagnoses)} "
             f"candidates{detail}"
@@ -742,13 +794,21 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                             ),
                         )
                 elif event_type == "stage_completed" and content is not None:
+                    stage_name, separator, round_text = title.partition(" - Round ")
                     completed_text = _format_stage_progress(
                         title,
                         content,
                         display_language,
                     )
                     if completed_text is not None:
-                        stage_name, separator, round_text = title.partition(" - Round ")
+                        if (
+                            display_language == "zh-CN"
+                            and stage_name in TRANSLATED_PROGRESS_STAGES
+                        ):
+                            completed_text = await self.translator.translate(
+                                completed_text,
+                                display_language,
+                            )
                         agent_title = STAGE_AGENT_NAMES[stage_name]
                         task_index = active_task_indices.pop(
                             (agent_title, round_text if separator else None),
