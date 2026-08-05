@@ -33,6 +33,8 @@ from schemas import DiagnosisResult
 
 logger = logging.getLogger(__name__)
 
+DISPLAY_MODES = {"normal", "debug"}
+
 DIAGNOSE_COMMANDS = {
     "开始诊断",
     "重新诊断",
@@ -51,8 +53,7 @@ CLEAR_COMMANDS = {
 }
 AGENT_DISPLAY_NAMES = {
     "zh-CN": {
-        "Diagnostic Hypothesis Preprocessing Agent": "诊断假设预处理",
-        "Positive Feature Preprocessing Agent": "阳性特征预处理",
+        "Preprocessing Agent": "病例预处理",
         "Search Planning Agent": "检索规划",
         "Knowledge Searcher Agent": "医学知识检索",
         "Similar Case Retrieval Agent": "相似病例检索",
@@ -61,8 +62,7 @@ AGENT_DISPLAY_NAMES = {
         "Diagnostic Judgement Agent": "诊断结果评估",
     },
     "en": {
-        "Diagnostic Hypothesis Preprocessing Agent": "diagnostic hypothesis preprocessing",
-        "Positive Feature Preprocessing Agent": "positive feature preprocessing",
+        "Preprocessing Agent": "case preprocessing",
         "Search Planning Agent": "search planning",
         "Knowledge Searcher Agent": "medical knowledge retrieval",
         "Similar Case Retrieval Agent": "similar-case retrieval",
@@ -72,8 +72,7 @@ AGENT_DISPLAY_NAMES = {
     },
 }
 STAGE_DISPLAY_NAMES = {
-    "LLM Hypotheses Preprocessing Result": "LLM Hypotheses Preprocessing Result",
-    "Positive Features Preprocessing Result": "Positive Features Preprocessing Result",
+    "Preprocessing Result": "Preprocessing Result",
     "Search Planning Result": "Search Planning Result",
     "Knowledge Search Result": "Medical Knowledge Search Result",
     "Similar Case Retrieval Rankings": "Similar-Case Retrieval Rankings",
@@ -82,8 +81,7 @@ STAGE_DISPLAY_NAMES = {
     "Diagnostic Judgement Result": "Diagnostic Result Assessment",
 }
 STAGE_OUTPUT_ORDER = {
-    "LLM Hypotheses Preprocessing Result": 0,
-    "Positive Features Preprocessing Result": 1,
+    "Preprocessing Result": 0,
     "Similar Case Retrieval Rankings": 2,
     "Search Planning Result": 3,
     "Knowledge Search Result": 4,
@@ -144,6 +142,7 @@ STATIC_TEXT = {
         ),
         "no_case": "当前还没有病例资料。请先发送患者病史、体征和检查结果。",
         "progress": "第 {round_index} 轮：正在进行{agent_name}…",
+        "progress_without_round": "正在进行{agent_name}…",
         "quota": (
             "模型 API 额度不足。请检查 API Key 所属项目的余额、"
             "Billing 和使用预算，更新后重启后端。"
@@ -163,6 +162,7 @@ STATIC_TEXT = {
             "physical findings, and examination results."
         ),
         "progress": "Round {round_index}: running {agent_name}…",
+        "progress_without_round": "Running {agent_name}…",
         "quota": (
             "The model API quota is insufficient. Check the balance, billing status, and usage "
             "budget for the API key's project, then restart the backend."
@@ -195,6 +195,11 @@ def _rate_limit_error_code(error: RateLimitError) -> str | None:
 
 def _static_text(language: str, key: str, **values: object) -> str:
     return STATIC_TEXT[language][key].format(**values)
+
+
+def normalize_display_mode(value: object) -> str:
+    mode = str(value or "").strip().lower()
+    return mode if mode in DISPLAY_MODES else "normal"
 
 
 def _format_diagnosis(result: DiagnosisResult) -> str:
@@ -259,72 +264,41 @@ def _format_stage_result(title: str, content: str) -> str:
         if not isinstance(ranking_groups, list) or not ranking_groups:
             return f"{heading}\n\nNo retrieval ranking details are available."
 
-        field_names = {
-            "positive_features": "Positive Features",
-        }
-        sections = [heading]
-        for group in ranking_groups:
-            if not isinstance(group, dict):
-                continue
-            query_field = field_names.get(
-                str(group.get("query_field", "")),
-                str(group.get("query_field", "Unknown Field")),
-            )
-            method = str(group.get("method", "Unknown Method"))
-            query = str(group.get("query", ""))
-            sections.extend(
-                [
-                    "",
-                    f"### {query_field} · {method}",
-                    "",
-                    f"**Query:** {query or 'Empty'}",
-                ]
-            )
-            if group.get("status") == "skipped":
-                sections.append(
-                    f"**Status:** Skipped — {group.get('skipped_reason') or 'No reason provided.'}"
-                )
-                continue
+        final_group = next(
+            (
+                group
+                for group in ranking_groups
+                if isinstance(group, dict) and group.get("method") == "Reranker"
+            ),
+            None,
+        )
+        if final_group is None:
+            return f"{heading}\n\nNo final retrieval results are available."
 
-            ranking = group.get("ranking")
-            if not isinstance(ranking, list) or not ranking:
-                sections.append("**Ranking:** No matching cases.")
+        query = str(final_group.get("query", ""))
+        sections = [heading, "", f"**Query:** {query or 'Empty'}"]
+        if final_group.get("status") == "skipped":
+            sections.append("\n**Top 5 Results:** No matching cases.")
+            return "\n".join(sections)
+
+        ranking = final_group.get("ranking")
+        if not isinstance(ranking, list) or not ranking:
+            sections.append("\n**Top 5 Results:** No matching cases.")
+            return "\n".join(sections)
+
+        sections.extend(["", "**Top 5 Results:**"])
+        for item in ranking[:5]:
+            if not isinstance(item, dict):
                 continue
-            sections.extend(["", "**Ranking:**"])
-            for item in ranking:
-                if not isinstance(item, dict):
-                    continue
-                score = item.get("score")
-                if score is None:
-                    score = item.get("rrf_score", item.get("reranker_score"))
-                score_text = f"{score:.6f}" if isinstance(score, (int, float)) else str(score)
-                sections.append(
-                    (
-                        f"{item.get('rank', '-')}. Hospital admission ID: "
-                        f"{item.get('hadm_id', '')}; Discharge disease: "
-                        f"{item.get('discharge_disease', '')}; Score: {score_text}"
-                    )
+            score = item.get("reranker_score", item.get("score"))
+            score_text = f"{score:.6f}" if isinstance(score, (int, float)) else str(score)
+            sections.append(
+                (
+                    f"{item.get('rank', '-')}. Hospital admission ID: "
+                    f"{item.get('hadm_id', '')}; Discharge disease: "
+                    f"{item.get('discharge_disease', '')}; Score: {score_text}"
                 )
-                if method == "RRF":
-                    hit_groups = (
-                        ("BM25", item.get("bm25_top_sections")),
-                        ("Dense", item.get("dense_top_sections")),
-                    )
-                elif method == "Reranker":
-                    hit_groups = (
-                        ("Reranker Used", item.get("reranker_sections")),
-                    )
-                else:
-                    hit_groups = ((method, item.get("top_sections")),)
-                for hit_method, hits in hit_groups:
-                    if not isinstance(hits, list) or not hits:
-                        continue
-                    hit_names = ", ".join(
-                        str(hit.get("section", ""))
-                        for hit in hits
-                        if isinstance(hit, dict)
-                    )
-                    sections.append(f"   {hit_method} Top Sections: {hit_names}")
+            )
         return "\n".join(sections)
 
     prepared_content = _prepare_stage_value(parsed_content)
@@ -355,9 +329,14 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         context: dict[str, Any],
         *,
         raw_text: str | None = None,
+        preserved_texts: tuple[str, ...] = (),
     ) -> ThreadItemDoneEvent:
         item_id = self.store.generate_item_id("message", thread, context)
-        self.store.register_raw_assistant_text(item_id, raw_text or text)
+        self.store.register_raw_assistant_text(
+            item_id,
+            raw_text or text,
+            preserved_texts,
+        )
         return ThreadItemDoneEvent(
             item=AssistantMessageItem(
                 id=item_id,
@@ -376,6 +355,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         user_text = _extract_user_text(input_user_message)
         normalized_command = user_text.lower().rstrip("。.!！")
         display_language = get_context_display_language(context)
+        display_mode = normalize_display_mode(context.get("display_mode"))
 
         if normalized_command in CLEAR_COMMANDS:
             self.store.clear_case_text(thread.id)
@@ -452,7 +432,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
 
         diagnosis_task = asyncio.create_task(run_diagnosis())
         stage_translation_tasks: list[
-            tuple[tuple[int, int, int], str, asyncio.Task[str]]
+            tuple[tuple[int, int, int], str, tuple[str, ...], asyncio.Task[str]]
         ] = []
         try:
             while True:
@@ -470,12 +450,16 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                         icon="analytics",
                         text=_static_text(
                             display_language,
-                            "progress",
+                            "progress" if content else "progress_without_round",
                             round_index=content or "-",
                             agent_name=agent_name,
                         ),
                     )
-                elif event_type == "stage_completed" and content is not None:
+                elif (
+                    display_mode == "debug"
+                    and event_type == "stage_completed"
+                    and content is not None
+                ):
                     raw_stage_text = _format_stage_result(title, content)
                     stage_name, _, round_text = title.partition(" - Round ")
                     output_order = (
@@ -483,21 +467,33 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                         STAGE_OUTPUT_ORDER.get(stage_name, len(STAGE_OUTPUT_ORDER)),
                         len(stage_translation_tasks),
                     )
+                    preserved_texts: tuple[str, ...] = ()
+                    if stage_name in {
+                        "Final Diagnosis Result",
+                        "Corrective Final Diagnosis Result",
+                    }:
+                        parsed_result = json.loads(content)
+                        evidence = parsed_result.get("evidence", [])
+                        preserved_texts = tuple(
+                            item for item in evidence if isinstance(item, str)
+                        )
                     stage_translation_tasks.append(
                         (
                             output_order,
                             raw_stage_text,
+                            preserved_texts,
                             asyncio.create_task(
                                 self.translator.translate(
                                     raw_stage_text,
                                     display_language,
+                                    preserved_texts,
                                 )
                             ),
                         )
                     )
 
             result = await diagnosis_task
-            for _, raw_stage_text, translation_task in sorted(
+            for _, raw_stage_text, preserved_texts, translation_task in sorted(
                 stage_translation_tasks,
                 key=lambda item: item[0],
             ):
@@ -507,12 +503,13 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                     translated_stage_text,
                     context,
                     raw_text=raw_stage_text,
+                    preserved_texts=preserved_texts,
                 )
         except RateLimitError as exc:
-            for _, _, translation_task in stage_translation_tasks:
+            for _, _, _, translation_task in stage_translation_tasks:
                 translation_task.cancel()
             await asyncio.gather(
-                *(task for _, _, task in stage_translation_tasks),
+                *(task for _, _, _, task in stage_translation_tasks),
                 return_exceptions=True,
             )
             error_code = _rate_limit_error_code(exc)
@@ -534,10 +531,10 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                 )
             return
         except Exception:
-            for _, _, translation_task in stage_translation_tasks:
+            for _, _, _, translation_task in stage_translation_tasks:
                 translation_task.cancel()
             await asyncio.gather(
-                *(task for _, _, task in stage_translation_tasks),
+                *(task for _, _, _, task in stage_translation_tasks),
                 return_exceptions=True,
             )
             logger.exception("Diagnosis pipeline failed for thread %s", thread.id)
@@ -548,13 +545,16 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
             return
 
         raw_diagnosis_text = _format_diagnosis(result)
+        preserved_texts = tuple(result.evidence)
         translated_diagnosis_text = await self.translator.translate(
             raw_diagnosis_text,
             display_language,
+            preserved_texts,
         )
         yield self._assistant_event(
             thread,
             translated_diagnosis_text,
             context,
             raw_text=raw_diagnosis_text,
+            preserved_texts=preserved_texts,
         )

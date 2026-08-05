@@ -34,7 +34,7 @@ HF_ENDPOINT=https://hf-mirror.com \
 ```dotenv
 DIAGNOSIS_PROVIDER=deepseek
 DEEPSEEK_MODEL=deepseek-v4-pro
-DEEPSEEK_THINKING=true
+DEEPSEEK_THINKING=false
 ```
 
 `DEEPSEEK_THINKING` 控制诊断流水线中的 DeepSeek 请求是否启用深度思考，
@@ -62,9 +62,10 @@ JSON 输出格式示例，响应按对应结构解析。Markdown、普通文本�
 `--workers` 默认为 `1`。批处理使用常驻 worker 队列保持指定并发数，成功结果按病例
 完成顺序写入 JSONL。
 
-单个病例先由预处理模块并发执行两次相互隔离的 LLM 调用：一次仅根据原始 `case_text`
-生成 `llm_hypotheses`，另一次仍仅根据原始 `case_text` 提取 `positive_features`。随后使用
-`positive_features` 执行一次相似病例检索。Search Planning 接收原始病例、两项预处理结果
+单个病例先调用一次统一的 Preprocessing Agent。该 Agent 分别调用两个相互隔离的 Tool：
+一个仅根据原始 `case_text` 生成 `llm_hypotheses`，另一个仍仅根据原始 `case_text` 提取
+`positive_features`，并将两项结果合并为一个预处理结果。随后使用 `positive_features`
+执行一次相似病例检索。Search Planning 接收原始病例、两项预处理结果
 以及相似病例的疾病名称和 ICD code，按 ICD code 将纯 LLM 候选与相似病例候选去重合并，
 并生成 5 至 10 条 PubMed 检索词。全部合并候选疾病都必须由至少一条检索词覆盖；当模型
 遗漏候选疾病时，程序会补充包含该疾病英文名称的检索词。Search Planning 完成后，PubMed
@@ -114,9 +115,10 @@ ICD。相似病例的疾病名称、ICD code 和匹配文本仍会传入最终�
 
 `evaluate.py` 对多轮批量诊断结果中的主诊断 ICD code 进行直接匹配。`batch_main.py` 将输入
 CSV 中代表本次住院主诊断的 `icd_code` 写入每条结果，评估脚本以该字段为金标准，并遍历
-`multi_round_diagnosis.rounds`。每一轮分别提取以下六组前五项 ICD code：
+`multi_round_diagnosis.rounds`。LLM 候选直接从病例顶层结果提取一次，其余五组按轮次
+提取前五项 ICD code：
 
-- `multi_round_diagnosis.rounds[].search_planning_result.hypotheses[].icd_code`
+- `llm_hypotheses_result.llm_hypotheses[].icd_code`
 - `multi_round_diagnosis.rounds[].similar_case_retrieval_result.bm25[].icd_code`
 - `multi_round_diagnosis.rounds[].similar_case_retrieval_result.embedding[].icd_code`
 - `multi_round_diagnosis.rounds[].similar_case_retrieval_result.rrf[].icd_code`
@@ -144,10 +146,12 @@ bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 评估结果固定写入
 `output/evaluate/<输入文件名>_evaluation.jsonl`。每条评估结果会实时写入输出文件。
 每条病例结果中的 `round_evaluations` 保存各轮六组诊断的预测 ICD code，以及
-`disease` 和 `subcategory` 排名，分别匹配编码前三位和前四位。程序结束时会在输出文件末尾写入
-`total`、`rounds` 和
-`final_result`：`rounds` 统计实际进入各轮病例的 Recall@1、Recall@3 和 Recall@5，
-`final_result` 使用每个病例最后一轮的评估结果汇总两个指标的相同 Recall。
+`disease` 和 `subcategory` 排名，分别匹配编码前三位和前四位。LLM 候选保存为
+`llm_hypotheses`，四路相似病例结果按 batch 输出结构嵌套在
+`similar_case_retrieval.bm25`、`embedding`、`rrf` 和 `rerank` 中。程序结束时会在输出文件
+末尾写入 `total`、`rounds` 和 `final_result`；两类汇总中的四路相似病例结果使用相同的
+`similar_case_retrieval` 嵌套结构。`rounds` 统计实际进入各轮病例的 Recall@1、Recall@3
+和 Recall@5，`final_result` 使用每个病例最后一轮的评估结果汇总两个指标的相同 Recall。
 汇总记录还会写入 `skill_usage`，其使用情况取自每个病例最后一轮的
 `diagnosis_result`。没有匹配编码时，该病例在对应诊断组的三个 Recall 中都记为未命中。
 
@@ -206,9 +210,14 @@ npm run dev
 语言；每个 Agent 完成后，ChatKit 服务端会翻译该阶段的字段标签和字符串内容，再立即
 追加到聊天界面。如果切换显示语言，当前线程会按新语言重新加载已有助手消息。
 
+显示语言下方可选择正常模式或 Debug 模式，选择结果通过 `X-Display-Mode` 请求头传递并
+保存在浏览器本地。正常模式显示各 Agent 的运行进度，并在流水线结束后只展示最后生成的
+“诊断分析结果”；Debug 模式保持完整过程展示，包括各轮进度和阶段结果。病例录入确认、
+清空结果和错误提示不受显示模式影响。
+
 展示翻译不会修改诊断流水线的原始结构化结果。URL、数值、计量单位、医学
-编码、枚举值、住院号和 `skill_names` 等机器标识保持不变，其余可见内容按目标语言
-翻译。长文本会按完整行分段翻译；翻译失败时会显示提示并附上未翻译原文，不会中断
+编码、枚举值、住院号、`skill_names` 等机器标识以及 `diagnosis_result.evidence` 保持不变，
+其余可见内容按目标语言翻译。长文本会按完整行分段翻译；翻译失败时会显示提示并附上未翻译原文，不会中断
 诊断流水线。翻译固定使用 DeepSeek，不随 `DIAGNOSIS_PROVIDER` 切换，并通过 `.env`
 单独设置模型：
 
@@ -295,9 +304,12 @@ skills/<PDF 文件名>/
 `positive_features_result.positive_features` 在这些 skills 内定位诊断标准、
 鉴别诊断、确认或排除检查及下一步建议；推荐索引只用于定位，证据和指南诊断结论均以
 `guideline-full-text.md` 核实后的内容为依据。每个 skill 的 `guideline_evidence` 和
-`guideline_diagnosis` 保存在同一个 `skill_results` 项目中。`search_queries` 只用于
-PubMed 检索。最终诊断使用 Search Planning 的合并候选集，并结合患者信息、PubMed 证据、
-相似病例匹配文本和完整指南结果进行排序。
+`guideline_diagnosis` 保存在同一个 `skill_results` 项目中。`search_queries` 将一个疾病
+或多个需要鉴别的相似疾病与患者最相关、最有鉴别力的阳性特征组合为精炼关键词，仅用于
+PubMed 检索；所有查询合起来覆盖候选疾病。最终诊断使用 Search Planning 的合并候选集，
+并结合患者信息、统一编号的指南和 PubMed 证据、相似病例匹配文本及各 skill 的
+`guideline_diagnosis` 进行排序；
+`GUIDELINE_RESULTS` 不再重复传入 `guideline_evidence`。
 
 DeepSeek function tools 在每次指南检索中只允许列举一次 skill；每个选中 skill 只允许
 读取一次 `SKILL.md`、搜索一次推荐索引、额外搜索一次指南全文，并最多读取两个指南全文
@@ -341,7 +353,8 @@ BM25/Dense 明细包括查询文本、住院号、出院疾病、病例聚合分
 chunks；RRF 明细额外包括最终 RRF 分数、两路候选排名及两路各自命中的 Top-2
 chunks，未进入某路候选排名时该路排名为 `null`；Reranker 明细包括标签级代表病例的
 相关性分数和实际输入模型的 chunks。未执行的检索分支会输出跳过原因。
-ChatKit 前端也会在相似病例检索完成后展示排名及跳过原因，该展示通过
+ChatKit 前端在相似病例检索完成后仅展示查询文本和 Reranker 的最终
+Top 5 结果，不展示 BM25、Dense、RRF 排名和命中章节等中间信息。该展示通过
 阶段进度事件传递，不要求后端启用 `debug`。
 
 如需单独测试“阳性特征预处理 → 相似病例检索”模块，可在 `.env` 中通过 `INPUT` 指定输入
@@ -394,8 +407,9 @@ BM25/Dense 候选数默认均为 `50`，RRF 候选病例数默认为 `20`；rera
 
 ## 最终诊断证据引用
 
-最终诊断结果的 `evidence` 先按本地指南检索结果的原始顺序保存完整指南证据，再追加
-PubMed 证据，并使用 `[1]`、`[2]` 等序号统一连续编号。指南证据保持
+最终诊断结果的 `evidence` 只保留 `supporting_evidence` 或
+`recommended_next_steps` 实际引用的指南和 PubMed 证据。被引用证据按原始证据顺序
+筛选后，使用 `[1]`、`[2]` 等序号重新连续编号，并同步更新诊断结果中的引用。指南证据保持
 `skill name：guideline evidence` 格式；PubMed 证据保持
 `PubMed PMID <PMID>（<论文标题>）：<相关摘要证据>` 格式。
 

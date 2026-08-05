@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sys
 from collections.abc import Callable
 from typing import TypeVar
@@ -40,8 +41,7 @@ from diagnosis.agents.knowledge_searcher_agent import (
     search_pubmed_queries,
 )
 from diagnosis.agents.preprocessing_agent import (
-    build_hypothesis_preprocessing_agent,
-    build_positive_feature_preprocessing_agent,
+    build_preprocessing_agent,
 )
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
@@ -58,6 +58,7 @@ from schemas import (
     LlmHypothesesResult,
     MultiRoundDiagnosisResult,
     PositiveFeaturesResult,
+    PreprocessingResult,
     PubMedQueryResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
@@ -166,15 +167,15 @@ def _publish_stage_result(
         progress_callback("stage_completed", title, _as_json(model_object))
 
 
-async def _run_hypothesis_preprocessing_async(
+async def _run_preprocessing_async(
     case_text: str,
     *,
     model: str | Model,
     debug: bool = False,
     progress_callback: DiagnosisProgressCallback | None = None,
-) -> LlmHypothesesResult:
+) -> PreprocessingResult:
     native_structured_output = _uses_native_structured_output(model)
-    agent = build_hypothesis_preprocessing_agent(
+    agent = build_preprocessing_agent(
         model,
         native_structured_output=native_structured_output,
     )
@@ -184,12 +185,12 @@ async def _run_hypothesis_preprocessing_async(
             f"{case_text}\n"
             "</PATIENT_INFORMATION>"
         ),
-        LlmHypothesesResult,
+        PreprocessingResult,
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(
         progress_callback,
-        "Diagnostic Hypothesis Preprocessing Agent",
+        "Preprocessing Agent",
         None,
     )
     raw_result = (
@@ -199,52 +200,9 @@ async def _run_hypothesis_preprocessing_async(
             run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         )
     ).final_output
-    result = _parse_structured_result(raw_result, LlmHypothesesResult)
+    result = _parse_structured_result(raw_result, PreprocessingResult)
     _publish_stage_result(
-        "LLM Hypotheses Preprocessing Result",
-        result,
-        debug=debug,
-        progress_callback=progress_callback,
-    )
-    return result
-
-
-async def _run_positive_feature_preprocessing_async(
-    case_text: str,
-    *,
-    model: str | Model,
-    debug: bool = False,
-    progress_callback: DiagnosisProgressCallback | None = None,
-) -> PositiveFeaturesResult:
-    native_structured_output = _uses_native_structured_output(model)
-    agent = build_positive_feature_preprocessing_agent(
-        model,
-        native_structured_output=native_structured_output,
-    )
-    prompt = _prepare_structured_prompt(
-        (
-            "<PATIENT_INFORMATION>\n"
-            f"{case_text}\n"
-            "</PATIENT_INFORMATION>"
-        ),
-        PositiveFeaturesResult,
-        native_structured_output=native_structured_output,
-    )
-    _notify_agent_started(
-        progress_callback,
-        "Positive Feature Preprocessing Agent",
-        None,
-    )
-    raw_result = (
-        await Runner.run(
-            agent,
-            prompt,
-            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
-        )
-    ).final_output
-    result = _parse_structured_result(raw_result, PositiveFeaturesResult)
-    _publish_stage_result(
-        "Positive Features Preprocessing Result",
+        "Preprocessing Result",
         result,
         debug=debug,
         progress_callback=progress_callback,
@@ -284,46 +242,6 @@ def _merge_planning_hypotheses(
             for other in merged_hypotheses
         )
     ]
-
-
-def _ensure_hypothesis_query_coverage(
-    hypotheses: list[HypothesisItem],
-    search_queries: list[str],
-) -> list[str]:
-    queries = [query.strip() for query in search_queries if query.strip()]
-    combined_queries = "\n".join(queries).casefold()
-    uncovered_hypotheses = [
-        hypothesis
-        for hypothesis in hypotheses
-        if hypothesis.category_name.casefold() not in combined_queries
-    ]
-
-    if len(uncovered_hypotheses) > 10 - len(queries):
-        queries = [
-            f'"{hypothesis.category_name}" diagnosis'
-            for hypothesis in hypotheses
-        ]
-    else:
-        queries.extend(
-            f'"{hypothesis.category_name}" diagnosis'
-            for hypothesis in uncovered_hypotheses
-        )
-
-    query_focuses = (
-        "diagnostic criteria",
-        "differential diagnosis",
-        "imaging findings",
-        "endoscopic findings",
-        "histopathological findings",
-    )
-    while hypotheses and len(queries) < 5:
-        query_index = len(queries)
-        hypothesis = hypotheses[query_index % len(hypotheses)]
-        queries.append(
-            f'"{hypothesis.category_name}" '
-            f'{query_focuses[query_index % len(query_focuses)]}'
-        )
-    return queries
 
 
 async def _run_search_planning_async(
@@ -417,10 +335,7 @@ async def _run_search_planning_async(
     raw_planning_result = _parse_structured_result(raw_result, SearchPlanningResult)
     result = SearchPlanningResult(
         hypotheses=merged_hypotheses,
-        search_queries=_ensure_hypothesis_query_coverage(
-            merged_hypotheses,
-            raw_planning_result.search_queries,
-        ),
+        search_queries=raw_planning_result.search_queries,
         reason=raw_planning_result.reason,
     )
     _publish_stage_result(
@@ -469,10 +384,7 @@ async def _run_search_planning_with_fallback(
         )
         result = SearchPlanningResult(
             hypotheses=merged_hypotheses,
-            search_queries=_ensure_hypothesis_query_coverage(
-                merged_hypotheses,
-                [],
-            ),
+            search_queries=[],
             reason=_stage_failure_reason("Search planning", exc),
         )
         _publish_stage_result(
@@ -902,10 +814,10 @@ async def _run_final_diagnosis_async(
         f"[{index}] {evidence}"
         for index, evidence in enumerate(combined_evidence, start=1)
     ]
-    guideline_result_for_diagnosis = {
-        "used_skill": guideline_search_result.used_skill,
-        "skill_results": guideline_search_result.skill_results,
-    }
+    guideline_diagnoses = [
+        skill_result.guideline_diagnosis
+        for skill_result in guideline_search_result.skill_results
+    ]
     revision_context = ""
     if (
         previous_diagnosis_result is not None
@@ -936,7 +848,7 @@ async def _run_final_diagnosis_async(
         f"{_as_json(numbered_evidence)}\n"
         "</NUMBERED_EVIDENCE>\n\n"
         "<GUIDELINE_RESULTS>\n"
-        f"{_as_json(guideline_result_for_diagnosis)}\n"
+        f"{_as_json(guideline_diagnoses)}\n"
         "</GUIDELINE_RESULTS>\n\n"
         "<SIMILAR_CASES>\n"
         f"{_as_json(similar_case_summary)}\n"
@@ -1018,13 +930,64 @@ async def _run_final_diagnosis_async(
         skill_result.skill_name
         for skill_result in guideline_search_result.skill_results
     ]
+    citation_pattern = re.compile(r"\[(\d+)\]")
+    referenced_numbers = {
+        int(reference)
+        for diagnosis in diagnosis_content.topk_diagnoses
+        for text in [
+            *diagnosis.supporting_evidence,
+            *diagnosis.recommended_next_steps,
+        ]
+        for reference in citation_pattern.findall(text)
+        if 1 <= int(reference) <= len(numbered_evidence)
+    }
+    ordered_numbers = [
+        number
+        for number in range(1, len(numbered_evidence) + 1)
+        if number in referenced_numbers
+    ]
+    citation_mapping = {
+        old_number: new_number
+        for new_number, old_number in enumerate(ordered_numbers, start=1)
+    }
+    filtered_evidence = [
+        citation_pattern.sub(
+            f"[{citation_mapping[old_number]}]",
+            numbered_evidence[old_number - 1],
+            count=1,
+        )
+        for old_number in ordered_numbers
+    ]
+    for diagnosis in diagnosis_content.topk_diagnoses:
+        diagnosis.supporting_evidence = [
+            citation_pattern.sub(
+                lambda match: (
+                    f"[{citation_mapping[int(match.group(1))]}]"
+                    if int(match.group(1)) in citation_mapping
+                    else ""
+                ),
+                text,
+            ).strip()
+            for text in diagnosis.supporting_evidence
+        ]
+        diagnosis.recommended_next_steps = [
+            citation_pattern.sub(
+                lambda match: (
+                    f"[{citation_mapping[int(match.group(1))]}]"
+                    if int(match.group(1)) in citation_mapping
+                    else ""
+                ),
+                text,
+            ).strip()
+            for text in diagnosis.recommended_next_steps
+        ]
     result = DiagnosisResult(
         used_skill=guideline_search_result.used_skill,
         skill_names=skill_names,
         topk_diagnoses=diagnosis_content.topk_diagnoses,
         excluded_planning_candidates=validated_excluded_candidates,
         summary=diagnosis_content.summary,
-        evidence=numbered_evidence,
+        evidence=filtered_evidence,
     )
     result_title = (
         f"Corrective Final Diagnosis Result - Round {round_index}"
@@ -1110,51 +1073,36 @@ async def make_diagnosis_pipeline_async(
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
 
-    async def run_positive_feature_branch() -> tuple[
-        PositiveFeaturesResult,
-        SimilarCaseRetrievalResult,
-    ]:
-        positive_features_result = await _run_positive_feature_preprocessing_async(
-            case_text,
-            model=diagnosis_model,
+    preprocessing_result = await _run_preprocessing_async(
+        case_text,
+        model=diagnosis_model,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
+    llm_hypotheses_result = LlmHypothesesResult(
+        llm_hypotheses=preprocessing_result.llm_hypotheses
+    )
+    positive_features_result = PositiveFeaturesResult(
+        positive_features=preprocessing_result.positive_features
+    )
+    try:
+        similar_case_retrieval_result = await asyncio.to_thread(
+            _run_similar_case_retrieval,
+            positive_features_result.positive_features,
+            debug=debug,
+            round_index=1,
+            progress_callback=progress_callback,
+        )
+    except Exception as exc:
+        similar_case_retrieval_result = SimilarCaseRetrievalResult(
+            reason=_stage_failure_reason("Similar-case retrieval", exc),
+        )
+        _publish_stage_result(
+            "Similar Case Retrieval Result - Round 1",
+            similar_case_retrieval_result,
             debug=debug,
             progress_callback=progress_callback,
         )
-        try:
-            similar_case_retrieval_result = await asyncio.to_thread(
-                _run_similar_case_retrieval,
-                positive_features_result.positive_features,
-                debug=debug,
-                round_index=1,
-                progress_callback=progress_callback,
-            )
-        except Exception as exc:
-            similar_case_retrieval_result = SimilarCaseRetrievalResult(
-                reason=_stage_failure_reason("Similar-case retrieval", exc),
-            )
-            _publish_stage_result(
-                "Similar Case Retrieval Result - Round 1",
-                similar_case_retrieval_result,
-                debug=debug,
-                progress_callback=progress_callback,
-            )
-        return positive_features_result, similar_case_retrieval_result
-
-    (
-        llm_hypotheses_result,
-        (
-            positive_features_result,
-            similar_case_retrieval_result,
-        ),
-    ) = await asyncio.gather(
-        _run_hypothesis_preprocessing_async(
-            case_text,
-            model=diagnosis_model,
-            debug=debug,
-            progress_callback=progress_callback,
-        ),
-        run_positive_feature_branch(),
-    )
 
     search_planning_result = await _run_search_planning_with_fallback(
         case_text,

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from chatkit_app.server import MedicalDiagnosisChatKitServer
+from chatkit_app.server import MedicalDiagnosisChatKitServer, normalize_display_mode
 from chatkit_app.store import InMemoryChatKitStore
 from chatkit_app.translation import DisplayTranslator, normalize_display_language
 from config import DIAGNOSIS_PROVIDER
@@ -43,7 +43,8 @@ async def chatkit_endpoint(request: Request) -> Response:
     context: dict[str, Any] = {
         "display_language": normalize_display_language(
             request.headers.get("X-Display-Language")
-        )
+        ),
+        "display_mode": normalize_display_mode(request.headers.get("X-Display-Mode")),
     }
     result = await server.process(await request.body(), context=context)
     if isinstance(result, StreamingResult):

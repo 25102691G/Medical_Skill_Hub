@@ -6,7 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
 METHODS = (
-    "search_planning",
+    "llm_hypotheses",
     "similar_case_bm25",
     "similar_case_embedding",
     "similar_case_rrf",
@@ -14,12 +14,18 @@ METHODS = (
     "final_diagnosis",
 )
 METHOD_LABELS = {
-    "search_planning": "Search planning",
+    "llm_hypotheses": "LLM hypotheses",
     "similar_case_bm25": "Similar BM25",
     "similar_case_embedding": "Similar embedding",
     "similar_case_rrf": "Similar RRF",
     "similar_case_rerank": "Similar rerank",
     "final_diagnosis": "Final diagnosis",
+}
+SIMILAR_CASE_METHODS = {
+    "bm25": "similar_case_bm25",
+    "embedding": "similar_case_embedding",
+    "rrf": "similar_case_rrf",
+    "rerank": "similar_case_rerank",
 }
 METRIC_PREFIX_LENGTHS = {
     "disease": 3,
@@ -142,11 +148,11 @@ def evaluate_file(input_path: Path) -> Path:
                     "similar_case_retrieval_result"
                 ]
                 predicted_icd_codes = {
-                    "search_planning": [
+                    "llm_hypotheses": [
                         hypothesis["icd_code"].strip()
-                        for hypothesis in round_result[
-                            "search_planning_result"
-                        ]["hypotheses"][:5]
+                        for hypothesis in record["llm_hypotheses_result"][
+                            "llm_hypotheses"
+                        ][:5]
                     ],
                     "similar_case_bm25": [
                         item["icd_code"].strip()
@@ -182,12 +188,24 @@ def evaluate_file(input_path: Path) -> Path:
                 round_evaluations.append(
                     {
                         "round": round_number,
-                        **{
-                            method: {
+                        "llm_hypotheses": {
+                            "predicted_icd_codes": predicted_icd_codes[
+                                "llm_hypotheses"
+                            ],
+                            "evaluated_ranks": evaluated_ranks["llm_hypotheses"],
+                        },
+                        "similar_case_retrieval": {
+                            stage: {
                                 "predicted_icd_codes": predicted_icd_codes[method],
                                 "evaluated_ranks": evaluated_ranks[method],
                             }
-                            for method in METHODS
+                            for stage, method in SIMILAR_CASE_METHODS.items()
+                        },
+                        "final_diagnosis": {
+                            "predicted_icd_codes": predicted_icd_codes[
+                                "final_diagnosis"
+                            ],
+                            "evaluated_ranks": evaluated_ranks["final_diagnosis"],
                         },
                     }
                 )
@@ -230,8 +248,18 @@ def evaluate_file(input_path: Path) -> Path:
             for skill_name in final_round["diagnosis_result"]["skill_names"]:
                 skill_counts[skill_name] = skill_counts.get(skill_name, 0) + 1
             final_evaluated_ranks = {
-                method: round_evaluations[-1][method]["evaluated_ranks"]
-                for method in METHODS
+                "llm_hypotheses": round_evaluations[-1]["llm_hypotheses"][
+                    "evaluated_ranks"
+                ],
+                **{
+                    method: round_evaluations[-1]["similar_case_retrieval"][stage][
+                        "evaluated_ranks"
+                    ]
+                    for stage, method in SIMILAR_CASE_METHODS.items()
+                },
+                "final_diagnosis": round_evaluations[-1]["final_diagnosis"][
+                    "evaluated_ranks"
+                ],
             }
             for method in METHODS:
                 for metric in METRICS:
@@ -241,25 +269,41 @@ def evaluate_file(input_path: Path) -> Path:
                             final_recall_hits[method][metric][cutoff] += (
                                 evaluated_rank <= cutoff
                             )
+            evaluation_messages = []
+            for round_evaluation in round_evaluations:
+                round_evaluated_ranks = {
+                    "llm_hypotheses": round_evaluation["llm_hypotheses"][
+                        "evaluated_ranks"
+                    ],
+                    **{
+                        method: round_evaluation["similar_case_retrieval"][stage][
+                            "evaluated_ranks"
+                        ]
+                        for stage, method in SIMILAR_CASE_METHODS.items()
+                    },
+                    "final_diagnosis": round_evaluation["final_diagnosis"][
+                        "evaluated_ranks"
+                    ],
+                }
+                evaluation_messages.append(
+                    f"  Round {round_evaluation['round']} | "
+                    + "\n          | ".join(
+                        f"{METHOD_LABELS[method]}: ICD-3 rank="
+                        f"{round_evaluated_ranks[method]['disease'] or 'not found'}, "
+                        f"ICD-4 rank="
+                        f"{round_evaluated_ranks[method]['subcategory'] or 'not found'}"
+                        for method in METHODS
+                    )
+                )
             print(
                 f"[{line_number}] Evaluated "
                 f"subject_id={record.get('subject_id')}, "
                 f"hadm_id={record.get('hadm_id')}\n"
-                + "\n".join(
-                    f"  Round {round_evaluation['round']} | "
-                    + "\n          | ".join(
-                        f"{METHOD_LABELS[method]}: ICD-3 rank="
-                        f"{round_evaluation[method]['evaluated_ranks']['disease'] or 'not found'}, "
-                        f"ICD-4 rank="
-                        f"{round_evaluation[method]['evaluated_ranks']['subcategory'] or 'not found'}"
-                        for method in METHODS
-                    )
-                    for round_evaluation in round_evaluations
-                ),
+                + "\n".join(evaluation_messages),
                 file=sys.stderr,
             )
 
-        final_summary = {
+        flat_final_summary = {
             method: {
                 metric: {
                     f"recall{cutoff}": (
@@ -271,7 +315,15 @@ def evaluate_file(input_path: Path) -> Path:
             }
             for method in METHODS
         }
-        round_summaries = [
+        final_summary = {
+            "llm_hypotheses": flat_final_summary["llm_hypotheses"],
+            "similar_case_retrieval": {
+                stage: flat_final_summary[method]
+                for stage, method in SIMILAR_CASE_METHODS.items()
+            },
+            "final_diagnosis": flat_final_summary["final_diagnosis"],
+        }
+        flat_round_summaries = [
             {
                 "round": round_number,
                 "total": round_totals[round_number],
@@ -291,6 +343,19 @@ def evaluate_file(input_path: Path) -> Path:
             }
             for round_number in sorted(round_totals)
         ]
+        round_summaries = [
+            {
+                "round": round_summary["round"],
+                "total": round_summary["total"],
+                "llm_hypotheses": round_summary["llm_hypotheses"],
+                "similar_case_retrieval": {
+                    stage: round_summary[method]
+                    for stage, method in SIMILAR_CASE_METHODS.items()
+                },
+                "final_diagnosis": round_summary["final_diagnosis"],
+            }
+            for round_summary in flat_round_summaries
+        ]
         summary_record = {
             "total": total,
             "final_result": final_summary,
@@ -304,8 +369,8 @@ def evaluate_file(input_path: Path) -> Path:
         }
         output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
 
-    _print_recall_table("Final Results", total, final_summary)
-    for round_summary in round_summaries:
+    _print_recall_table("Final Results", total, flat_final_summary)
+    for round_summary in flat_round_summaries:
         _print_recall_table(
             f"Round {round_summary['round']}",
             round_summary["total"],

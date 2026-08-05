@@ -66,7 +66,7 @@ h1 {
   gap: 10px;
 }
 
-.language-control {
+.display-control {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -75,7 +75,7 @@ h1 {
   font-weight: 600;
 }
 
-.language-control select {
+.display-control select {
   min-width: 120px;
   padding: 7px 30px 7px 10px;
   border: 1px solid rgba(42, 92, 77, 0.22);
@@ -86,7 +86,7 @@ h1 {
   cursor: pointer;
 }
 
-.language-control select:disabled {
+.display-control select:disabled {
   cursor: wait;
   opacity: 0.62;
 }

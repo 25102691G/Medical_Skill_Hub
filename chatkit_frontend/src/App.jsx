@@ -9,6 +9,12 @@ export default function App() {
         ? "en"
         : "zh-CN",
   );
+  const [displayMode, setDisplayMode] = useState(
+    () =>
+      window.localStorage.getItem("medical-skill-hub-display-mode") === "debug"
+        ? "debug"
+        : "normal",
+  );
   const [threadId, setThreadId] = useState(
     () => window.localStorage.getItem("medical-skill-hub-thread"),
   );
@@ -20,6 +26,9 @@ export default function App() {
       instructions:
         "分次发送病例资料，完成后发送“开始诊断”；发送“清空病例”可重置当前病例。",
       languageLabel: "显示语言",
+      modeLabel: "显示模式",
+      normalMode: "正常模式",
+      debugMode: "Debug 模式",
       placeholder: "请输入病例资料或诊断指令",
       chatLabel: "医学诊断聊天窗口",
       disclaimer: "仅用于技术演示和辅助分析，不能替代临床医生诊断。",
@@ -29,6 +38,9 @@ export default function App() {
       instructions:
         'Send the case in one or more messages, then send “start diagnosis”. Send “clear case” to reset it.',
       languageLabel: "Display language",
+      modeLabel: "Display mode",
+      normalMode: "Normal",
+      debugMode: "Debug",
       placeholder: "Enter case information or a diagnosis command",
       chatLabel: "Medical diagnosis chat",
       disclaimer:
@@ -43,9 +55,10 @@ export default function App() {
       const headers = new Headers(requestHeaders);
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
       headers.set("X-Display-Language", displayLanguage);
+      headers.set("X-Display-Mode", displayMode);
       return window.fetch(input, { ...init, headers });
     },
-    [displayLanguage],
+    [displayLanguage, displayMode],
   );
 
   const chatkit = useChatKit({
@@ -77,6 +90,10 @@ export default function App() {
     window.localStorage.setItem("medical-skill-hub-language", displayLanguage);
   }, [displayLanguage]);
 
+  useEffect(() => {
+    window.localStorage.setItem("medical-skill-hub-display-mode", displayMode);
+  }, [displayMode]);
+
   return (
     <main className="page-shell">
       <header className="app-header">
@@ -85,7 +102,7 @@ export default function App() {
           <h1>{text.title}</h1>
         </div>
         <div className="header-controls">
-          <label className="language-control">
+          <label className="display-control">
             <span>{text.languageLabel}</span>
             <select
               value={displayLanguage}
@@ -96,11 +113,22 @@ export default function App() {
               <option value="en">English</option>
             </select>
           </label>
+          <label className="display-control">
+            <span>{text.modeLabel}</span>
+            <select
+              value={displayMode}
+              disabled={responseRunning}
+              onChange={(event) => setDisplayMode(event.target.value)}
+            >
+              <option value="normal">{text.normalMode}</option>
+              <option value="debug">{text.debugMode}</option>
+            </select>
+          </label>
           <p className="instructions">{text.instructions}</p>
         </div>
       </header>
       <section className="chat-panel" aria-label={text.chatLabel}>
-        <ChatKit key={displayLanguage} control={chatkit.control} />
+        <ChatKit key={`${displayLanguage}-${displayMode}`} control={chatkit.control} />
       </section>
       <footer>{text.disclaimer}</footer>
     </main>

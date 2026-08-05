@@ -47,7 +47,8 @@ Requirements:
 1. Do not summarize, omit, explain, or add medical information.
 2. Preserve Markdown structure, JSON syntax and nesting, list order, and line breaks.
 3. Preserve URLs, email addresses, numeric values, measurement units, medical codes, enum values,
-   hospital admission IDs, and machine identifiers such as skill_names.
+   hospital admission IDs, machine identifiers such as skill_names, and identifiers beginning with
+   __CHATKIT_PRESERVED_TEXT_.
 4. Translate human-readable text inside brackets while preserving the brackets.
 5. Use clinically accurate terminology and keep standard abbreviations when translation would reduce
    precision.
@@ -84,20 +85,33 @@ class DisplayTranslator:
             model=translation_model,
             instructions=TRANSLATION_INSTRUCTIONS,
         )
-        self._cache: dict[tuple[str, str], str] = {}
+        self._cache: dict[tuple[str, str, tuple[str, ...]], str] = {}
         self._lock = asyncio.Lock()
 
-    async def translate(self, text: str, target_language: str) -> str:
+    async def translate(
+        self,
+        text: str,
+        target_language: str,
+        preserved_texts: tuple[str, ...] = (),
+    ) -> str:
         normalized_language = normalize_display_language(target_language)
-        cache_key = (normalized_language, text)
+        preserved_texts = tuple(dict.fromkeys(value for value in preserved_texts if value))
+        cache_key = (normalized_language, text, preserved_texts)
         cached = self._cache.get(cache_key)
         if cached is not None:
             return cached
 
+        protected_text = text
+        preserved_values: list[tuple[str, str]] = []
+        for index, value in enumerate(sorted(preserved_texts, key=len, reverse=True)):
+            placeholder = f"__CHATKIT_PRESERVED_TEXT_{index}__"
+            protected_text = protected_text.replace(value, placeholder)
+            preserved_values.append((placeholder, value))
+
         chunks: list[str] = []
         current_lines: list[str] = []
         current_length = 0
-        for line in text.split("\n"):
+        for line in protected_text.split("\n"):
             added_length = len(line) + (1 if current_lines else 0)
             if current_lines and current_length + added_length > MAX_TRANSLATION_CHARS:
                 chunks.append("\n".join(current_lines))
@@ -133,6 +147,10 @@ class DisplayTranslator:
                     TranslationResult.model_validate_json(content).translated_text
                 )
             translated_text = "\n".join(translated_chunks)
+            for placeholder, value in preserved_values:
+                if placeholder not in translated_text:
+                    raise RuntimeError(f"DeepSeek modified preserved placeholder {placeholder}.")
+                translated_text = translated_text.replace(placeholder, value)
         except Exception:
             logger.exception(
                 "Display translation failed; returning untranslated content for language %s",

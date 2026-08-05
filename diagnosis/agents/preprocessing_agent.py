@@ -2,7 +2,27 @@ from __future__ import annotations
 
 from agents import Agent, Model
 
-from schemas import LlmHypothesesResult, PositiveFeaturesResult
+from schemas import LlmHypothesesResult, PositiveFeaturesResult, PreprocessingResult
+
+
+PREPROCESSING_INSTRUCTIONS = """
+## PREPROCESSING INSTRUCTIONS
+
+You coordinate two independent preprocessing tasks for a gastroenterology diagnosis pipeline.
+
+Call `generate_diagnostic_hypotheses` exactly once and `extract_positive_features` exactly once.
+Pass the complete original patient case to each tool without adding, removing, or interpreting any
+patient information. The two tools are independent and neither tool's result may be supplied to the
+other tool.
+
+After both tools return, copy their results into one JSON object with exactly these fields:
+
+* `llm_hypotheses`: copy the complete `llm_hypotheses` tool result without changes;
+* `positive_features`: copy the complete `positive_features` tool result without changes.
+
+Do not perform your own clinical analysis, alter either tool result, or add commentary. Return valid
+JSON only and strictly follow the provided output schema.
+""".strip()
 
 
 HYPOTHESIS_PREPROCESSING_INSTRUCTIONS = """
@@ -86,27 +106,40 @@ hypotheses, or fields that are not defined in the schema.
 """.strip()
 
 
-def build_hypothesis_preprocessing_agent(
+def build_preprocessing_agent(
     model: str | Model,
     *,
     native_structured_output: bool = True,
 ) -> Agent:
-    return Agent(
+    hypothesis_agent = Agent(
         name="Diagnostic Hypothesis Preprocessing Agent",
         model=model,
         instructions=HYPOTHESIS_PREPROCESSING_INSTRUCTIONS,
         output_type=LlmHypothesesResult if native_structured_output else None,
     )
-
-
-def build_positive_feature_preprocessing_agent(
-    model: str | Model,
-    *,
-    native_structured_output: bool = True,
-) -> Agent:
-    return Agent(
+    positive_feature_agent = Agent(
         name="Positive Feature Preprocessing Agent",
         model=model,
         instructions=POSITIVE_FEATURE_PREPROCESSING_INSTRUCTIONS,
         output_type=PositiveFeaturesResult if native_structured_output else None,
+    )
+    return Agent(
+        name="Preprocessing Agent",
+        model=model,
+        instructions=PREPROCESSING_INSTRUCTIONS,
+        tools=[
+            hypothesis_agent.as_tool(
+                tool_name="generate_diagnostic_hypotheses",
+                tool_description=(
+                    "Generate principal-diagnosis hypotheses from the complete original patient case."
+                ),
+            ),
+            positive_feature_agent.as_tool(
+                tool_name="extract_positive_features",
+                tool_description=(
+                    "Extract positive clinical features from the complete original patient case."
+                ),
+            ),
+        ],
+        output_type=PreprocessingResult if native_structured_output else None,
     )

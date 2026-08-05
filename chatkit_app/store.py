@@ -28,10 +28,15 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         self.threads: dict[str, ThreadMetadata] = {}
         self.items: dict[str, list[ThreadItem]] = defaultdict(list)
         self.case_sections: dict[str, list[str]] = defaultdict(list)
-        self.raw_assistant_texts: dict[str, str] = {}
+        self.raw_assistant_texts: dict[str, tuple[str, tuple[str, ...]]] = {}
 
-    def register_raw_assistant_text(self, item_id: str, text: str) -> None:
-        self.raw_assistant_texts[item_id] = text
+    def register_raw_assistant_text(
+        self,
+        item_id: str,
+        text: str,
+        preserved_texts: tuple[str, ...] = (),
+    ) -> None:
+        self.raw_assistant_texts[item_id] = (text, preserved_texts)
 
     def append_case_section(self, thread_id: str, text: str) -> str:
         self.case_sections[thread_id].append(text)
@@ -95,11 +100,16 @@ class InMemoryChatKitStore(Store[dict[str, Any]]):
         display_language = get_context_display_language(context)
         localized_items: list[ThreadItem] = []
         for item in page.data:
-            raw_text = self.raw_assistant_texts.get(item.id)
-            if not isinstance(item, AssistantMessageItem) or raw_text is None:
+            raw_message = self.raw_assistant_texts.get(item.id)
+            if not isinstance(item, AssistantMessageItem) or raw_message is None:
                 localized_items.append(item)
                 continue
-            translated_text = await self.translator.translate(raw_text, display_language)
+            raw_text, preserved_texts = raw_message
+            translated_text = await self.translator.translate(
+                raw_text,
+                display_language,
+                preserved_texts,
+            )
             localized_items.append(
                 item.model_copy(
                     update={

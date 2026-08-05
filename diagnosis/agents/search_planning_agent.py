@@ -67,16 +67,17 @@ focused medical literature queries.
 
 ### 4. Search Query Requirements
 
-Each query must support one or more hypotheses and be a focused, retrieval-oriented keyword phrase
-rather than a full sentence.
+Each query may focus on one candidate disease or compare two or more clinically similar candidate
+diseases that require differentiation. Include the current patient's positive feature that is most
+relevant and discriminative for the disease or diseases in that query.
 
-The complete set of queries must cover every supplied hypothesis. Include each hypothesis's exact
-category_name in at least one query so coverage can be verified programmatically. A query may cover
-multiple related hypotheses by including their exact category_name values and framing the query as a
-differential diagnosis.
+Write each query as a concise PubMed-oriented keyword phrase rather than a full sentence. Use disease
+names, the selected patient feature, and only the additional biomedical concepts needed for the query
+intent, such as anatomical site, imaging, endoscopy, pathology, or procedure context.
 
-Normally use only 2–5 core biomedical concepts needed for the query intent, selected from disease,
-anatomical site, manifestation, procedure context, pathology, and clinical task.
+The complete set of queries must collectively cover every supplied hypothesis. Do not mechanically
+append generic terms such as "diagnosis" to a disease name. Do not wrap terms in quotation marks or
+include literal backslashes in a query.
 
 Avoid duplicate or overly broad queries.
 
@@ -86,7 +87,7 @@ Collectively cover the following when applicable:
 * every supplied hypothesis;
 * relevant diagnostic criteria, endoscopic, imaging, histopathological, or immunohistochemical
   features;
-* a major differential diagnosis or evidence that could distinguish the supplied candidates;
+* major differential diagnoses or evidence that could distinguish clinically similar candidates;
 * postoperative or procedure-related complications.
 
 ### 5. Output Requirements

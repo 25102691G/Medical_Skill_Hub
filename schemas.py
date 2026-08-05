@@ -187,8 +187,8 @@ class DiagnosisResult(BaseModel):
     evidence: list[str] = Field(
         default_factory=list,
         description=(
-            "Complete numbered evidence list derived from guideline evidence followed by PubMed "
-            "evidence. Each item must use the format [number] source：evidence text."
+            "Numbered guideline and PubMed evidence cited by the final diagnoses. Each item must "
+            "use the format [number] source：evidence text."
         )
     )
 
@@ -281,6 +281,21 @@ class PositiveFeaturesResult(BaseModel):
     )
 
 
+class PreprocessingResult(BaseModel):
+    llm_hypotheses: list[HypothesisItem] = Field(
+        max_length=5,
+        description=(
+            "Up to 5 principal-diagnosis hypotheses generated directly from the original case text"
+        ),
+    )
+    positive_features: list[str] = Field(
+        description=(
+            "Explicitly documented positive clinical manifestations and examination results "
+            "extracted directly from the original case text"
+        )
+    )
+
+
 class SearchPlanningResult(BaseModel):
     hypotheses: list[HypothesisItem] = Field(
         max_length=10,
@@ -292,8 +307,9 @@ class SearchPlanningResult(BaseModel):
     search_queries: list[str] = Field(
         max_length=10,
         description=(
-            "Five to ten medical literature search queries that collectively cover every hypothesis; "
-            "may be empty only when search planning fails"
+            "Five to ten concise PubMed search queries that collectively cover every hypothesis; "
+            "each query combines one or more clinically relevant candidate diseases with the most "
+            "discriminative positive patient feature, and may be empty only when search planning fails"
         ),
     )
     reason: str | None = Field(
