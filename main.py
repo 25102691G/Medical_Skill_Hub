@@ -794,11 +794,6 @@ async def _run_final_diagnosis_async(
                 "category_name": hypothesis.category_name,
             }
         )
-    if len(candidate_diagnoses) < 5:
-        raise ValueError(
-            "Final diagnosis requires at least 5 unique candidates, "
-            f"but received {len(candidate_diagnoses)}."
-        )
     pubmed_results = _format_pubmed_results(knowledge_search_result)
     guideline_evidence = [
         f"{skill_result.skill_name}：{evidence}"
@@ -851,7 +846,8 @@ async def _run_final_diagnosis_async(
         "</SIMILAR_CASES>\n\n"
         f"{revision_context}"
         "## Task\n\n"
-        "Please output exactly five ranked principal-diagnosis candidates."
+        "Please output the five highest-ranked principal-diagnosis candidates, or all supplied "
+        "candidates when fewer than five are available."
     )
     diagnosis_prompt = _prepare_structured_prompt(
         diagnosis_prompt,
@@ -900,10 +896,10 @@ async def _run_final_diagnosis_async(
     missing_excluded_codes = expected_excluded_codes - set(excluded_candidates)
     if missing_excluded_codes:
         raise ValueError(
-            "Every search planning candidate omitted from the final top five must include patient "
+            "Every search planning candidate omitted from the final diagnoses must include patient "
             "contrary evidence. "
             f"Missing {sorted(missing_excluded_codes)}; "
-            f"final top five contains {sorted(selected_codes)}."
+            f"final diagnoses contain {sorted(selected_codes)}."
         )
     validated_excluded_candidates = []
     for icd_code in planning_candidates:
