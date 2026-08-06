@@ -41,7 +41,8 @@ from diagnosis.agents.knowledge_searcher_agent import (
     search_pubmed_queries,
 )
 from diagnosis.agents.preprocessing_agent import (
-    build_preprocessing_agent,
+    build_hypothesis_preprocessing_agent,
+    build_positive_feature_preprocessing_agent,
 )
 from diagnosis.agents.search_planning_agent import build_search_planning_agent
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
@@ -175,17 +176,27 @@ async def _run_preprocessing_async(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> PreprocessingResult:
     native_structured_output = _uses_native_structured_output(model)
-    agent = build_preprocessing_agent(
+    hypothesis_agent = build_hypothesis_preprocessing_agent(
         model,
         native_structured_output=native_structured_output,
     )
-    prompt = _prepare_structured_prompt(
-        (
-            "<PATIENT_INFORMATION>\n"
-            f"{case_text}\n"
-            "</PATIENT_INFORMATION>"
-        ),
-        PreprocessingResult,
+    positive_feature_agent = build_positive_feature_preprocessing_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
+    patient_information = (
+        "<PATIENT_INFORMATION>\n"
+        f"{case_text}\n"
+        "</PATIENT_INFORMATION>"
+    )
+    hypothesis_prompt = _prepare_structured_prompt(
+        patient_information,
+        LlmHypothesesResult,
+        native_structured_output=native_structured_output,
+    )
+    positive_feature_prompt = _prepare_structured_prompt(
+        patient_information,
+        PositiveFeaturesResult,
         native_structured_output=native_structured_output,
     )
     _notify_agent_started(
@@ -193,14 +204,30 @@ async def _run_preprocessing_async(
         "Preprocessing Agent",
         None,
     )
-    raw_result = (
-        await Runner.run(
-            agent,
-            prompt,
+    hypothesis_run, positive_feature_run = await asyncio.gather(
+        Runner.run(
+            hypothesis_agent,
+            hypothesis_prompt,
             run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
-        )
-    ).final_output
-    result = _parse_structured_result(raw_result, PreprocessingResult)
+        ),
+        Runner.run(
+            positive_feature_agent,
+            positive_feature_prompt,
+            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+        ),
+    )
+    llm_hypotheses_result = _parse_structured_result(
+        hypothesis_run.final_output,
+        LlmHypothesesResult,
+    )
+    positive_features_result = _parse_structured_result(
+        positive_feature_run.final_output,
+        PositiveFeaturesResult,
+    )
+    result = PreprocessingResult(
+        llm_hypotheses=llm_hypotheses_result.llm_hypotheses,
+        positive_features=positive_features_result.positive_features,
+    )
     _publish_stage_result(
         "Preprocessing Result",
         result,

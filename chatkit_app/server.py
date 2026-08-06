@@ -576,6 +576,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
 
         diagnosis_task = asyncio.create_task(run_diagnosis())
         yield ThreadItemAddedEvent(item=elapsed_item)
+        stage_translation_task: asyncio.Task[str] | None = None
         final_translation_task: asyncio.Task[str] | None = None
         try:
             next_elapsed_update = progress_started_at + 1
@@ -602,7 +603,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                             ),
                         ),
                     )
-                    next_elapsed_update += 1
+                    next_elapsed_update = loop.time() + 1
                     continue
                 if progress_event is None:
                     break
@@ -653,10 +654,43 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                             display_language == "zh-CN"
                             and stage_name in TRANSLATED_PROGRESS_STAGES
                         ):
-                            completed_text = await self.translator.translate(
-                                completed_text,
-                                display_language,
+                            stage_translation_task = asyncio.create_task(
+                                self.translator.translate(
+                                    completed_text,
+                                    display_language,
+                                )
                             )
+                            while True:
+                                try:
+                                    completed_text = await asyncio.wait_for(
+                                        asyncio.shield(stage_translation_task),
+                                        timeout=max(
+                                            0,
+                                            next_elapsed_update - loop.time(),
+                                        ),
+                                    )
+                                    stage_translation_task = None
+                                    break
+                                except asyncio.TimeoutError:
+                                    elapsed_seconds = int(
+                                        loop.time() - progress_started_at
+                                    )
+                                    yield ThreadItemUpdatedEvent(
+                                        item_id=elapsed_item.id,
+                                        update=WidgetComponentUpdated(
+                                            component_id=elapsed_component_id,
+                                            component=DynamicWidgetComponent(
+                                                type="Text",
+                                                id=elapsed_component_id,
+                                                value=_format_elapsed_time(
+                                                    elapsed_seconds,
+                                                    display_language,
+                                                ),
+                                                **elapsed_text_props,
+                                            ),
+                                        ),
+                                    )
+                                    next_elapsed_update = loop.time() + 1
                         agent_title = STAGE_AGENT_NAMES[stage_name]
                         task_index = active_task_indices.pop(
                             (agent_title, round_text if separator else None),
@@ -774,10 +808,15 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                 preserved_texts=preserved_texts,
             )
         except RateLimitError as exc:
-            if final_translation_task is not None:
-                final_translation_task.cancel()
+            translation_tasks = [
+                task
+                for task in (stage_translation_task, final_translation_task)
+                if task is not None
+            ]
+            for task in translation_tasks:
+                task.cancel()
             await asyncio.gather(
-                *([final_translation_task] if final_translation_task is not None else []),
+                *translation_tasks,
                 return_exceptions=True,
             )
             error_code = _rate_limit_error_code(exc)
@@ -808,10 +847,15 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                 )
             return
         except Exception:
-            if final_translation_task is not None:
-                final_translation_task.cancel()
+            translation_tasks = [
+                task
+                for task in (stage_translation_task, final_translation_task)
+                if task is not None
+            ]
+            for task in translation_tasks:
+                task.cancel()
             await asyncio.gather(
-                *([final_translation_task] if final_translation_task is not None else []),
+                *translation_tasks,
                 return_exceptions=True,
             )
             if elapsed_item_visible:
