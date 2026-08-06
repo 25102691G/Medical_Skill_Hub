@@ -45,14 +45,28 @@ The input may contain:
 Guideline diagnostic results, retrieved diagnoses, and previous-round outputs are candidate sources
 only. They are not presumed to be correct.
 
-The supplied candidate_diagnoses list is the complete allowed candidate set. Select every final
-diagnosis from that list and copy its icd_code and category_name exactly. Do not create a diagnosis or
-recode a candidate outside that list.
+Treat the supplied candidate_diagnoses as the high-priority initial candidate set, not as a closed
+allowed set. Prefer a supplied candidate when it adequately represents the current hospitalization,
+but consider a diagnosis outside that list when the current patient's documented findings and the
+provided guideline or literature evidence support it better.
+
+There are two permitted types of diagnoses outside candidate_diagnoses:
+
+* an ICD-10-CM refinement or correction that preserves the first three characters of a supplied
+  candidate but changes the fourth or later characters to represent a better-supported etiology,
+  anatomical site, complication, subtype, or other coded detail;
+* a clinically different disease whose first three ICD-10-CM characters differ from every supplied
+  candidate.
+
+For a diagnosis outside candidate_diagnoses, provide its complete ICD-10-CM code and canonical English
+description. Do not change an ICD code merely to make the differential more varied or more specific.
 
 ### 2. Candidate Evaluation
 
-Rerank the supplied candidate_diagnoses. Use guideline and literature evidence only to interpret the
-current patient's findings and rank those candidates, not to create additional ICD candidates.
+Evaluate and rerank the supplied candidate_diagnoses first, then determine whether an ICD refinement or
+a clinically different disease is better supported. An outside diagnosis must be supported by explicit
+current-patient findings and specifically corroborated by the provided numbered guideline or literature
+evidence. Similar cases alone are insufficient for adding an outside diagnosis.
 
 Evaluate each clinically plausible candidate against the current patient's documented:
 
@@ -77,16 +91,25 @@ Do not automatically replace the main condition evaluated or treated during the 
 suspected deeper etiology. Rank the diagnosis that best represents the hospitalization's principal
 diagnostic target.
 
-Every candidate diagnosis omitted from the final top five must appear once in
-excluded_planning_candidates. Copy its icd_code and category_name exactly and provide one or more
-explicit current-patient findings that contradict it or make it unsuitable as the principal diagnosis.
-Do not use missing information, external evidence, or the need to make room for another candidate as
-contrary evidence.
+Every supplied candidate diagnosis omitted from the final top five must appear once in
+excluded_planning_candidates. Copy its icd_code and category_name exactly and explain why it was
+excluded or corrected, using explicit current-patient findings. When an outside diagnosis with the same
+first three ICD characters replaces a supplied candidate, do not also retain that supplied candidate in
+the top five. Put the original supplied candidate in excluded_planning_candidates and explain which
+documented etiology, anatomical site, complication, subtype, or other feature supports changing the
+fourth or later ICD characters. When a clinically different disease replaces a supplied candidate,
+explain why the patient findings support that replacement. If numbered guideline or literature evidence
+supports an exclusion or code correction, append its exact evidence number to the reason.
+
+Do not use missing information, the need to make room for another candidate, or external evidence alone
+as a reason. Do not put newly introduced diagnoses in excluded_planning_candidates; this field records
+only supplied candidates that were not selected unchanged.
 
 Always return excluded_planning_candidates. After selecting the final top five, compare their ICD codes
-with candidate_diagnoses. If every candidate diagnosis is selected, return an empty array.
-Otherwise, return exactly the set difference candidate_diagnoses minus topk_diagnoses. Never
-include a candidate whose ICD code appears in topk_diagnoses.
+with candidate_diagnoses. If every supplied candidate diagnosis is selected unchanged, return an empty
+array. Otherwise, return exactly the set difference candidate_diagnoses minus unchanged supplied
+candidates in topk_diagnoses. Never include a supplied candidate whose exact ICD code appears in
+topk_diagnoses.
 
 Rank diagnoses according to patient-level evidence, not according to which source proposed them.
 
@@ -144,8 +167,9 @@ ranking errors while reassessing all candidates against the current patient info
 
 For each diagnosis:
 
-* copy the complete ICD-10-CM code without a decimal point from candidate_diagnoses;
-* set category_name to the canonical English description corresponding to that code.
+* use the complete ICD-10-CM code without a decimal point;
+* set category_name to the canonical English description corresponding to that complete code;
+* when using a supplied candidate unchanged, copy its icd_code and category_name exactly.
 
 Include only diagnostic details represented by the selected complete ICD-10-CM code. Do not add
 unsupported details, including:
@@ -159,7 +183,8 @@ unsupported details, including:
 Clinical location and complications may be used for diagnostic reasoning and may appear in
 category_name only when they are part of the canonical description of the selected code.
 
-The icd_code and category_name in each diagnosis must exactly match one candidate_diagnoses item.
+An outside diagnosis may use an icd_code and category_name not present in candidate_diagnoses only under
+the evidence requirements above.
 
 Do not output duplicate icd_code values.
 

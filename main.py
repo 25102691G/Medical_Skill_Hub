@@ -794,11 +794,6 @@ async def _run_final_diagnosis_async(
                 "category_name": hypothesis.category_name,
             }
         )
-    if len(candidate_diagnoses) < 5:
-        raise ValueError(
-            "Final diagnosis requires at least 5 unique candidates, "
-            f"but received {len(candidate_diagnoses)}."
-        )
     pubmed_results = _format_pubmed_results(knowledge_search_result)
     guideline_evidence = [
         f"{skill_result.skill_name}：{evidence}"
@@ -872,17 +867,25 @@ async def _run_final_diagnosis_async(
         )
     ).final_output
     diagnosis_content = _parse_structured_result(raw_result, FinalDiagnosisContent)
+    citation_pattern = re.compile(r"\[(\d+)\]")
     for diagnosis in diagnosis_content.topk_diagnoses:
         expected_category_name = candidate_names.get(diagnosis.icd_code)
-        if expected_category_name is None:
-            raise ValueError(
-                f"Final diagnosis returned ICD code outside the candidate set: "
-                f"{diagnosis.icd_code}"
-            )
-        if diagnosis.category_name != expected_category_name:
+        if (
+            expected_category_name is not None
+            and diagnosis.category_name != expected_category_name
+        ):
             raise ValueError(
                 f"Final diagnosis changed the candidate name for {diagnosis.icd_code}: "
                 f"expected {expected_category_name!r}, got {diagnosis.category_name!r}"
+            )
+        if expected_category_name is None and not any(
+            1 <= int(reference) <= len(numbered_evidence)
+            for evidence in diagnosis.supporting_evidence
+            for reference in citation_pattern.findall(evidence)
+        ):
+            raise ValueError(
+                f"Final diagnosis outside the planning candidate set must cite supporting "
+                f"guideline or PubMed evidence: {diagnosis.icd_code}."
             )
 
     selected_codes = {
@@ -892,6 +895,20 @@ async def _run_final_diagnosis_async(
         hypothesis.icd_code: hypothesis.category_name
         for hypothesis in search_planning_result.hypotheses
     }
+    refined_planning_codes = {
+        planning_code
+        for diagnosis in diagnosis_content.topk_diagnoses
+        if diagnosis.icd_code not in planning_candidates
+        for planning_code in planning_candidates
+        if diagnosis.icd_code[:3] == planning_code[:3]
+    }
+    retained_refined_sources = refined_planning_codes & selected_codes
+    if retained_refined_sources:
+        raise ValueError(
+            "A planning candidate replaced by an ICD code with the same first three characters "
+            "must be excluded rather than retained unchanged. "
+            f"Conflicting candidates: {sorted(retained_refined_sources)}."
+        )
     excluded_candidates = {
         candidate.icd_code: candidate
         for candidate in diagnosis_content.excluded_planning_candidates
@@ -900,8 +917,8 @@ async def _run_final_diagnosis_async(
     missing_excluded_codes = expected_excluded_codes - set(excluded_candidates)
     if missing_excluded_codes:
         raise ValueError(
-            "Every search planning candidate omitted from the final top five must include patient "
-            "contrary evidence. "
+            "Every search planning candidate omitted from the final top five must include "
+            "patient-grounded exclusion or ICD correction reasons. "
             f"Missing {sorted(missing_excluded_codes)}; "
             f"final top five contains {sorted(selected_codes)}."
         )
@@ -918,7 +935,7 @@ async def _run_final_diagnosis_async(
             evidence.strip() for evidence in candidate.patient_contrary_evidence
         ):
             raise ValueError(
-                f"Excluded planning candidate {icd_code} has empty contrary evidence."
+                f"Excluded planning candidate {icd_code} has an empty exclusion or correction reason."
             )
         validated_excluded_candidates.append(candidate)
 
@@ -926,13 +943,22 @@ async def _run_final_diagnosis_async(
         skill_result.skill_name
         for skill_result in guideline_search_result.skill_results
     ]
-    citation_pattern = re.compile(r"\[(\d+)\]")
     referenced_numbers = {
         int(reference)
-        for diagnosis in diagnosis_content.topk_diagnoses
         for text in [
-            *diagnosis.supporting_evidence,
-            *diagnosis.recommended_next_steps,
+            *[
+                item
+                for diagnosis in diagnosis_content.topk_diagnoses
+                for item in [
+                    *diagnosis.supporting_evidence,
+                    *diagnosis.recommended_next_steps,
+                ]
+            ],
+            *[
+                item
+                for candidate in validated_excluded_candidates
+                for item in candidate.patient_contrary_evidence
+            ],
         ]
         for reference in citation_pattern.findall(text)
         if 1 <= int(reference) <= len(numbered_evidence)
@@ -976,6 +1002,18 @@ async def _run_final_diagnosis_async(
                 text,
             ).strip()
             for text in diagnosis.recommended_next_steps
+        ]
+    for candidate in validated_excluded_candidates:
+        candidate.patient_contrary_evidence = [
+            citation_pattern.sub(
+                lambda match: (
+                    f"[{citation_mapping[int(match.group(1))]}]"
+                    if int(match.group(1)) in citation_mapping
+                    else ""
+                ),
+                text,
+            ).strip()
+            for text in candidate.patient_contrary_evidence
         ]
     result = DiagnosisResult(
         used_skill=guideline_search_result.used_skill,

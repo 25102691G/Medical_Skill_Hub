@@ -134,8 +134,9 @@ class ExcludedPlanningCandidate(BaseModel):
     patient_contrary_evidence: list[str] = Field(
         min_length=1,
         description=(
-            "Explicit current-patient findings that justify excluding this planning candidate "
-            "from the final top five"
+            "Reasons grounded in explicit current-patient findings for excluding this planning "
+            "candidate or replacing it with a corrected ICD-10-CM code; supporting numbered "
+            "guideline or literature evidence may be cited"
         ),
     )
 
@@ -152,8 +153,8 @@ class FinalDiagnosisContent(BaseModel):
     )
     excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
         description=(
-            "Search planning candidates omitted from the final top five, each supported by explicit "
-            "contrary evidence from the current patient"
+            "Search planning candidates not selected unchanged in the final top five, each with "
+            "patient-grounded reasons for exclusion or ICD-10-CM correction"
         ),
     )
     summary: str = Field(description="Brief diagnostic analysis summary")

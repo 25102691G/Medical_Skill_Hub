@@ -11,14 +11,20 @@ METHODS = (
     "similar_case_embedding",
     "similar_case_rrf",
     "similar_case_rerank",
+    "search_planning_result",
     "final_diagnosis",
 )
+RECALL_CUTOFFS = {
+    method: (1, 3, 5, 10) if method == "search_planning_result" else (1, 3, 5)
+    for method in METHODS
+}
 METHOD_LABELS = {
     "llm_hypotheses": "LLM hypotheses",
     "similar_case_bm25": "Similar BM25",
     "similar_case_embedding": "Similar embedding",
     "similar_case_rrf": "Similar RRF",
     "similar_case_rerank": "Similar rerank",
+    "search_planning_result": "Search planning result",
     "final_diagnosis": "Final diagnosis",
 }
 SIMILAR_CASE_METHODS = {
@@ -36,7 +42,7 @@ METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate six sets of top-5 principal-diagnosis ICD predictions."
+        description="Evaluate principal-diagnosis ICD predictions from seven stages."
     )
     parser.add_argument(
         "--input",
@@ -85,28 +91,34 @@ def _print_recall_table(
     print(f"{title} (n={total})")
     print(
         f"{'Method':<{method_width}}  "
-        f"{'3-digit Recall':^25}  "
-        f"{'4-digit Recall':^25}"
+        f"{'3-digit Recall':^33}  "
+        f"{'4-digit Recall':^33}"
     )
     print(
         f"{'':<{method_width}}  "
-        f"{'R@1':>7} {'R@3':>7} {'R@5':>7}  "
-        f"{'R@1':>7} {'R@3':>7} {'R@5':>7}"
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7}  "
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7}"
     )
     for method in METHODS:
         three_digit_values = [
-            summary[method]["disease"][f"recall{cutoff}"]
-            for cutoff in (1, 3, 5)
+            summary[method]["disease"].get(f"recall{cutoff}")
+            for cutoff in (1, 3, 5, 10)
         ]
         four_digit_values = [
-            summary[method]["subcategory"][f"recall{cutoff}"]
-            for cutoff in (1, 3, 5)
+            summary[method]["subcategory"].get(f"recall{cutoff}")
+            for cutoff in (1, 3, 5, 10)
         ]
         print(
             f"{method:<{method_width}}  "
-            + " ".join(f"{value:>7.1%}" for value in three_digit_values)
+            + " ".join(
+                f"{value:>7.1%}" if value is not None else f"{'-':>7}"
+                for value in three_digit_values
+            )
             + "  "
-            + " ".join(f"{value:>7.1%}" for value in four_digit_values)
+            + " ".join(
+                f"{value:>7.1%}" if value is not None else f"{'-':>7}"
+                for value in four_digit_values
+            )
         )
     print()
 
@@ -119,7 +131,7 @@ def evaluate_file(input_path: Path) -> Path:
     total = 0
     final_recall_hits = {
         method: {
-            metric: {1: 0, 3: 0, 5: 0}
+            metric: {cutoff: 0 for cutoff in RECALL_CUTOFFS[method]}
             for metric in METRICS
         }
         for method in METHODS
@@ -170,6 +182,12 @@ def evaluate_file(input_path: Path) -> Path:
                         item["icd_code"].strip()
                         for item in similar_case_result["rerank"][:5]
                     ],
+                    "search_planning_result": [
+                        hypothesis["icd_code"].strip()
+                        for hypothesis in round_result["search_planning_result"][
+                            "hypotheses"
+                        ]
+                    ],
                     "final_diagnosis": [
                         diagnosis["icd_code"].strip()
                         for diagnosis in round_result["diagnosis_result"][
@@ -201,6 +219,14 @@ def evaluate_file(input_path: Path) -> Path:
                             }
                             for stage, method in SIMILAR_CASE_METHODS.items()
                         },
+                        "search_planning_result": {
+                            "predicted_icd_codes": predicted_icd_codes[
+                                "search_planning_result"
+                            ],
+                            "evaluated_ranks": evaluated_ranks[
+                                "search_planning_result"
+                            ],
+                        },
                         "final_diagnosis": {
                             "predicted_icd_codes": predicted_icd_codes[
                                 "final_diagnosis"
@@ -214,7 +240,9 @@ def evaluate_file(input_path: Path) -> Path:
                     round_number,
                     {
                         method: {
-                            metric: {1: 0, 3: 0, 5: 0}
+                            metric: {
+                                cutoff: 0 for cutoff in RECALL_CUTOFFS[method]
+                            }
                             for metric in METRICS
                         }
                         for method in METHODS
@@ -224,7 +252,7 @@ def evaluate_file(input_path: Path) -> Path:
                     for metric in METRICS:
                         evaluated_rank = evaluated_ranks[method][metric]
                         if evaluated_rank is not None:
-                            for cutoff in (1, 3, 5):
+                            for cutoff in RECALL_CUTOFFS[method]:
                                 round_hits[method][metric][cutoff] += (
                                     evaluated_rank <= cutoff
                                 )
@@ -257,6 +285,9 @@ def evaluate_file(input_path: Path) -> Path:
                     ]
                     for stage, method in SIMILAR_CASE_METHODS.items()
                 },
+                "search_planning_result": round_evaluations[-1][
+                    "search_planning_result"
+                ]["evaluated_ranks"],
                 "final_diagnosis": round_evaluations[-1]["final_diagnosis"][
                     "evaluated_ranks"
                 ],
@@ -265,7 +296,7 @@ def evaluate_file(input_path: Path) -> Path:
                 for metric in METRICS:
                     evaluated_rank = final_evaluated_ranks[method][metric]
                     if evaluated_rank is not None:
-                        for cutoff in (1, 3, 5):
+                        for cutoff in RECALL_CUTOFFS[method]:
                             final_recall_hits[method][metric][cutoff] += (
                                 evaluated_rank <= cutoff
                             )
@@ -281,6 +312,9 @@ def evaluate_file(input_path: Path) -> Path:
                         ]
                         for stage, method in SIMILAR_CASE_METHODS.items()
                     },
+                    "search_planning_result": round_evaluation[
+                        "search_planning_result"
+                    ]["evaluated_ranks"],
                     "final_diagnosis": round_evaluation["final_diagnosis"][
                         "evaluated_ranks"
                     ],
@@ -309,7 +343,7 @@ def evaluate_file(input_path: Path) -> Path:
                     f"recall{cutoff}": (
                         final_recall_hits[method][metric][cutoff] / total
                     )
-                    for cutoff in (1, 3, 5)
+                    for cutoff in RECALL_CUTOFFS[method]
                 }
                 for metric in METRICS
             }
@@ -321,6 +355,9 @@ def evaluate_file(input_path: Path) -> Path:
                 stage: flat_final_summary[method]
                 for stage, method in SIMILAR_CASE_METHODS.items()
             },
+            "search_planning_result": flat_final_summary[
+                "search_planning_result"
+            ],
             "final_diagnosis": flat_final_summary["final_diagnosis"],
         }
         flat_round_summaries = [
@@ -334,7 +371,7 @@ def evaluate_file(input_path: Path) -> Path:
                                 round_recall_hits[round_number][method][metric][cutoff]
                                 / round_totals[round_number]
                             )
-                            for cutoff in (1, 3, 5)
+                            for cutoff in RECALL_CUTOFFS[method]
                         }
                         for metric in METRICS
                     }
@@ -352,6 +389,9 @@ def evaluate_file(input_path: Path) -> Path:
                     stage: round_summary[method]
                     for stage, method in SIMILAR_CASE_METHODS.items()
                 },
+                "search_planning_result": round_summary[
+                    "search_planning_result"
+                ],
                 "final_diagnosis": round_summary["final_diagnosis"],
             }
             for round_summary in flat_round_summaries
