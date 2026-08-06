@@ -135,7 +135,7 @@ class ExcludedPlanningCandidate(BaseModel):
         min_length=1,
         description=(
             "Explicit current-patient findings that justify excluding this planning candidate "
-            "from the final diagnoses"
+            "from the final top five"
         ),
     )
 
@@ -146,13 +146,13 @@ class ExcludedPlanningCandidate(BaseModel):
 
 class FinalDiagnosisContent(BaseModel):
     topk_diagnoses: list[DiagnosisItem] = Field(
-        min_length=1,
+        min_length=5,
         max_length=5,
-        description="Up to five ranked principal-diagnosis ICD candidates",
+        description="Exactly five ranked principal-diagnosis ICD candidates",
     )
     excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
         description=(
-            "Search planning candidates omitted from the final diagnoses, each supported by explicit "
+            "Search planning candidates omitted from the final top five, each supported by explicit "
             "contrary evidence from the current patient"
         ),
     )
@@ -163,11 +163,8 @@ class FinalDiagnosisContent(BaseModel):
         diagnosis_codes = [item.icd_code for item in self.topk_diagnoses]
         if len(diagnosis_codes) != len(set(diagnosis_codes)):
             raise ValueError("Final diagnosis ICD codes must be unique.")
-        expected_ranks = list(range(1, len(self.topk_diagnoses) + 1))
-        if [item.rank for item in self.topk_diagnoses] != expected_ranks:
-            raise ValueError(
-                "Final diagnosis ranks must be consecutive from 1 in list order."
-            )
+        if [item.rank for item in self.topk_diagnoses] != [1, 2, 3, 4, 5]:
+            raise ValueError("Final diagnosis ranks must be exactly 1 through 5 in list order.")
         excluded_codes = [
             item.icd_code for item in self.excluded_planning_candidates
         ]
@@ -180,11 +177,11 @@ class DiagnosisResult(BaseModel):
     used_skill: bool = Field(description="Whether a guideline skill was used before the final diagnosis stage")
     skill_names: list[str] = Field(description="List of skill names actually used")
     topk_diagnoses: list[DiagnosisItem] = Field(
-        description="Up to five ranked principal-diagnosis ICD candidates"
+        description="Five ranked principal-diagnosis ICD candidates"
     )
     excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
         default_factory=list,
-        description="Search planning candidates excluded from the final diagnoses",
+        description="Search planning candidates excluded from the final top five",
     )
     summary: str = Field(description="Brief diagnostic analysis summary")
     evidence: list[str] = Field(

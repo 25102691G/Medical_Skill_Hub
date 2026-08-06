@@ -29,10 +29,9 @@ FINAL_DIAGNOSIS_INSTRUCTIONS = """
 
 This is the final diagnosis stage.
 
-Generate up to five unique ICD-10-CM candidates for the principal diagnosis of the current
+Generate exactly five unique ICD-10-CM candidates for the principal diagnosis of the current
 hospitalization, ranked by their consistency with the current patient's documented clinical information
 and the condition chiefly responsible for the admission or the main condition evaluated and treated.
-When fewer than five candidates are supplied, return all supplied candidates.
 
 The input may contain:
 
@@ -78,13 +77,13 @@ Do not automatically replace the main condition evaluated or treated during the 
 suspected deeper etiology. Rank the diagnosis that best represents the hospitalization's principal
 diagnostic target.
 
-Every candidate diagnosis omitted from the final diagnoses must appear once in
+Every candidate diagnosis omitted from the final top five must appear once in
 excluded_planning_candidates. Copy its icd_code and category_name exactly and provide one or more
 explicit current-patient findings that contradict it or make it unsuitable as the principal diagnosis.
 Do not use missing information, external evidence, or the need to make room for another candidate as
 contrary evidence.
 
-Always return excluded_planning_candidates. After selecting the final diagnoses, compare their ICD codes
+Always return excluded_planning_candidates. After selecting the final top five, compare their ICD codes
 with candidate_diagnoses. If every candidate diagnosis is selected, return an empty array.
 Otherwise, return exactly the set difference candidate_diagnoses minus topk_diagnoses. Never
 include a candidate whose ICD code appears in topk_diagnoses.
