@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
@@ -20,7 +21,8 @@ class GuidelineToolState:
     lock: Any = field(default_factory=Lock, repr=False)
     listed_skills: bool = False
     skill_md_reads: set[str] = field(default_factory=set)
-    index_searches: set[str] = field(default_factory=set)
+    index_reads: set[str] = field(default_factory=set)
+    source_block_reads: set[str] = field(default_factory=set)
     full_text_searches: set[str] = field(default_factory=set)
     full_text_read_counts: dict[str, int] = field(default_factory=dict)
     accessed_skills: set[str] = field(default_factory=set)
@@ -50,10 +52,11 @@ directly relevant skill and no unrelated skill.
 ### 3. Guideline Retrieval
 
 After selecting skills, do not use the hypotheses to search within a skill or to assess the patient.
-For each selected skill, use only the supplied positive_features to locate guideline content relevant
-to diagnostic criteria, differential diagnosis, confirmation or exclusion tests, and recommended next
-steps. Use a recommendations index only to locate relevant content, then verify the supporting context
-against the skill's guideline full text. The guideline full text is the authoritative source.
+For each selected skill, read its complete recommendations index and use only the supplied
+positive_features to semantically match index entries relevant to diagnostic criteria, differential
+diagnosis, confirmation or exclusion tests, and recommended next steps. Read the exact source blocks
+listed by the relevant entries, then verify their supporting context against the skill's guideline full
+text. The guideline full text is the authoritative source.
 
 ### 4. Source Boundaries
 
@@ -101,8 +104,8 @@ Use the sandbox Skills capability:
 4. Read .agents/{skill_name}/SKILL.md and follow its workflow to read references or run scripts.
 5. After skill selection, use only positive_features for content retrieval and patient comparison.
    Do not use hypothesis disease names as within-skill search terms.
-6. Use the recommendations index for location and verify relevant evidence against the guideline full
-   text before returning it or using it in guideline_diagnosis.
+6. Read the complete recommendations index, semantically match it against positive_features, and use
+   the selected entries' source line ranges to read and verify the guideline full text.
 """.strip()
 
 FUNCTION_TOOL_SKILL_INSTRUCTIONS = """
@@ -115,12 +118,14 @@ Use the local guideline function tools:
    specific disease match is insufficient. Do not target a fixed skill count and do not select skills
    from unrelated disease categories. All narrower conditions required by a skill must be explicit in
    the diagnostic hypothesis set; a general disease hypothesis alone is insufficient.
-2. For each selected skill, call read_guideline_file with file_name "SKILL.md" exactly once.
-3. For each selected skill, call search_guideline on "recommendations-index.md" at most once, using
-   only the most discriminative positive_features as alternative keywords in one call. Do not use
-   hypothesis disease names as search keywords.
-4. For each selected skill, read at most 2 relevant line ranges from "guideline-full-text.md" to verify
-   the original context. If the index has no clear match, search "guideline-full-text.md" at most once.
+2. For each selected skill, call read_guideline_file with file_name "SKILL.md" exactly once, then call
+   it with file_name "recommendations-index.md" exactly once. The complete index is returned; use the
+   LLM to semantically match positive_features against its entries.
+3. For each selected skill, collect every source block ID from the relevant index entries and call
+   read_guideline_sources exactly once to read and verify those exact full-text ranges.
+4. If an older index has no source block IDs or the complete index does not cover the needed content,
+   use search_guideline on the full text at most once, then read at most 2 relevant full-text ranges
+   with read_guideline_file. This is only a location fallback, not the primary semantic match.
 5. Never repeat a tool call with the same arguments. Do not try to run scripts or use tools that are
    not provided.
 6. Return one skill_results item for every selected and searched skill. If a search tool returns
@@ -185,26 +190,18 @@ def search_guideline(
     ctx: RunContextWrapper[GuidelineToolState],
     skill_name: str,
     keywords: list[str],
-    file_name: str = "recommendations-index.md",
     context_lines: int = 2,
 ) -> str:
-    """Search any keyword in one allowed guideline reference file and return numbered context lines."""
-    if file_name not in {"recommendations-index.md", "guideline-full-text.md"}:
-        raise ValueError(f"Unsupported guideline search file: {file_name}")
+    """Fallback keyword search in guideline-full-text.md with numbered context lines."""
     with ctx.context.lock:
-        searched_skills = (
-            ctx.context.index_searches
-            if file_name == "recommendations-index.md"
-            else ctx.context.full_text_searches
-        )
-        if skill_name in searched_skills:
+        if skill_name in ctx.context.full_text_searches:
             return (
-                f"Tool call rejected: {file_name} was already searched for this skill. "
+                "Tool call rejected: guideline-full-text.md was already searched for this skill. "
                 "Do not call more tools; return the final JSON now."
             )
-        searched_skills.add(skill_name)
+        ctx.context.full_text_searches.add(skill_name)
         ctx.context.accessed_skills.add(skill_name)
-    target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES[file_name]
+    target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES["guideline-full-text.md"]
     lines = target.read_text(encoding="utf-8").splitlines()
     normalized_keywords = [
         keyword.strip().casefold()
@@ -242,14 +239,9 @@ def read_guideline_file(
     start_line: int = 1,
     end_line: int = 200,
 ) -> str:
-    """Read a numbered line range from one allowed file in a local guideline skill."""
+    """Read SKILL.md, the complete index, or one numbered full-text line range."""
     if file_name not in GUIDELINE_FILES:
         raise ValueError(f"Unsupported guideline file: {file_name}")
-    if file_name == "recommendations-index.md":
-        return (
-            "Tool call rejected: use search_guideline once for recommendations-index.md. "
-            "Do not call more tools; return the final JSON now."
-        )
     with ctx.context.lock:
         if file_name == "SKILL.md":
             if skill_name in ctx.context.skill_md_reads:
@@ -258,6 +250,13 @@ def read_guideline_file(
                     "Do not call more tools; return the final JSON now."
                 )
             ctx.context.skill_md_reads.add(skill_name)
+        elif file_name == "recommendations-index.md":
+            if skill_name in ctx.context.index_reads:
+                return (
+                    "Tool call rejected: recommendations-index.md was already read for this skill. "
+                    "Do not call more tools; return the final JSON now."
+                )
+            ctx.context.index_reads.add(skill_name)
         else:
             read_count = ctx.context.full_text_read_counts.get(skill_name, 0)
             if read_count >= 2:
@@ -268,6 +267,8 @@ def read_guideline_file(
             ctx.context.full_text_read_counts[skill_name] = read_count + 1
         ctx.context.accessed_skills.add(skill_name)
     target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES[file_name]
+    if file_name == "recommendations-index.md":
+        return target.read_text(encoding="utf-8")
     lines = target.read_text(encoding="utf-8").splitlines()
     start = max(1, start_line)
     end = min(len(lines), end_line)
@@ -275,6 +276,42 @@ def read_guideline_file(
         f"{index}: {lines[index - 1]}"
         for index in range(start, end + 1)
     )
+
+
+@function_tool
+def read_guideline_sources(
+    ctx: RunContextWrapper[GuidelineToolState],
+    skill_name: str,
+    source_block_ids: list[str],
+) -> str:
+    """Read exact guideline-full-text.md line ranges identified by index source block IDs."""
+    if not source_block_ids:
+        raise ValueError("At least one guideline source block ID is required.")
+    with ctx.context.lock:
+        if skill_name in ctx.context.source_block_reads:
+            return (
+                "Tool call rejected: indexed guideline source blocks were already read for this skill. "
+                "Do not call more tools; return the final JSON now."
+            )
+        ctx.context.source_block_reads.add(skill_name)
+        ctx.context.accessed_skills.add(skill_name)
+
+    target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES["guideline-full-text.md"]
+    lines = target.read_text(encoding="utf-8").splitlines()
+    output: list[str] = []
+    for source_block_id in dict.fromkeys(source_block_ids):
+        match = re.fullmatch(r"L(\d{6})-L(\d{6})", source_block_id)
+        if not match:
+            raise ValueError(f"Invalid guideline source block ID: {source_block_id}")
+        start_line, end_line = (int(value) for value in match.groups())
+        if start_line < 1 or end_line < start_line or end_line > len(lines):
+            raise ValueError(f"Guideline source block is outside the full text: {source_block_id}")
+        output.append(f"--- source {source_block_id} ---")
+        output.extend(
+            f"{index}: {lines[index - 1]}"
+            for index in range(start_line, end_line + 1)
+        )
+    return "\n".join(output)
 
 
 def _build_guideline_skill_capability() -> Skills:
@@ -323,5 +360,6 @@ def build_guideline_searcher_agent(
             list_guideline_skills,
             search_guideline,
             read_guideline_file,
+            read_guideline_sources,
         ],
     )

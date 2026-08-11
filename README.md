@@ -108,6 +108,10 @@ guidelines/
 bash run_compile_skill.sh
 ```
 
+编译器会将 MinerU 生成的 Markdown 直接保存为 `references/guideline-full-text.md`，并为
+每个非空原文段落生成稳定的全文行号块。LLM 生成的 `references/recommendations-index.md`
+中每个条目都引用对应原文块；检索时完整读取索引进行语义匹配，再按块ID读取全文核实。
+
 ## 医疗声明
 
 本 demo 仅用于技术演示和辅助分析，不能替代临床医生诊断、治疗建议或线下医疗评估。

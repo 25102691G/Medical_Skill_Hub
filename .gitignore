@@ -7,6 +7,7 @@ AGENTS.md
 /database/*.pt
 /tmp/
 /output/
+/guideline
 /guidelines
 /mineru
 /chatkit_frontend/node_modules/
