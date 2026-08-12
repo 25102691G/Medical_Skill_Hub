@@ -47,8 +47,8 @@ only. They are not presumed to be correct.
 
 Treat the supplied candidate_diagnoses as the high-priority initial candidate set, not as a closed
 allowed set. Prefer a supplied candidate when it adequately represents the current hospitalization,
-but consider a diagnosis outside that list when the current patient's documented findings and the
-provided guideline or literature evidence support it better.
+but consider a diagnosis outside that list when the current patient's documented findings support it
+better.
 
 There are two permitted types of diagnoses outside candidate_diagnoses:
 
@@ -64,9 +64,10 @@ description. Do not change an ICD code merely to make the differential more vari
 ### 2. Candidate Evaluation
 
 Evaluate and rerank the supplied candidate_diagnoses first, then determine whether an ICD refinement or
-a clinically different disease is better supported. An outside diagnosis must be supported by explicit
-current-patient findings and specifically corroborated by the provided numbered guideline or literature
-evidence. Similar cases alone are insufficient for adding an outside diagnosis.
+a clinically different disease is better supported. An outside diagnosis must include explicit
+current-patient findings in supporting_evidence. When provided numbered guideline or literature evidence
+supports that diagnostic interpretation, append its exact evidence number. Similar cases alone are
+insufficient for adding an outside diagnosis.
 
 Evaluate each clinically plausible candidate against the current patient's documented:
 
@@ -93,13 +94,10 @@ diagnostic target.
 
 Every supplied candidate diagnosis omitted from the final top five must appear once in
 excluded_planning_candidates. Copy its icd_code and category_name exactly and explain why it was
-excluded or corrected, using explicit current-patient findings. When an outside diagnosis with the same
-first three ICD characters replaces a supplied candidate, do not also retain that supplied candidate in
-the top five. Put the original supplied candidate in excluded_planning_candidates and explain which
-documented etiology, anatomical site, complication, subtype, or other feature supports changing the
-fourth or later ICD characters. When a clinically different disease replaces a supplied candidate,
-explain why the patient findings support that replacement. If numbered guideline or literature evidence
-supports an exclusion or code correction, append its exact evidence number to the reason.
+excluded or corrected, using explicit current-patient findings. When a clinically different disease
+replaces a supplied candidate, explain why the patient findings support that replacement. If numbered
+guideline or literature evidence supports an exclusion or code correction, append its exact evidence
+number to the reason.
 
 Do not use missing information, the need to make room for another candidate, or external evidence alone
 as a reason. Do not put newly introduced diagnoses in excluded_planning_candidates; this field records

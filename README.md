@@ -27,7 +27,10 @@ HF_ENDPOINT=https://hf-mirror.com \
 
 `batch_main.py` 读取通过 `--input` 指定的 CSV，使用
 `discharge_text_before_disposition` 作为 `case_text` 运行完整诊断流水线。使用
-`--limit` 控制本次处理的病例数量：
+`--limit` 控制本次处理的病例数量。单个病例的完整诊断流水线失败时，最多执行
+3 次（首次执行加 2 次重试），终端会显示每次失败的阶段、错误原因和重试轮次。
+阳性特征和最终诊断的结构化输出校验失败时，当前阶段仍会先根据具体错误纠正一次。
+成功结果写入 JSONL；最终失败的病例只在终端报告，不另外生成错误文件：
 
 ```bash
 .venv/bin/python batch_main.py \

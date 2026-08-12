@@ -51,6 +51,7 @@ from schemas import (
     DiagnosisRoundResult,
     DiagnosisResult,
     DiagnosticJudgementResult,
+    ExcludedPlanningCandidate,
     FinalDiagnosisContent,
     GuidelineSearchResult,
     HypothesisItem,
@@ -68,6 +69,14 @@ from schemas import (
 
 DiagnosisProgressCallback = Callable[[str, str, str | None], None]
 StructuredResultT = TypeVar("StructuredResultT", bound=BaseModel)
+
+
+class DiagnosisStageError(ValueError):
+    def __init__(self, stage: str, error: Exception):
+        self.stage = stage
+        super().__init__(
+            f"{stage} failed after one correction: {type(error).__name__}: {error}"
+        )
 
 
 def _to_jsonable(value: object) -> object:
@@ -135,6 +144,64 @@ def _parse_structured_result(
 
 def _stage_failure_reason(stage_name: str, exc: Exception) -> str:
     return f"{stage_name} failed: {type(exc).__name__}: {exc}"
+
+
+def _validate_final_diagnosis_content(
+    diagnosis_content: FinalDiagnosisContent,
+    candidate_names: dict[str, str],
+    planning_candidates: dict[str, str],
+) -> list[ExcludedPlanningCandidate]:
+    for diagnosis in diagnosis_content.topk_diagnoses:
+        expected_category_name = candidate_names.get(diagnosis.icd_code)
+        if (
+            expected_category_name is not None
+            and diagnosis.category_name != expected_category_name
+        ):
+            raise ValueError(
+                f"Final diagnosis changed the candidate name for {diagnosis.icd_code}: "
+                f"expected {expected_category_name!r}, got {diagnosis.category_name!r}"
+            )
+        if expected_category_name is None and not any(
+            evidence.strip() for evidence in diagnosis.supporting_evidence
+        ):
+            raise ValueError(
+                f"Final diagnosis outside the planning candidate set must include supporting "
+                f"evidence from the current patient: {diagnosis.icd_code}."
+            )
+
+    selected_codes = {
+        diagnosis.icd_code for diagnosis in diagnosis_content.topk_diagnoses
+    }
+    excluded_candidates = {
+        candidate.icd_code: candidate
+        for candidate in diagnosis_content.excluded_planning_candidates
+    }
+    expected_excluded_codes = set(planning_candidates) - selected_codes
+    missing_excluded_codes = expected_excluded_codes - set(excluded_candidates)
+    if missing_excluded_codes:
+        raise ValueError(
+            "Every search planning candidate omitted from the final top five must include "
+            "patient-grounded exclusion or ICD correction reasons. "
+            f"Missing {sorted(missing_excluded_codes)}; "
+            f"final top five contains {sorted(selected_codes)}."
+        )
+    validated_excluded_candidates = []
+    for icd_code in planning_candidates:
+        if icd_code not in expected_excluded_codes:
+            continue
+        candidate = excluded_candidates[icd_code]
+        if candidate.category_name != planning_candidates[icd_code]:
+            raise ValueError(
+                f"Excluded planning candidate changed the candidate name for {icd_code}."
+            )
+        if not all(
+            evidence.strip() for evidence in candidate.patient_contrary_evidence
+        ):
+            raise ValueError(
+                f"Excluded planning candidate {icd_code} has an empty exclusion or correction reason."
+            )
+        validated_excluded_candidates.append(candidate)
+    return validated_excluded_candidates
 
 
 def _print_debug_section(title: str, model_object: object) -> None:
@@ -220,10 +287,37 @@ async def _run_preprocessing_async(
         hypothesis_run.final_output,
         LlmHypothesesResult,
     )
-    positive_features_result = _parse_structured_result(
-        positive_feature_run.final_output,
-        PositiveFeaturesResult,
-    )
+    try:
+        positive_features_result = _parse_structured_result(
+            positive_feature_run.final_output,
+            PositiveFeaturesResult,
+        )
+    except ValueError as first_exc:
+        correction_prompt = (
+            f"{positive_feature_prompt}\n\n"
+            "## Correction Required\n\n"
+            f"The previous response failed validation: {type(first_exc).__name__}: {first_exc}\n"
+            "Generate the complete JSON object again. Return concise, non-duplicated positive "
+            "features without copying long passages from the case, and ensure the JSON is complete "
+            "and valid."
+        )
+        retry_output = (
+            await Runner.run(
+                positive_feature_agent,
+                correction_prompt,
+                run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+            )
+        ).final_output
+        try:
+            positive_features_result = _parse_structured_result(
+                retry_output,
+                PositiveFeaturesResult,
+            )
+        except ValueError as retry_exc:
+            raise DiagnosisStageError(
+                "positive_feature_preprocessing",
+                retry_exc,
+            ) from retry_exc
     result = PreprocessingResult(
         llm_hypotheses=llm_hypotheses_result.llm_hypotheses,
         positive_features=positive_features_result.positive_features,
@@ -768,6 +862,15 @@ async def _run_guideline_search_async(
                         f"{type(retry_exc).__name__}: {retry_exc}.{attempted_detail}"
                     ),
                 )
+    source_locator_pattern = re.compile(
+        r"\s*[（(]\s*原文\s*L\d{6}(?:\s*-\s*L\d{6})?"
+        r"(?:\s*[、,，]\s*L\d{6}(?:\s*-\s*L\d{6})?)*\s*[）)]"
+    )
+    for skill_result in result.skill_results:
+        skill_result.guideline_evidence = [
+            source_locator_pattern.sub("", evidence).strip()
+            for evidence in skill_result.guideline_evidence
+        ]
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -823,6 +926,10 @@ async def _run_final_diagnosis_async(
                 "category_name": hypothesis.category_name,
             }
         )
+    planning_candidates = {
+        hypothesis.icd_code: hypothesis.category_name
+        for hypothesis in search_planning_result.hypotheses
+    }
     pubmed_results = _format_pubmed_results(knowledge_search_result)
     guideline_evidence = [
         f"{skill_result.skill_name}：{evidence}"
@@ -888,85 +995,43 @@ async def _run_final_diagnosis_async(
         else "Digestive Diagnosis Agent"
     )
     _notify_agent_started(progress_callback, agent_name, round_index)
-    raw_result = (
-        await Runner.run(
-            diagnosis_agent,
-            diagnosis_prompt,
-            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
-        )
-    ).final_output
-    diagnosis_content = _parse_structured_result(raw_result, FinalDiagnosisContent)
-    citation_pattern = re.compile(r"\[(\d+)\]")
-    for diagnosis in diagnosis_content.topk_diagnoses:
-        expected_category_name = candidate_names.get(diagnosis.icd_code)
-        if (
-            expected_category_name is not None
-            and diagnosis.category_name != expected_category_name
-        ):
-            raise ValueError(
-                f"Final diagnosis changed the candidate name for {diagnosis.icd_code}: "
-                f"expected {expected_category_name!r}, got {diagnosis.category_name!r}"
+    validation_error: ValueError | None = None
+    for attempt in range(2):
+        current_prompt = diagnosis_prompt
+        if validation_error is not None:
+            current_prompt = (
+                f"{diagnosis_prompt}\n\n"
+                "## Correction Required\n\n"
+                f"The previous response failed validation: {type(validation_error).__name__}: "
+                f"{validation_error}\n"
+                "Generate the complete final diagnosis JSON again and correct that exact error. "
+                "Return exactly five unique ICD-10-CM codes and continue to follow every candidate, "
+                "citation, exclusion, and ranking requirement above."
             )
-        if expected_category_name is None and not any(
-            1 <= int(reference) <= len(numbered_evidence)
-            for evidence in diagnosis.supporting_evidence
-            for reference in citation_pattern.findall(evidence)
-        ):
-            raise ValueError(
-                f"Final diagnosis outside the planning candidate set must cite supporting "
-                f"guideline or PubMed evidence: {diagnosis.icd_code}."
+        raw_result = (
+            await Runner.run(
+                diagnosis_agent,
+                current_prompt,
+                run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
             )
+        ).final_output
+        try:
+            diagnosis_content = _parse_structured_result(
+                raw_result,
+                FinalDiagnosisContent,
+            )
+            validated_excluded_candidates = _validate_final_diagnosis_content(
+                diagnosis_content,
+                candidate_names,
+                planning_candidates,
+            )
+            break
+        except ValueError as exc:
+            if attempt == 1:
+                raise DiagnosisStageError("final_diagnosis", exc) from exc
+            validation_error = exc
 
-    selected_codes = {
-        diagnosis.icd_code for diagnosis in diagnosis_content.topk_diagnoses
-    }
-    planning_candidates = {
-        hypothesis.icd_code: hypothesis.category_name
-        for hypothesis in search_planning_result.hypotheses
-    }
-    refined_planning_codes = {
-        planning_code
-        for diagnosis in diagnosis_content.topk_diagnoses
-        if diagnosis.icd_code not in planning_candidates
-        for planning_code in planning_candidates
-        if diagnosis.icd_code[:3] == planning_code[:3]
-    }
-    retained_refined_sources = refined_planning_codes & selected_codes
-    if retained_refined_sources:
-        raise ValueError(
-            "A planning candidate replaced by an ICD code with the same first three characters "
-            "must be excluded rather than retained unchanged. "
-            f"Conflicting candidates: {sorted(retained_refined_sources)}."
-        )
-    excluded_candidates = {
-        candidate.icd_code: candidate
-        for candidate in diagnosis_content.excluded_planning_candidates
-    }
-    expected_excluded_codes = set(planning_candidates) - selected_codes
-    missing_excluded_codes = expected_excluded_codes - set(excluded_candidates)
-    if missing_excluded_codes:
-        raise ValueError(
-            "Every search planning candidate omitted from the final top five must include "
-            "patient-grounded exclusion or ICD correction reasons. "
-            f"Missing {sorted(missing_excluded_codes)}; "
-            f"final top five contains {sorted(selected_codes)}."
-        )
-    validated_excluded_candidates = []
-    for icd_code in planning_candidates:
-        if icd_code not in expected_excluded_codes:
-            continue
-        candidate = excluded_candidates[icd_code]
-        if candidate.category_name != planning_candidates[icd_code]:
-            raise ValueError(
-                f"Excluded planning candidate changed the candidate name for {icd_code}."
-            )
-        if not all(
-            evidence.strip() for evidence in candidate.patient_contrary_evidence
-        ):
-            raise ValueError(
-                f"Excluded planning candidate {icd_code} has an empty exclusion or correction reason."
-            )
-        validated_excluded_candidates.append(candidate)
+    citation_pattern = re.compile(r"\[(\d+)\]")
 
     skill_names = [
         skill_result.skill_name

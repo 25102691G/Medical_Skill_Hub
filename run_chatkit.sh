@@ -12,4 +12,4 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
 fi
 
 export DIAGNOSIS_PROVIDER="${DIAGNOSIS_PROVIDER:-}"
-exec .venv/bin/uvicorn chatkit_app.app:app --host 0.0.0.0 --port 8005 --reload
+exec .venv/bin/uvicorn chatkit_app.app:app --host 0.0.0.0 --port 8006 --reload

@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).absolute().parent
 OUTPUT_DIR = PROJECT_ROOT / "output" / "batch"
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
 OUTPUT_COLUMNS = ("subject_id", "hadm_id", "icd_code", "long_title")
+MAX_DIAGNOSIS_ATTEMPTS = 3
 
 
 def _positive_int(value: str) -> int:
@@ -86,6 +87,7 @@ async def _run_batch_async(
 
     attempted_count = 0
     success_count = 0
+    failed_count = 0
 
     async def diagnose_row(
         attempted_index: int,
@@ -105,21 +107,40 @@ async def _run_batch_async(
             )
             return None
 
-        print(f"[{attempted_index}] Diagnosing {case_label} ...", file=sys.stderr)
-        try:
-            pipeline_result = await make_diagnosis_pipeline_async(
-                case_text,
-                model=diagnosis_model,
-            )
-        except Exception as exc:
+        for attempt in range(1, MAX_DIAGNOSIS_ATTEMPTS + 1):
+            action = "Diagnosing" if attempt == 1 else "Retrying"
             print(
-                f"[{attempted_index}] Failed CSV row {row_number} ({case_label}): "
-                f"{type(exc).__name__}: {exc}",
+                f"[{attempted_index}] {action} {case_label} "
+                f"(attempt {attempt}/{MAX_DIAGNOSIS_ATTEMPTS}) ...",
+                file=sys.stderr,
+            )
+            try:
+                pipeline_result = await make_diagnosis_pipeline_async(
+                    case_text,
+                    model=diagnosis_model,
+                )
+                break
+            except Exception as exc:
+                error_stage = getattr(exc, "stage", "diagnosis_pipeline")
+                print(
+                    f"[{attempted_index}] Attempt {attempt}/{MAX_DIAGNOSIS_ATTEMPTS} "
+                    f"failed for CSV row {row_number} ({case_label}) at {error_stage}: "
+                    f"{type(exc).__name__}: {exc}",
+                    file=sys.stderr,
+                )
+        else:
+            print(
+                f"[{attempted_index}] Failed {case_label} after "
+                f"{MAX_DIAGNOSIS_ATTEMPTS} attempts.",
                 file=sys.stderr,
             )
             return None
 
-        print(f"[{attempted_index}] Completed {case_label}.", file=sys.stderr)
+        print(
+            f"[{attempted_index}] Completed {case_label} on attempt "
+            f"{attempt}/{MAX_DIAGNOSIS_ATTEMPTS}.",
+            file=sys.stderr,
+        )
         return {
             "subject_id": row["subject_id"],
             "hadm_id": row["hadm_id"],
@@ -140,7 +161,7 @@ async def _run_batch_async(
         ] = asyncio.Queue(maxsize=workers)
 
         async def worker() -> None:
-            nonlocal success_count
+            nonlocal success_count, failed_count
             while True:
                 pending_row = await row_queue.get()
                 if pending_row is None:
@@ -157,6 +178,8 @@ async def _run_batch_async(
                     )
                     output_file.flush()
                     success_count += 1
+                else:
+                    failed_count += 1
 
         worker_tasks = [
             asyncio.create_task(worker())
@@ -175,7 +198,7 @@ async def _run_batch_async(
 
     print(
         f"Batch completed: attempted={attempted_count}, succeeded={success_count}, "
-        f"output={output_path.relative_to(PROJECT_ROOT)}",
+        f"failed={failed_count}, output={output_path.relative_to(PROJECT_ROOT)}",
         file=sys.stderr,
     )
     return output_path

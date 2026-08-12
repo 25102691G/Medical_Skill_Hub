@@ -71,7 +71,8 @@ inside that item:
 * skill_name: the exact original local skill identifier;
 * disease_name: the disease evaluated by the skill;
 * guideline_evidence: relevant evidence verified against that skill's guideline full text, without a
-  skill-name prefix;
+  skill-name prefix. Include only the medical content; do not include source block IDs, full-text line
+  ranges, or locator text such as "（原文L000158-L000160）";
 * guideline_diagnosis: a concise natural-language conclusion comparing the positive_features with the
   verified guideline information. State whether the patient may have the disease, which positive
   features support that conclusion, and which essential diagnostic information is still missing.

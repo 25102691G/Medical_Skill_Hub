@@ -163,7 +163,16 @@ class FinalDiagnosisContent(BaseModel):
     def validate_rankings(self) -> "FinalDiagnosisContent":
         diagnosis_codes = [item.icd_code for item in self.topk_diagnoses]
         if len(diagnosis_codes) != len(set(diagnosis_codes)):
-            raise ValueError("Final diagnosis ICD codes must be unique.")
+            duplicate_codes = sorted(
+                {
+                    icd_code
+                    for icd_code in diagnosis_codes
+                    if diagnosis_codes.count(icd_code) > 1
+                }
+            )
+            raise ValueError(
+                f"Final diagnosis ICD codes must be unique. Duplicates: {duplicate_codes}."
+            )
         if [item.rank for item in self.topk_diagnoses] != [1, 2, 3, 4, 5]:
             raise ValueError("Final diagnosis ranks must be exactly 1 through 5 in list order.")
         excluded_codes = [

@@ -50,7 +50,7 @@ export default function App() {
 
   const chatkit = useChatKit({
     api: {
-      url: "http://localhost:8005/chatkit",
+      url: "http://localhost:8006/chatkit",
       domainKey: "local-dev",
       fetch: localizedFetch,
     },
