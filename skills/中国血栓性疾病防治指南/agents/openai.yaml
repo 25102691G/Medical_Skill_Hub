@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国血栓性疾病防治指南"
+  short_description: "查询中国血栓性疾病防治指南中的临床建议"
+  default_prompt: "请使用中国血栓性疾病防治指南回答临床问题"

@@ -1,4 +1,4 @@
 interface:
-  display_name: "小肠梗阻诊断与治疗中国专家共识(2023)"
-  short_description: "查询小肠梗阻诊断与治疗中国专家共识中的临床建议"
-  default_prompt: "请使用小肠梗阻诊断与治疗中国专家共识回答临床问题"
+  display_name: "小肠梗阻的诊断与治疗中国专家共识(2023版)"
+  short_description: "查询小肠梗阻的诊断与治疗中国专家共识(2023版)中的临床建议"
+  default_prompt: "请使用《小肠梗阻的诊断与治疗中国专家共识(2023版)》回答临床问题"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "慢性乙型肝炎防治指南（2022年版）"
+  short_description: "查询慢性乙型肝炎防治指南中的预防、诊断和治疗建议"
+  default_prompt: "请使用慢性乙型肝炎防治指南回答临床问题"

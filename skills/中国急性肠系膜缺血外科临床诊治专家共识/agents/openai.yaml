@@ -1,0 +1,4 @@
+interface:
+  display_name: "急性肠系膜缺血外科临床诊治共识"
+  short_description: "查询急性肠系膜缺血（AMI）的诊断、外科治疗和随访建议"
+  default_prompt: "请使用中国急性肠系膜缺血外科临床诊治专家共识回答临床问题"

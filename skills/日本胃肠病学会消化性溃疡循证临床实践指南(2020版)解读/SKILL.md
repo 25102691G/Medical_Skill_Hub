@@ -1,22 +1,21 @@
 ---
 name: 日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读
-description: "类别：食管、胃和十二指肠疾病。用于消化性溃疡（Peptic ulcer disease，PUD）的诊断、治疗和管理，涵盖出血性溃疡、幽门螺杆菌根除、药物诱发性溃疡、特发性溃疡及术后管理，适用于临床决策支持，仅在病例涉及消化性溃疡时使用。"
+description: "主要疾病及适用范围：用于消化性溃疡（Peptic ulcer disease，PUD）的诊断、鉴别诊断、治疗和随访，涵盖出血性胃和十二指肠溃疡、幽门螺杆菌（Hp）根除治疗、非根除治疗、药物诱发的溃疡、非Hp-非NSAID溃疡、残胃溃疡和外科手术治疗。明确鉴别疾病：无。"
 ---
 
-# 日本胃肠病学会消化性溃疡循证临床实践 指南（2020版）解读
+# 日本胃肠病学会消化性溃疡循证临床实践指南（2020版）解读
 
 ## 工作流程
 
-使用本 skill 回答与《日本胃肠病学会消化性溃疡循证临床实践 指南（2020版）解读》相关的问题时，以 `references/guideline-full-text.md` 为原文依据。
+使用本 skill 回答与《日本胃肠病学会消化性溃疡循证临床实践指南（2020版）解读》相关的问题时，以 `references/guideline-full-text.md` 为原文依据。
 
-1. 先读取 `references/recommendations-index.md`，定位相关推荐意见、诊断标准、鉴别诊断、检查、治疗、监测、随访等重要信息。
-2. 再读取 `references/guideline-full-text.md` 中的相关内容，补充适用人群、限制条件、解释依据和上下文。
-3. 如果问题没有明显对应推荐意见，使用 `scripts/search_guideline.py` 进行关键词搜索。
-4. 如用户询问该文件之外的最新证据、药品获批状态、医保或现实可及性，应使用当前权威来源另行核实。
+1. 完整读取 `references/recommendations-index.md`，根据问题或病例阳性特征语义匹配相关推荐意见、诊断标准、鉴别诊断、检查、治疗、监测、随访等重要信息。
+2. 按索引条目的“原文位置”直接读取 `references/guideline-full-text.md` 对应行，核实适用人群、限制条件、解释依据和上下文。
+3. 如用户询问该文件之外的最新证据、药品获批状态、医保或现实可及性，应使用当前权威来源另行核实。
 
 ## 回答规则
 
-- 明确说明回答依据《日本胃肠病学会消化性溃疡循证临床实践 指南（2020版）解读》。
+- 明确说明回答依据《日本胃肠病学会消化性溃疡循证临床实践指南（2020版）解读》。
 - 有推荐意见编号时，列出对应编号。
 - 有证据等级和推荐强度时，按索引或原文原样列出。
 - 区分“指南/共识推荐、建议、可考虑、不推荐”和 Codex 自己的解释性总结。
@@ -26,10 +25,18 @@ description: "类别：食管、胃和十二指肠疾病。用于消化性溃疡
 
 ## 资源
 
-- `references/recommendations-index.md`：LLM 根据全文自动生成的重要信息索引，用于定位推荐意见、诊断标准、鉴别诊断、检查、治疗、监测和随访等关键内容。
+- `references/recommendations-index.md`：LLM 根据全文自动生成的重要信息索引；每个条目带有确定性的全文行号范围，用于直接定位原文。
 - `references/guideline-full-text.md`：MinerU 解析得到的指南 Markdown 全文。
-- `scripts/search_guideline.py`：关键词/正则搜索脚本。
 
 ## 常用缩写
 
 - PUD：Peptic ulcer disease
+- Hp：Helicobacter pylori
+- NSAID：Nonsteroidal anti-inflammatory drug
+- PPI：Proton pump inhibitor
+- P-CAB：Potassium-competitive acid blocker
+- LDA：Low-dose aspirin
+- DOAC：Direct oral anticoagulant
+- UGIB：Upper gastrointestinal bleeding
+- IVR：Interventional radiology
+- COX-2：Cyclooxygenase-2

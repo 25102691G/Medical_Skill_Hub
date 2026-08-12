@@ -1,4 +1,0 @@
-interface:
-  display_name: "结直肠癌卵巢转移诊疗专家共识（2025版）"
-  short_description: "查询结直肠癌卵巢转移诊疗专家共识中的临床建议"
-  default_prompt: "请使用结直肠癌卵巢转移诊疗专家共识回答临床问题"

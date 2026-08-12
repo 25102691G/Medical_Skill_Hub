@@ -1,4 +1,4 @@
 interface:
   display_name: "中国溃疡性结肠炎诊治指南（2023年·西安）"
-  short_description: "查询溃疡性结肠炎临床指南中的推荐建议"
+  short_description: "查询中国溃疡性结肠炎诊治指南（2023年·西安）中的临床建议"
   default_prompt: "请使用中国溃疡性结肠炎诊治指南（2023年·西安）回答临床问题"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国恶性肿瘤整合诊治指南-结肠癌（2024版）"
+  short_description: "查询结肠癌指南中的临床建议"
+  default_prompt: "请使用《中国恶性肿瘤整合诊治指南-结肠癌（2024版）》回答临床问题"

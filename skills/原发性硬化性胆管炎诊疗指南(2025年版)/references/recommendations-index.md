@@ -1,136 +1,119 @@
 # 原发性硬化性胆管炎诊疗指南（2025年版）重要信息索引
 
-## Overview
+## 概述
 
-- PSC is an autoimmune liver disease characterized by diffuse inflammation and fibrosis of intrahepatic and extrahepatic bile ducts (fibro-obliterative cholangitis).
-- Three recognized types: classic large-duct PSC, PSC/AIH overlap syndrome, and small-duct PSC.
-- Complications include progressive biliary fibrosis leading to cirrhosis, liver failure, and cholangiocellular carcinoma (CCA).
-- Treatment: empirical oral UDCA (small to moderate doses), balloon dilation or temporary biliary stenting for dominant strictures, and liver transplantation for end-stage disease.
+- 原发性硬化性胆管炎（PSC）是一类以肝内外胆管弥漫性炎症和纤维化（纤维-闭塞性胆管病）为特征的自身免疫性肝病，常合并炎症性肠病（以右半结肠炎最常见）。类型包括经典大胆管型PSC、PSC/自身免疫性肝炎（AIH）重叠综合征和小胆管型PSC。并发症包括胆道纤维化进展导致的肝硬化、肝衰竭及胆管细胞癌（CCA）。治疗主要包括经验性口服小～中等剂量熊去氧胆酸，对胆管显性狭窄可行球囊扩张术或暂时性胆道支架植入，多数患者最终需肝移植。
+  - 原文位置：`L000025-L000025`
 
-## Etiology and Epidemiology
+## 病因和流行病学
 
-- Main pathogenesis: In genetically susceptible individuals, bile duct cells exposed to toxins or microbes (e.g., gut microbiota via leaky gut) trigger sustained immune-mediated injury, leading to cholestasis and progressive fibrosis.
-- Family history: first-degree relatives have 11-fold increased risk.
-- Genetic associations: HLA-DR3 (DRB1*03), HLA-B8 (HLA-B*08), DRB1*13 (DR6); non-HLA genes include IL-21 and TGR5.
-- Incidence and prevalence vary geographically; highest in Northern Europe and North America, lowest in Mediterranean regions.
-- Typical diagnosis age: 30–40 years; males 51–71.4%.
-- Co-existing IBD: 20.0–88.1%.
+- 发病机制认为是在具有遗传易感性的个体中，胆管细胞暴露于毒物或微生物（如肠道菌群及代谢物通过逸漏肠道迁移至肝脏），引起持续免疫介导的胆管上皮损伤，最终导致胆管细胞衰老、胆汁淤积和进展性肝纤维化。一级亲属患病风险较健康人群增加11倍；已报道23个高危基因位点，HLA-DR3（DRB1*03）、HLA-B8（HLA-B*08）、DRB1*13（DR6）为易感位点，非HLA基因包括IL-21和G蛋白偶联胆汁酸受体TGR5。北欧和北美发病率最高（芬兰1.58/10万、挪威1.3/10万、明尼苏达1.47/10万），地中海盆地最低（意大利0.1/10万）；欧洲患病率3.85～31.7/10万，明尼苏达23.99/10万，新加坡1.33/10万，新西兰13.17/10万。男性占比51%～71.4%，IBD共病率20.0%～88.1%。我国报道较少，本中心资料显示PSC平均确诊年龄42.3岁，PSC/AIH重叠综合征40.7岁，合并IBD比例19.8%。
+  - 原文位置：`L000029-L000029`、`L000031-L000031`、`L000033-L000033`
 
-## Clinical Manifestations
+## 临床表现
 
-- Insidious onset; approximately 40% asymptomatic at diagnosis.
-- Common symptoms: fatigue, abdominal pain, pruritus.
-- Others: weight loss, jaundice, hepatosplenomegaly; jaundice often fluctuating or recurrent, sometimes with fever and chills.
-- Dominant strictures may present with fever, right upper quadrant pain, and biochemical abnormalities, indicating cholangitis; severe cases may develop sepsis.
-- Complications: portal hypertension, fat-soluble vitamin deficiencies, metabolic bone disease; association with other autoimmune diseases (thyroiditis, SLE, rheumatoid arthritis, Sjögren’s syndrome).
-- Increased risk of hepatobiliary and intestinal malignancies – surveillance and tumor screening required during follow-up.
+- 患者临床表现多样，起病隐匿，部分患者诊断时无症状；出现慢性胆汁淤积者大多已有胆道狭窄或肝硬化。常见症状包括乏力、腹痛及皮肤瘙痒，其他可见体质量减轻、黄疸和肝脾大等；黄疸多波动或反复发作，可伴中低热或高热及寒战。出现胆道显性狭窄时可表现为发热伴右上腹痛及肝生化异常，提示胆道感染，严重者可出现败血症。并发症包括门静脉高压、脂溶性维生素缺乏症、代谢性骨病等，还可伴发其他自身免疫病。肝胆系统及肠道恶性肿瘤风险增加，随访时需监测并定期肿瘤筛查。
+  - 原文位置：`L000037-L000037`
 
-## Auxiliary Examinations
+## 辅助检查
 
-### Biochemical
+### 生化学检查
 
-- ALP elevation is the most common abnormality, often with GGT elevation; levels fluctuate and may be normal at times.
-- Transaminases may be 2–3× elevated; higher levels suggest acute obstruction or AIH overlap.
-- Serum bilirubin typically normal early, rising with significant strictures or fibrosis.
-- In cirrhosis/portal hypertension: decreased albumin, coagulopathy (PT, APTT prolongation), thrombocytopenia.
+- 主要表现为胆汁淤积性改变，血清碱性磷酸酶（ALP）升高最常见，常伴γ-谷氨酰转移酶（GGT）升高；ALP水平可波动甚至正常。转氨酶可为正常2～3倍升高，若超过此范围应考虑急性胆道梗阻或合并AIH重叠综合征。血清胆红素早期正常，存在明显胆道狭窄或纤维化进展时逐渐升高；进展至肝硬化、门静脉高压阶段可出现白蛋白降低、凝血功能异常及血小板减少。
+  - 原文位置：`L000041-L000041`
 
-### Immunological
+### 免疫学检查
 
-- Various autoantibodies (ANA, SMA, anticardiolipin) often low-titer, non-specific.
-- ANCA (pANCA, cANCA) relatively specific but unrelated to severity.
-- Hypergammaglobulinemia: mild-moderate IgG or IgM elevation; IgG4 mildly elevated in 9–36%.
-- If serum IgG4 ≥135 mg/dL, differentiate from IgG4-related sclerosing cholangitis (IgG4-SC).
+- 可检测出多种低滴度、非特异性自身抗体，包括抗核抗体（ANA）、抗平滑肌抗体（SMA）、抗心磷脂抗体等；抗中性粒细胞胞浆抗体（pANCA和cANCA）相对特异，但与病情严重程度无关。部分患者IgG或IgM轻-中度升高；9%～36%患者血清IgG4轻度升高，但若血清IgG4≥135 mg/dL需与IgG4相关硬化性胆管炎（IgG4-SC）鉴别。
+  - 原文位置：`L000043-L000043`
 
-### Imaging
+### 影像学检查
 
-- Typical MRCP: multifocal, short-segmental, annular strictures with intervening dilatations, giving a beaded or pruned-tree appearance.
-- High-quality MRCP is the first-line imaging modality; equivalent to ERCP for detecting obstruction.
-- ERCP indicated when MRCP is suboptimal, or in symptomatic patients with suspected mechanical obstruction (stones, stricture, tumor) or high suspicion of CCA; allows brush cytology/biopsy and therapeutic intervention.
+- 典型MRCP表现为肝内外胆管多灶性、短节段性、环形狭窄，间以肝内胆管扩张，胆管壁僵直、呈铅管样，呈串珠样或枯树枝样改变。高质量MRCP显示胆道梗阻的准确性与ERCP相当，是诊断PSC的首选影像学检查方法。对于MRCP显影不理想的大胆管病变，或有症状、怀疑机械性梗阻（结石、狭窄、肿瘤等）或高度疑诊时，需ERCP协助确诊，并可行胆管细胞刷检或活检取样及治疗性干预。
+  - 原文位置：`L000045-L000045`
 
-### Pathology
+### 病理学检查
 
-- Liver biopsy not required for diagnosis; recommended when small-duct PSC or AIH overlap is suspected.
-- Typical histology: periductal inflammation with “onion-skin” fibrosis, bile duct proliferation, ductopenia.
-- Small-duct PSC (≈5%): normal bile duct imaging; biopsy mandatory for diagnosis.
-- PSC/AIH overlap: shows AIH features – interface hepatitis, lymphoplasmacytic infiltration, rosette formation, emperipolesis.
+- 肝活检并非诊断PSC必需，通常用于怀疑小胆管型PSC或考虑合并AIH重叠综合征时。典型PSC组织学表现包括胆管周围炎症伴纤维化，如“洋葱皮样”胆管周围纤维化、小胆管增生、胆管缺失。约5%为小胆管型PSC，病变仅累及肝内小胆管，早期胆道成像无明显异常，肝活检对其诊断必需。PSC/AIH重叠综合征可见界面性肝炎、淋巴-浆细胞浸润、肝细胞玫瑰花环样排列及淋巴细胞“穿入现象”等AIH组织学表现。
+  - 原文位置：`L000047-L000047`
 
-## Diagnosis
+## 诊断
 
-- No internationally accepted diagnostic criteria; based on comprehensive assessment.
-- 2021 Chinese guideline (中华医学会肝病学分会):
+### 大胆管型PSC诊断标准
 
-### Large-duct PSC
+- 目前尚无国际公认的PSC诊断标准，需结合临床表现、生化学、影像学、组织学并排除继发性胆道损伤。大胆管型PSC诊断标准：（1）胆管影像学检查具备PSC典型特征；（2）以下标准至少满足一条：①胆汁淤积的临床表现及生化学改变（成人ALP升高、儿童GGT升高）；②合并IBD的临床或组织学证据；③典型PSC肝脏组织学改变；（3）排除其他病因引起的继发性硬化性胆管炎。对于胆道成像无典型表现者，满足上述标准至少2条，或仅有PSC典型胆道影像学特征，可疑诊PSC。
+  - 原文位置：`L000051-L000051`、`L000053-L000053`、`L000055-L000055`、`L000057-L000057`
 
-1. Imaging with typical PSC features.
-2. At least one of:
-   - Cholestatic clinical/biochemical changes (ALP elevation in adults, GGT in children).
-   - Clinical or histological evidence of IBD.
-   - Typical PSC liver histology.
-3. Exclusion of secondary sclerosing cholangitis.
+### 小胆管型PSC诊断标准
 
-If imaging not typical but ≥2 criteria from (2) met or only suspicious imaging, PSC may be suspected.
+- （1）近期胆道影像学无明显异常改变；（2）典型PSC肝脏组织学改变；（3）排除其他因素所致胆汁淤积。如果胆道影像学无异常，肝脏组织学具有PSC特点但不典型，同时存在IBD临床或组织学证据以及胆汁淤积的生化改变时，也可诊断小胆管型PSC。
+  - 原文位置：`L000059-L000059`、`L000061-L000061`、`L000063-L000063`、`L000065-L000065`
 
-### Small-duct PSC
+### PSC/AIH重叠综合征诊断
 
-1. No significant abnormality on recent bile duct imaging.
-2. Typical PSC liver histology.
-3. Exclusion of other causes of cholestasis.
+- 国际尚无PSC/AIH重叠综合征指南规范；临床广泛采用多数欧洲和美国研究中心报道的诊断标准，即符合前述PSC诊断标准的同时，满足国际自身免疫性肝炎小组（IAIHG）的AIH简化诊断标准。
+  - 原文位置：`L000067-L000067`
 
-If imaging normal and histology atypical but IBD evidence plus cholestatic biochemistry, diagnosis possible.
+## 鉴别诊断
 
-### PSC/AIH Overlap Syndrome
+### 继发性硬化性胆管炎
 
-- Meets PSC criteria and fulfills simplified IAIHG criteria for AIH.
+- 继发性硬化性胆管炎由明确病因引起，临床表现和影像学类似硬化性胆管炎；常见病因包括胆总管结石、医源性胆道梗阻（手术或ERCP后狭窄）、反复发作的化脓性胆管炎、肝胆恶性肿瘤（如肝细胞癌累及胆管、壶腹部癌、胆总管旁淋巴结转移压迫）、胰腺疾病（胰腺癌、胰腺囊肿、慢性胰腺炎）、缺血性胆道病、门静脉高压性胆道病及化疗、靶向或免疫治疗等药物所致胆管病等（详见表1）。
+  - 原文位置：`L000071-L000071`、`L000077-L000079`
 
-## Differential Diagnosis
+### IgG4相关硬化性胆管炎（IgG4-SC）
 
-### Secondary Sclerosing Cholangitis
+- IgG4-SC与PSC胆道影像学表现相似，鉴别困难；IgG4-SC属于IgG4相关性疾病累及胆管的表现，可合并自身免疫性胰腺炎、下颌下腺炎、肾脏病变、腹膜后纤维化等。可有血清IgG4明显升高；典型组织学表现为淋巴浆细胞浸润，IgG4阳性浆细胞占IgG阳性细胞比例>40%或每高倍镜视野>10个IgG4阳性浆细胞，伴显著纤维化，可呈席纹状纤维化、闭塞性静脉炎等。多数IgG4-SC对糖皮质激素治疗应答良好，预后更好。
+  - 原文位置：`L000073-L000073`
 
-- Defined by known etiologies (see Table 1): choledocholithiasis, iatrogenic biliary injury, recurrent pyogenic cholangitis, CCA, HCC with bile duct invasion, ampullary cancer, lymph node compression, portal hypertensive biliopathy, ischemic cholangiopathy, hepatic inflammatory pseudotumor, AIDS-related cholangiopathy, amyloidosis, eosinophilic cholangitis, GVHD, histiocytosis, giant cell cholangiopathy, sarcoidosis, intra-arterial chemotherapy (floxuridine).
+### 胆管细胞癌与其他胆汁淤积性疾病
 
-### IgG4-related Sclerosing Cholangitis (IgG4-SC)
+- 当PSC影像学表现为胆道狭窄甚至中断，且临床表现为胆汁淤积甚至胆道梗阻时，需与胆管细胞癌（CCA）鉴别；腹部CT/MRI增强、PET-MRI有一定帮助，胆道镜、ERCP下细胞学刷检和病理检查对CCA特异度非常高，但灵敏度低于30%。所有PSC和显性狭窄患者都应注意排查CCA。PBC、药物性肝损伤、AIH、慢性病毒性肝炎、酒精性肝病也可引起胆汁淤积性肝损伤，需通过既往史、Ig、AIH抗体、病毒学标志物等鉴别，尤其对于非典型PSC或小胆管型PSC。
+  - 原文位置：`L000075-L000075`
 
-- Imaging may mimic PSC. Associated with IgG4-RD (autoimmune pancreatitis, submandibular gland swelling, renal lesions, retroperitoneal fibrosis).
-- Serum IgG4 ≥135 mg/dL; histology: lymphoplasmacytic infiltrate with IgG4+ plasma cells >10/HPF or >40% of IgG+ cells, storiform fibrosis, obliterative phlebitis.
-- Responsive to glucocorticoids; better prognosis.
+## 治疗
 
-### Cholangiocellular Carcinoma (CCA)
+### 概述
 
-- Difficult to differentiate from benign dominant strictures. Enhanced CT/MRI, PET-MRI may assist. Endoscopic brush cytology/biopsy: specificity high, sensitivity <30%. All PSC patients with dominant strictures must be evaluated for CCA.
+- 目前国际PSC诊疗指南仍未明确推荐药物治疗方案；多种药物（UDCA、抗生素、免疫抑制剂、调脂药、益生菌等）曾被试用。内镜治疗可改善胆道狭窄和胆汁淤积症状，但不改变远期临床预后；肝移植是终末期PSC患者唯一有效的治疗方式。
+  - 原文位置：`L000083-L000083`
 
-### Other Cholestatic Conditions
+### 熊去氧胆酸（UDCA）
 
-- PBC, drug-induced liver injury, AIH, chronic viral hepatitis, alcoholic liver disease can cause ALP/GGT ± bilirubin elevation. Differentiate by history, autoantibodies, virology, etc. Atypical PSC (mild ALP elevation, small-duct) requires exclusion of these.
+- UDCA是目前PSC治疗研究最广泛的药物，常规用量与其他胆汁淤积性肝病治疗剂量相当，为13～15 mg·kg⁻¹·d⁻¹；过高剂量无临床益处，甚至可能有害。
+  - 原文位置：`L000087-L000087`
 
-## Treatment
+### UDCA联合胆汁酸衍生物
 
-### Pharmacological
+- 临床前研究提示norUDCA有望成为PSC治疗的候选药物，但需人体研究证据及多中心Ⅱ期临床试验验证。法尼醇X受体（FXR）激动剂可降低肝内胆汁酸浓度，并通过诱导成纤维细胞生长因子19、抑制胆汁酸合成、减少肠道细菌过度生长和肠道渗透性、介导肠道抗炎作用，可能在PSC治疗中获益；FXR配体奥贝胆酸（OCA）已用于PBC治疗，其在PSC的疗效尚需进一步探索。
+  - 原文位置：`L000089-L000089`
 
-- No definitive recommended medical therapy.
-- UDCA: 13–15 mg·kg⁻¹·d⁻¹ (higher doses not beneficial, possibly harmful).
-- UDCA + bile acid derivatives: norUDCA (experimental); FXR agonists (e.g., obeticholic acid) under investigation.
-- Immunosuppressants: Azathioprine and glucocorticoids for overlap syndrome; MMF, tacrolimus, cyclosporine, infliximab, etc. not effective in pure PSC.
-- Antibiotics: Oral vancomycin may improve symptoms/biochemistry (especially pediatric); minocycline reduced ALP and Mayo risk score; UDCA+metronidazole improved biochemistry but not disease progression; rifaximin showed no benefit.
+### 免疫抑制剂
 
-### Endoscopic
+- 硫唑嘌呤和糖皮质激素可用于PSC/AIH重叠综合征患者。其他免疫抑制剂包括吗替麦考酚酯、他克莫司、环孢素、甲泼尼龙、布地奈德及生物制剂依那西普、英夫利西单抗在单纯型PSC（不合并AIH，包括大小胆管型两亚型）中的应用研究结果均不尽如人意。
+  - 原文位置：`L000091-L000091`
 
-- EASL 2017: For dominant strictures on MRCP, endoscopic therapy with ductal sampling (brush cytology, biopsy) is recommended (strong recommendation, low quality evidence).
-- Do not routinely perform sphincterotomy before stenting (increases risk of recurrent cholangitis).
-- Short-term stenting (2–4 weeks) yields similar benefit to standard duration (8–12 weeks).
-- Repeated balloon dilation recommended if: (1) stricture causing pruritus, recurrent cholangitis, or worsening cholestasis; (2) good response to prior dilation (weak recommendation, very low quality evidence).
+### 抗生素
 
-### Liver Transplantation
+- 口服万古霉素有助于部分PSC患者（尤其儿科患者）临床症状和生化改善，但未经随机临床试验证实；米诺环素治疗1年可显著降低ALP和Mayo风险评分；UDCA联合甲硝唑可改善血清生化、Mayo风险评分，但对疾病进展无显著影响；利福昔明口服12周未观察到血清生化和临床症状的显著改善。
+  - 原文位置：`L000093-L000093`
 
-- Only effective treatment for end-stage PSC.
-- Post-transplant: 36.1% develop biliary strictures (mean 3.9 years); 20.3% PSC recurrence (mean 4.1 years).
-- Risk factors for recurrence: younger age at transplant, active ulcerative colitis post-transplant.
+### 内镜治疗
 
-## Complication Monitoring
+- 欧洲肝病学会2017年指南推荐：经MRCP确诊的PSC患者存在显著胆管狭窄时进行内镜下治疗，同时行导管取样（毛刷细胞学分析、胆道内活检术），临床症状有望缓解（指南推荐级别：强推荐，低质量证据级别）。不推荐在支架置入前常规应用胆道括约肌切开术，否则会增加术后反复胆道感染风险；短时间支架置入的短期留置与标准留置获益相当。符合以下条件者可反复行球囊扩张术：（1）胆道显著狭窄是引起瘙痒、胆管炎反复发作或胆汁淤积症状明显加重的病因；（2）患者对已行球囊扩张术应答良好（指南推荐级别：弱推荐，极低质量证据级别）。
+  - 原文位置：`L000093-L000093`、`L000095-L000095`
 
-- Regularly monitor cholestasis symptoms, pruritus, imaging; screen for hepatobiliary and intestinal malignancies.
-- Colonoscopy recommended in all PSC patients to evaluate for IBD, even without gastrointestinal symptoms.
-- For PSC/AIH overlap on immunosuppressants: monitor for infection, osteoporosis, gastrointestinal bleeding.
+### 肝移植治疗
 
-## Diagnostic and Therapeutic Algorithm
+- 肝移植是终末期PSC患者唯一有效的治疗方案，但最佳时机较难把握。德国多中心回顾性研究（335例）显示患者及移植物的1、5、10年生存率分别为：患者90.7%、84.8%、79.4%，移植物79.1%、69%、62.4%；术后胆道狭窄发生于36.1%的患者，平均发病时间为移植后3.9年；PSC复发见于20.3%的患者。肝移植时年龄较轻和移植后活动性溃疡性结肠炎的存在是PSC复发的危险因素。
+  - 原文位置：`L000097-L000097`、`L000099-L000099`
 
-Refer to Figure 1 for the overall management flow.
+## 并发症监测
+
+- 治疗过程中需定期监测患者胆汁淤积、瘙痒症状及胆道影像学变化，并注意监测肝胆系统及肠道肿瘤合并风险。确诊PSC患者即使无腹泻、便血等肠道症状，也建议行肠镜检查以排查合并IBD。对PSC/AIH重叠综合征患者使用糖皮质激素及其他免疫抑制剂时，需关注药物相关感染风险、骨质疏松、消化道出血等风险。
+  - 原文位置：`L000103-L000103`
+
+## 诊疗流程
+
+- PSC诊疗流程见图1。
+  - 原文位置：`L000107-L000109`

@@ -1,4 +1,4 @@
 interface:
-  display_name: "恶性肠梗阻治疗中国专家共识(2023 年)"
-  short_description: "查询恶性肠梗阻治疗共识中的临床建议"
-  default_prompt: "请使用恶性肠梗阻治疗中国专家共识回答临床问题"
+  display_name: "恶性肠梗阻治疗中国专家共识(2023年)"
+  short_description: "查询恶性肠梗阻治疗中国专家共识中的临床建议"
+  default_prompt: "请使用《恶性肠梗阻治疗中国专家共识（2023年）》回答临床问题"

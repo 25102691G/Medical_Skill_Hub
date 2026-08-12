@@ -1,4 +1,0 @@
-interface:
-  display_name: "肝内胆管癌诊疗共识(2022版)"
-  short_description: "查询2022版肝内胆管癌专家共识中的临床建议"
-  default_prompt: "请使用原发性肝癌诊疗指南之肝内胆管癌诊疗中国专家共识(2022版)回答临床问题"

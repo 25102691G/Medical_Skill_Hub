@@ -1,0 +1,4 @@
+interface:
+  display_name: "急性阑尾炎超声检查及报告规范专家共识（2025版）"
+  short_description: "查询急性阑尾炎超声检查、诊断标准及报告规范建议"
+  default_prompt: "请使用急性阑尾炎超声检查及报告规范专家共识（2025版）回答临床问题"

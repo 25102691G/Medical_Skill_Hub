@@ -1,337 +1,1095 @@
 # 结直肠癌肝转移诊断和综合治疗指南（2025版）重要信息索引
 
-## 1. Diagnosis and Follow-up
+## 摘要
 
-### 1.1 Definition
-- Synchronous: Liver metastasis at or before CRC diagnosis.
-- Metachronous: After radical CRC resection.
+- 肝脏是结直肠癌血行转移最主要的靶器官，结直肠癌肝转移是结直肠癌治疗的重点和难点之一。15%～25% 的结直肠癌患者在确诊时即合并肝转移，另有 15%～25% 的患者在结直肠癌原发病灶根治术后发生肝转移，其中 80%～90% 的肝转移灶初始无法实现根治性切除。肝转移是结直肠癌患者最主要的死亡原因。未经治疗的肝转移患者中位生存期仅 6.9 个月，无法切除患者的 5 年生存率低于 5%。然而，肝转移灶完全切除或达到“无疾病证据（NED）”状态患者的中位生存期延长为 ～ 个月，5 年总体生存率 40%～57%。对于初始无法根治性切除的肝转移灶，部分患者经治疗后可能转化为可切除或达到NED 状态。因此，通过多学科团队（MDT）对结直肠癌肝转移患者进行全面评估，制定个性化治疗目标并开展综合治疗，可预防结直肠癌肝转移的发生、提高肝转移灶手术切除率和患者 5 年生存率。
+  - 原文位置：`L000014-L000014`、`L000032-L000032`
 
-### 1.2 Diagnostic Workup
-- Liver ultrasound and enhanced abdominal CT for all newly diagnosed CRC. If uncertain, add AFP, contrast-enhanced ultrasound, and liver MRI. (1a, A)
-- Liver-specific contrast MRI for lesions <1 cm if available. (2a, B)
-- PET/CT or PET/MRI not routine; use when needed. (2a, B)
-- Intraoperative liver exploration mandatory; intraoperative ultrasound and biopsy as needed. (3a, B)
+## 结直肠癌肝转移的诊断与随访
 
-### 1.3 Postoperative Surveillance (after primary CRC resection)
-- q3–6 months history, physical exam, liver US, CEA, CA19-9 for 2 years, then q6 months to 5 years. (1a, A)
-- Annual chest/abdominal/pelvic CT for stage II/III for 3–5 years. (1b, A)
-- Colonoscopy within 1 year postop, then at 3 years, then every 5 years; for age <50 or Lynch syndrome increase frequency. (1a, A)
+### 定义
 
-### 1.4 Follow-up after NED
-- Serum CEA, CA19-9 q3 months for 2 years, then q6 months to 5 years. (1a, A)
-- Abdominal/pelvic CT or liver MRI q3 months for 2 years, then q6–12 months to 5 years. (1a, A)
+- 根据国际共识：同时性肝转移是指结直肠癌确诊前或确诊时发现的肝转移；而结直肠癌根治术后发生的肝转移称为异时性肝转移。本指南为便于诊疗策略的制定，从“结直肠癌确诊时合并肝转移”和“结直肠癌根治术后发生肝转移”两方面进行阐述。
+  - 原文位置：`L000038-L000038`
 
-### 1.5 Genetic Testing
-- MMR/MSI for all CRC patients to guide immunotherapy. (1a, A)
-- RAS (KRAS/NRAS exons 2–4) for all liver metastases; predicts anti-EGFR benefit. (1a, A)
-- BRAF V600E for prognosis and therapy guidance. (1b, A)
-- HER2 in treatment-refractory patients. (2b, B)
-- Other biomarkers: TMB, POLE, NTRK, RET, c-Met; ctDNA for MRD assessment. (2b, B)
+### 结直肠癌确诊时肝转移的诊断常规
 
-## 2. Prevention of Liver Metastases
+- 对已确诊结直肠癌的患者，除血清癌胚抗原（CEA）、糖类抗原 19-9（CA19-9）等肿瘤标志物检查、病理分期评估外，还应常规进行肝脏超声和腹部增强等影像学检查，以筛查和诊断肝脏转移瘤。对于超声或 CT 影像高度怀疑但不能确诊的患者，可增加血清甲胎蛋白（AFP）、肝脏超声造影和肝脏磁共振成像（MRI）增强检查（1a 类证据，A 级推荐）。肝脏细胞特异性造影剂增强检查对最大径＜ 的微小病灶检出准确率更高，条件允许时可考虑使用（2a 类证据，B 级推荐）。PET/CT 或 PET/MRI 检查不作为常规推荐，可在需要时酌情应用（2a 类证据，B 级推荐）。肝脏病灶的经皮针刺活检仅限于病情允许时应用。结直肠癌手术中必须常规探查肝脏以进一步排除肝转移的可能，对可疑的肝脏结节可行术中超声检查，必要时考虑同步切除或术中活检（3a 类证据，B 级推荐）。
+  - 原文位置：`L000040-L000040`
 
-### 2.1 Radical CRC Resection
-- Colon: CME principle.
-- Mid/low rectum: TME principle.
-- Suspicious nodes outside resection field: biopsy or resect.
+### 结直肠癌根治术后肝转移的监测
 
-### 2.2 Neoadjuvant Therapy
-- dMMR/MSI-H patients: immune checkpoint inhibitors may allow non-operative management.
-- pMMR/MSS/MSI-L mid/low rectal T3+ or N+: radiotherapy and/or chemotherapy; TNT recommended. (1a, A)
-- pMMR/MSS/MSI-L colon cancer: neoadjuvant not routine; hepatic artery infusion may be considered in stage III.
-- High rectal cancer: treat as colon cancer.
+- 结直肠癌根治术后，应对患者定期随访，了解肝转移或其他远处转移的发生情况。（1）每 3～6 个月进行 1 次病史询问、体格检查、肝脏超声检查，并检测血清 CEA、CA19-9等适当的肿瘤标志物，持续 2 年。2 年后每 6 个月随访 1 次，直至满 5 年（1a 类证据，A 级推荐）。5 年后每年随访 1 次。（2）对于Ⅱ期和Ⅲ期结直肠癌患者，建议每年进行 1 次胸/腹/盆腔 CT 增强检查，持续3～5 年（1b 类证据，A 级推荐）。之后每1～2 年检查 1 次。对于超声或 CT 影像高度怀疑肝脏转移瘤而无法确诊的患者，增加肝脏 MRI 等检查，并建议在随访过程中保持影像检查方法的一致性。PET/CT 或 PET/MRI 检查不作为常规推荐。（3）术后 年内应进行电子结肠镜检查，若发现异常，需在 1 年内复查；如无异常则推荐术后第 3 年复查，以后每 5 年检查 1 次。如果患者发病年龄小于 50 岁或确诊 Lynch 综合征，应适当增加电子结肠镜的检查频率。对于结直肠癌原发病灶切除术前因梗阻等原因未完成全结肠镜检查的患者，应在术后 3～6 个月内完成首次电子结肠镜检查（1a 类证据，A 级推荐）。
+  - 原文位置：`L000042-L000042`、`L000044-L000044`、`L000046-L000046`、`L000048-L000048`
 
-### 2.3 Intraoperative Portal Vein Chemotherapy
-- May reduce liver metastases; not routine.
+### 结直肠癌肝转移灶达到 NED 后的随访
 
-### 2.4 Adjuvant Therapy after Radical Resection
-- Stage III colon cancer: 3–6 months of FOLFOX, CapeOX, 5-FU/LV, or capecitabine. (1a, A)
-- pMMR/MSS/MSI-L stage II without high-risk features: observation or 5-FU. (1b, A)
-- High-risk stage II: adjuvant chemotherapy. (2a, B)
-- dMMR/MSI-H stage II: observation; stage III: controversial.
-- Rectal cancer T3+ or N+: if no preoperative chemoradiation, postoperative chemoradiation improves DFS.
+- 结直肠癌肝转移灶达到NED 后，仍应对患者进行密切随访，了解肝转移复发或其他远处转移的发生情况。（1）建议术后 2 年内每 3 个月随访血清CEA、CA19-9 和其他适当的肿瘤标志物。术后3～5 年每 6 个月随访 1 次（1a 类证据，A 级推荐），5 年后每年随访 1 次。（2）术后 2 年内每 3 个月进行 1 次腹/盆腔CT 增强或肝脏 MRI 增强检查，必要时行肝脏细胞特异性造影剂增强 MRI 检查。2 年后每 6～12 个月检查 1 次，共 5 年（1a 类证据，A 级推荐）。5 年后每年检查 1 次。不推荐常规进行PET/CT 或 PET/MRI 检查。（3）其他随访内容和频次参照结直肠癌原发病灶根治术后的随访进行。
+  - 原文位置：`L000050-L000050`、`L000052-L000052`、`L000054-L000054`、`L000056-L000056`
 
-## 3. Multidisciplinary Team (MDT)
+## 结直肠癌及其肝转移的相关基因检测
 
-- MDT recommended for all colorectal cancer liver metastasis patients. (1a, A)
-- Team: colorectal surgery, liver surgery, oncology, radiation, interventional radiology, imaging, pathology.
-- Fit patients: categorised as resectable, potentially resectable (conversion), or never resectable.
+### MMR/MSI检测
 
-## 4. Surgical and Local Ablative Therapy
+- 推荐结直肠癌患者均进行 MMR/MSI 检测（1a 类证据，A 级推荐），以便更精准地制定治疗策略，尤其对免疫检查点抑制剂的应用决策至关重要。采用聚合酶链反应（PCR）联合毛细管电泳法比较肿瘤组织与正常组织中微卫星序列长度的差异以检测微卫星状态，是 MSI 检测的金标准。免疫组化检测 MMR 基因的蛋白表达（包括 MLH1、MSH2、MSH6 和 PMS2），因其简便快捷，是目前最常用的检测方式，与 PCR 检测的一致率高达95%。另外，经过验证合格的二代测序（NGS）技术也可用于 MSI检测。
+  - 原文位置：`L000060-L000060`
 
-### 4.1 Surgery
-- Only curative method; indications: primary R0 resectable, liver R0 with remnant liver >30%, no unresectable extrahepatic disease. (2a, B)
-- Contraindications: unresectable primary, unresectable extrahepatic, insufficient future remnant, poor performance status. (3a, B)
-- Resection margin >1 mm; remnant volume ≥40% (synchronous) or ≥30% (metachronous).
-- Techniques: PVE/PVL, ALPPS, RASPE/LVD, SIRT to increase future liver remnant.
-- Liver transplantation may be considered for liver-only disease after systemic therapy failure. (4, C)
-- Repeat hepatectomy for recurrence feasible. (3b, B)
-- Extrahepatic metastases (lung, peritoneal) can be resected if completely removable. (3b, B)
+### RAS检测
 
-### 4.2 Local Ablative Treatments
-- RFA: for lesions ≤3 cm, ≤5 lesions; not preferred for resectable tumours.
-- MWA: for lesions ≤5 cm, including those adjacent to vessels.
-- SBRT: for ≤3 lesions, ≤6 cm; for >3 cm preferred over RFA.
+- 推荐所有结直肠癌肝转移患者均进行 KRAS 第 2、3、4 外显子以及 NRAS 第2、3、4 外显子的检测。RAS 基因是否突变不仅具有预后意义，还是预测抗表皮生长因子受体（EGFR）治疗有效性的重要生物学标志物（1a 类证据，A 级推荐）。其中，KRAS G12C 或 G12D 等突变还有助于后线治疗对新型靶向药物的选择。
+  - 原文位置：`L000062-L000062`、`L000064-L000064`
 
-## 5. Neoadjuvant and Adjuvant Therapy for Potentially NED Patients
+### BRAF检测
 
-### 5.1 Neoadjuvant
-- dMMR/MSI-H: immune checkpoint inhibitors preferred.
-- pMMR/MSS/MSI-L: FOLFOX/FOLFIRI/CapeOX or FOLFOXIRI ± targeted therapy; ≤6 cycles (1a, A), surgery after 2–3 months.
-- Hepatic artery infusion may be added.
+- 推荐结直肠癌肝转移患者进行 V600E 突变检测，作为预后的评估指标（ 类证据， 级推荐）以及疗效预测因子，以指导治疗方案选择。
+  - 原文位置：`L000064-L000064`
 
-### 5.2 Adjuvant
-- Post-hepatectomy chemotherapy recommended; total duration (including neoadjuvant) about 6 months. (1a, A)
-- Effective preoperative regimen continued postop.
+### HER2检测
 
-## 6. Management of Unresectable Disease
+- 在标准治疗失败的转移性结直肠癌患者中抗 HER2 治疗逐渐受到重视，建议转移性结直肠癌患者进行HER2 检测，为晚期患者后线治疗的临床决策提供依据（2b 类证据，B 级推荐）。另外，HER2过表达或基因扩增提示患者可能对抗 EGFR 单抗治疗反应不佳。
+  - 原文位置：`L000066-L000066`
 
-### 6.1 dMMR/MSI-H
-- First-line: PD-1 inhibitors (e.g., pembrolizumab, nivolumab) ± CTLA-4 inhibitor.
+### 其他
 
-### 6.2 pMMR/MSS/MSI-L
-- Systemic chemotherapy: doublet (FOLFOX/FOLFIRI/CapeOX) ± targeted therapy as first-line; triplet (FOLFOXIRI) ± bevacizumab for selected fit patients. (1b, A)
-- Targeted therapy: RAS wild-type left-sided tumors benefit from anti-EGFR; right-sided may benefit more from anti-VEGF.
-- BRAF V600E mutant: triplet + anti-VEGF or BRAF inhibitor combinations.
-- Maintenance after disease control: fluoropyrimidine ± bevacizumab or observation.
-- Second-line: switch regimen (e.g., FOLFIRI after FOLFOX); third-line: regorafenib, fruquintinib, TAS-102 ± bevacizumab.
-- Local-regional: HAI, TACE, DEB-TACE, SIRT for liver-dominant disease.
+- NGS 检测出的肿瘤突变负荷（TMB）、DNA 聚合酶epsilon（POLE）/DNA 聚合酶delta 1（POLD1）、神经营养因子受体酪氨酸激酶（NTRK）融合基因、转染重排原癌基因（RET）、间质表皮转化因子（c-Met）等，均可作为潜在的预测免疫检查点抑制剂或靶向药物疗效的生物标志物。结直肠癌原发病灶和肝转移灶的基因状态大多无差别。无法获取肿瘤组织进行检测时，可考虑液态活检技术（2b 类证据，B 级推荐）。此外，基于循环肿瘤 DNA（ctDNA）指导的微小残留病灶（MRD）评估可有效提示结直肠癌患者接受治疗后的治愈情况。因此，MRD 可用于预后评估和后续治疗策略的制定，目前还在不断完善中，仍需要更多循证医学证据支持。
+  - 原文位置：`L000068-L000068`、`L000070-L000070`
 
----
+## 结直肠癌肝转移的预防
 
-## Chemotherapy regimens
+### 结直肠癌原发灶根治性切除术
+
+- 根治性手术切除结直肠癌病灶是目前结直肠癌最有效的治愈方法，也是预防肝转移发生的重要环节。（1）结肠癌根治性手术范围包括肿瘤全部及其两端足够肠段，周围可能被浸润的组织和器官，以及相关系膜、主要供应血管和淋巴引流区。具体手术方式依照肿瘤部位不同而异，但均应遵循完整结肠系膜切除（CME）原则。（2）直肠癌根治性手术范围应包括肿瘤全部及其两端足够肠段、周围可能被浸润的组织和器官以及相关的肠系膜和淋巴结。直肠中下段的肿瘤应遵循全直肠系膜切除（TME）原则。（3）术中发现存在切除范围以外的可疑转移淋巴结，应进行术中活检或切除。
+  - 原文位置：`L000074-L000074`、`L000076-L000076`、`L000078-L000078`、`L000080-L000080`
+
+### 结直肠癌确诊时无肝转移的新辅助治疗
+
+- 术前通过新辅助治疗控制未被影像学检测到的微小转移灶，可以最大程度地减少根治性手术后的远处转移。
+  - 原文位置：`L000082-L000082`
+
+### 中低位直肠癌的新辅助治疗
+
+- （1）对于错配修复缺陷/微卫星高度不稳定（dMMR/MSI-H）型患者，现有研究表明：免疫检查点抑制剂治疗效果较好，大多数患者可以免除手术或（和）放化疗，仅需观察随访。目前研究数据显示短期结果理想，长期结果有待观察。（2）对于错配修复完整/微卫星稳定/微卫星低度不稳定（pMMR/MSS/MSI-L）型患者，术前诊断 T 期及以上或任何T 分期、淋巴结阳性的直肠癌，在不伴有明显出血、梗阻症状，无穿孔以及其他远处转移等情况时，应用放疗和（或）化疗。另外，多项研究发现，新辅助放化疗或放疗联合/序贯免疫检查点抑制剂治疗，可获得更好的病理客观缓解，且安全性不受影响。对局部进展期直肠癌还可实施全程新辅助治疗（TNT）。该方案将直肠癌术后进行的辅助化疗提前至术前，即在术前阶段进行新辅助化疗和同步放化疗。采用这种治疗模式可获得更高的完全缓解率，有助于器官保留，还可以降低远处转移发生率，改善患者长期生存期（1a 类证据，A 级推荐）。（3）对于术前分期Ⅲ期，且不伴有出血、梗阻症状或无穿孔的患者，有条件的医疗机构可考虑应用肝动脉和肿瘤区域动脉联合灌注化疗。5-氟尿嘧啶（5-FU）或其前体药物可联合奥沙利铂，经肝动脉、肿瘤区域动脉分别灌注，化疗后 7～10 d 实施根治性切除术。目前的临床研究表明，该方案虽不能显著降低肿瘤分期，但对Ⅲ期结直肠癌患者有预防肝转移的作用，建议在有条件的医疗机构开展，但不作为常规推荐方案。
+  - 原文位置：`L000084-L000084`、`L000086-L000086`、`L000088-L000088`、`L000090-L000090`
+
+### 结肠癌的新辅助治疗
+
+- pMMR/MSS/MSI-L型结肠癌患者的新辅助治疗尚无明确的循证医学证据，对于术前判断为Ⅲ期的患者可考虑肝动脉和肿瘤区域动脉联合灌注化疗，以减少肝转移的发生，但不作为常规推荐。研究发现，dMMR/型结肠癌患者应用免疫检查点抑制剂新辅助治疗可获得较为理想的病理客观缓解，从而改善生存质量。
+  - 原文位置：`L000092-L000092`
+
+### 高位直肠癌的新辅助治疗
+
+- 对于高位直肠癌，即肿瘤下缘距离肛缘 以上者，新辅助治疗方案参照结肠癌。
+  - 原文位置：`L000094-L000094`
+
+### 无转移结直肠癌术中门静脉化疗、腹腔化疗
+
+- 目前，该治疗方案已取得一些应用成效。例如，术中门静脉化疗联合术后辅助化疗，可以减少肝转移的发生。但这一结果仍需进一步临床研究证实，不作为常规推荐方案。
+  - 原文位置：`L000096-L000096`
+
+### 无转移结直肠癌根治术后的辅助治疗
+
+- （1）对于Ⅲ期结肠癌，术后辅助化疗能提高患者 年无病生存率及总生存率。因此，上述结肠癌患者在手术治疗后应进行 3～6 个月的辅助化疗，可选择的治疗方案：FOLFOX、CapeOX、5-FU/LV 或卡培他滨单药治疗（1a 类证据，A 级推荐）。对于 pMMR/MSS/MSI-L 型Ⅱ期患者，如不存在复发转移高危因素（T 期、组织分化差、肿瘤周围淋巴管神经侵犯、肠梗阻、 期伴有局部穿孔、切缘不确定或阳性、淋巴结活检数量少于12 个），术后两药联合的辅助化疗在多项临床研究中获益不显著，因此建议接受临床观察和随访（1b 类证据，A 级推荐），或接受 5-FU 单药治疗。但对高危Ⅱ期患者应予以辅助化疗，方案参照Ⅲ期患者（2a 类证据，B 级推荐）。
+  - 原文位置：`L000098-L000098`、`L000100-L000100`
+
+## 辅助治疗
+
+- dMMR/MSI-H 型Ⅱ期患者无论是否存在高危因素均可接受临床观察和随访，但Ⅱ期患者是否需要接受辅助化疗目前尚有争议。dMMR/MSI-H的Ⅱ/Ⅲ期患者，术后是否使用免疫检查点抑制剂作为辅助治疗仍存在争议。
+  - 原文位置：`L000102-L000102`
+
+- 对于T3期及以上和任何T分期、淋巴结阳性的中低位直肠癌患者，如术前没有进行放化疗，术后辅助化疗或放化疗能提高5年无病生存率，并降低局部复发率。然而，关于辅助治疗能否减少直肠癌肝转移的研究有限，辅助治疗的结合方式也需要更多临床试验验证。术前接受过放疗或联合放化疗的患者，术后也应接受辅助治疗，但尚无充分的循证医学证据。
+  - 原文位置：`L000104-L000104`
+
+- 综上，结直肠癌肝转移最有效的预防方式为规范化治疗结直肠癌。
+  - 原文位置：`L000106-L000106`
+
+## MDT 在结直肠癌肝转移诊治中的作用
+
+- 对于肿瘤性疾病，MDT 治疗模式是有效的手段。因此，建议结直肠癌肝转移的患者均采取MDT 治疗模式（1a 类证据，A 级推荐）。结直肠癌的 MDT 以患者为中心，团队成员应包括结直肠外科/胃肠外科、肝外科、肿瘤内科、放疗科、放射介入科、放射和超声影像科、病理科及其他相关专业有一定资质的医生。MDT 治疗模式可以减少个体医生做出的不完善决策，其重要作用还包括：（1）更精准的基因分子分型；（2）更精确的疾病分期；（3）减少治疗混乱和延误；（4）更个性化的评估和治疗；（5）更好的治疗衔接；（6）更高的生活质量；（7）较高的临床和生存获益；（8）较优的卫生经济学。
+  - 原文位置：`L000108-L000108`、`L000110-L000110`
+
+### 全身状况较差患者的治疗策略
+
+- 根据患者的体力状况、年龄、器官功能、合并症和肿瘤的分子病理特征等进行评估，针对不同的治疗目标，给予患者最合理的检查和最恰当的综合治疗方案（1a 类证据，A 级推荐）。患者全身状况较差，不适合进行高强度治疗时，建议给予单药（或联合靶向药物）治疗、减量的两药联合方案或最佳支持治疗，以提高生活质量并尽量延长生存时间。如全身情况好转，可再进行高强度治疗。
+  - 原文位置：`L000112-L000112`
+
+### 适合高强度治疗患者的治疗策略
+
+- 对于适合高强度治疗的患者，应依据肝转移的具体情况和是否伴有其他转移等，制定不同的治疗目标，给予个体化的治疗方案。本指南将适合高强度治疗的患者分为 3 类。
+  - 原文位置：`L000114-L000114`
+
+### 肝转移灶可初始 R0 切除
+
+- 对于肝转移灶可初始 R0 切除，且手术难度不大、肿瘤生物学行为良好的患者，治疗目的是获得治愈。应该围绕手术治疗进行相应的新辅助和（或）辅助治疗，以降低术后复发风险。肝转移灶是否可以 R0 切除，应由肝外科、肿瘤外科、影像科专家共同评估。
+  - 原文位置：`L000116-L000116`
+
+- 肝转移灶可以 R0 切除，但手术切除难度较大时也应积极联合其他肿瘤局部毁损手段，例如射频消融和（或）立体定向放射治疗（SBRT）等，以达到 NED状态。
+  - 原文位置：`L000118-L000118`
+
+### 肝转移灶初始无法切除
+
+- 对于肝转移灶初始无法切除，但经过一定的治疗有望转化为NED 状态，且全身情况允许接受转移灶切除手术等局部治疗和高强度治疗的患者，治疗目的主要是最大程度地缩小瘤体或增加残余肝体积。应采用最积极的综合治疗，即转化治疗。
+  - 原文位置：`L000120-L000120`
+
+### dMMR/MSI-H 型患者
+
+- dMMR/MSI-H 型患者排除禁忌证后，应首选免疫检查点抑制剂治疗，包括单药或两药联合治疗。
+  - 原文位置：`L000122-L000122`
+
+### pMMR/MSS/MSI-L 型患者
+
+- 对于结直肠癌确诊时合并无法达到 NED 状态的肝转移：（1）结直肠癌原发病灶存在出血、梗阻或穿孔时，应先切除结直肠癌原发病灶，再进行系统性化疗（或加用肝动脉灌注化疗），必要时可联合分子靶向药物治疗（1b 类证据，A 级推荐）。治疗后每 6～8 周进行肝脏超声检查和 CT 增强检查，并依据实体瘤疗效评价标准（RECIST）予以评估。临床重大决策时建议 MRI 增强检查。如果肝转移灶转化为可切除或有望达到 NED 状态时，适时予以手术治疗和（或）其他肿瘤局部毁损手段；如果肝转移灶仍不能达到 NED，则继续进行综合治疗。（2）结直肠癌原发灶无出血、梗阻或穿孔时，可以进行系统性化疗（或加用肝动脉灌注化疗），必要时可联合分子靶向药物治疗（1c 类证据，B 级推荐）。每 6～8 周评估 1 次，如果转移灶转化成可切除或有望达到 NED 状态时，予以手术治疗（一期同步切除或分阶段切除原发病灶和肝转移灶）或手术联合其他肿瘤局部毁损手段；如果肝转移灶仍不能达到 NED，则视具体情况手术切除结直肠癌原发病灶，术后继续对肝转移灶进行综合治疗。此类患者也可选择先行切除结直肠癌的原发病灶，继而进一步治疗，具体方案同上。（3）局部晚期直肠癌合并同时性肝转移，需兼顾直肠癌局部治疗和全身治疗，可长程同步放化疗序贯化疗或联合免疫检查点抑制剂治疗，也可短程放疗联合化疗或联合免疫检查点抑制剂治疗，现有研究结果更倾向于后者。
+  - 原文位置：`L000124-L000124`
+
+- 结直肠癌根治术后发生的无法达到NED 状态的肝转移：（1）采用 5-FU/LV（或卡培他滨）联合奥沙利铂或（和）伊立替康的两药或三药方案作为一线化疗，并可加用分子靶向治疗，或联用肝动脉灌注化疗（1b 类证据，A 级推荐）。对氟尿嘧啶类药物不耐受的患者可考虑使用雷替曲塞（2b 类证据，B 级推荐）。（2）在肝转移发生前 12 个月内使用过奥沙利铂为基础的化疗作为辅助治疗的患者，应采用 FOLFIRI 方案；化疗结束后 12 个月以上发生肝转移，仍可采用FOLFOX 或 CapeOX 化疗方案，并可加用分子靶向药物治疗，或联用肝动脉灌注化疗（3a 类证据，B 级推荐）。治疗后每 6～8 周通过肝脏超声、CT 增强检查予以评估。进行临床重大决策时，建议 MRI 增强检查。对于肝转移灶转化为可切除或可以达到NED 状态的患者，应予以肝转移灶切除手术或手术联合其他肿瘤局部毁损手段，术后再予以辅助化疗；如果肝转移灶仍不能达到NED，则应继续进行综合治疗。
+  - 原文位置：`L000126-L000126`
+
+### 肝转移灶始终无法切除
+
+- 对于肝转移灶可能始终无法切除或达到NED 状态，但全身情况允许接受较高强度治疗的患者，应以控制疾病进展为目的进行治疗，建议采用较为积极的联合治疗。
+  - 原文位置：`L000128-L000128`
+
+- 对于结直肠癌原发灶无出血、梗阻或穿孔，但肝转移灶始终无法达到NED 的患者，是否应该切除原发病灶，目前仍有争议。因此，需要综合考虑肿瘤和患者情况，进行个体化决策，是否切除原发病灶。
+  - 原文位置：`L000130-L000130`
+
+- 综上，多次 MDT 评估不仅对全身治疗有反应的结直肠癌肝转移患者有价值，对于初始评估无法手术切除的患者同样重要。
+  - 原文位置：`L000132-L000132`
+
+## 结直肠癌肝转移灶的手术及其他局部毁损治疗
+
+### 手术治疗
+
+- 手术完全切除肝转移灶仍是目前能治愈结直肠癌肝转移的最佳方法。因此，符合条件的患者均应适时接受手术治疗。部分最初肝转移灶无法切除的患者经治疗后转化为可切除时也应适时接受手术治疗。
+  - 原文位置：`L000134-L000134`、`L000136-L000136`
+
+### 手术适应证和禁忌证
+
+- 手术适应证在不断变化，主要从以下 3 个方面来判断（2a 类证据，B 级推荐）：（1）结直肠癌原发病灶能够或已经根治性切除；（2）根据肝脏解剖学基础和病灶范围，肝转移灶可完全（R0）切除，且要求保留足够的功能性肝组织，即残余肝体积超过 30%，采用三维CT、吲哚菁绿（ICG）、3D 数字成像技术等有助于评估残余肝体积；（3）患者全身状况允许，没有不可切除或毁损的肝外转移病变，或仅为肺部结节性病灶，但不影响肝转移灶切除决策。随着技术的进步，肝转移灶的大小、数目、部位等已不再是评估结直肠癌肝转移患者手术适应证的单一决定因素。另外，切缘不足1 cm、可切除的肝门淋巴结转移、可切除的肝外转移病灶（包括肺部、腹腔）等已被纳入适宜手术切除的范畴（4 类证据，C 级推荐）。
+  - 原文位置：`L000138-L000138`、`L000140-L000140`
+
+- 手术禁忌证（3a 类证据，B 级推荐）：（1）结直肠癌原发病灶不能获得根治性切除；（2）出现不适合局部处理的肝外转移；（3）预计术后残余肝体积不足；（4）患者全身状况不佳，无法耐受手术。
+  - 原文位置：`L000142-L000142`
+
+### 结直肠癌确诊时合并肝转移的手术治疗
+
+- 对于结直肠癌确诊时合并肝转移的患者，有两种手术方案。（1）结直肠癌原发病灶和肝转移灶一期同步切除：对于原发病灶切除难度较小，肝转移灶小且多位于肝脏边缘或局限于半肝，肝切除量低于 60%，肝门部淋巴结、腹腔或其他远处转移均可手术切除的患者，建议一期同步切除。研究显示，一期同步切除肝转移灶和结直肠癌原发病灶的手术并发症和死亡率可能高于二期分阶段手术。因此，需谨慎选择患者，尤其是两切口下完成的同步手术。
+  - 原文位置：`L000144-L000144`
+
+- 急诊手术由于缺少完备的术前检查资料，且具有较高的感染发生机会，不推荐结直肠癌原发病灶和肝脏转移灶一期同步切除（2c 类证据，B 级推荐）。
+  - 原文位置：`L000146-L000146`
+
+- 结直肠癌原发病灶和肝转移灶二期分阶段切除：对于术前评估不能满足一期同步切除条件的患者，可以先手术切除结直肠癌原发病灶，再于结直肠癌根治术后 4～6 周，二期分阶段切除肝转移灶；若在肝转移灶手术前进行系统性治疗，肝转移灶的切除可延至原发病灶切除后 6 个月内进行。可根治的复发性结直肠癌伴有可切除肝转移灶的治疗，参照结直肠癌确诊时合并肝转移处理，但建议进行二期分阶段切除术。不可切除的结直肠癌肝转移灶经治疗转化为可切除后，建议进行二期分阶段切除结直肠癌原发病灶和肝转移灶。
+  - 原文位置：`L000148-L000148`
+
+- 先切除肝转移灶、再切除结直肠癌原发病灶的“肝优先模式”也已开展应用，其手术的并发症、死亡率和 5 年生存率均与传统模式的二期分阶段切除相同（3b 类证据，B 级推荐）。
+  - 原文位置：`L000150-L000150`
+
+### 结直肠癌根治术后发生肝转移的手术治疗
+
+- 对于既往结直肠癌原发病灶为根治性切除且不伴有原发病灶复发，肝转移灶能完全切除且肝切除量＜70%（无肝硬化者）的患者，应予以手术切除肝转移灶，也可考虑先行新辅助治疗（3b 类证据，B 级推荐）。
+  - 原文位置：`L000152-L000152`
+
+- 诊断结直肠癌根治术后发生肝转移应当有两项以上的影像学检查依据，包括肝脏超声或超声造影、CT 及 MRI 增强等，必要时可结合 PET/CT或 PET/MRI 检查以确定病变的范围和有无肝外转移，从而避免不必要的手术治疗。
+  - 原文位置：`L000154-L000154`
+
+### 肝转移灶手术方式的选择
+
+- 肝转移灶手术方式的选择（3b 类证据，B 级推荐）：（1）肝转移灶切除后至少保留 3 条肝静脉中的 1 条，且残余肝体积≥40%（同时性肝切除）或≥30%（异时性肝切除）。转移灶的手术切除应符合R0原则，切缘至少大于1 mm。
+  - 原文位置：`L000156-L000156`
+
+- 对于局限于左半肝或右半肝的较大肝转移灶且无肝硬化者，可行规则的半肝切除。
+  - 原文位置：`L000158-L000158`
+
+- 肝转移手术时采用术中超声或超声造影检查，有助于发现术前影像学检查未能诊断的肝转移灶。肝脏微创手术比例逐渐升高，显示出更好的短期结局。此外，人工智能影像技术在肝脏手术精准规划中的应用也日益增多。
+  - 原文位置：`L000160-L000160`
+
+- 选择性门静脉栓塞（PVE）或门静脉结扎（PVL）可以使肝转移灶切除术后预期剩余肝脏代偿性增大，增加手术切除的可能。此方法被用于预计手术切除后残余肝体积不足 30% 的肝转移患者。对于残余肝体积为 30%～40%，且接受强烈化疗而有肝实质损伤的患者，同样也可从中获益（4 类证据，C 级推荐）。
+  - 原文位置：`L000162-L000162`
+
+- 联合肝脏离断和门静脉结扎的二步肝切除术（ALPPS）可使残余肝体积在较短时间内明显增大而获得更多Ⅱ期肝切除的机会。然而，ALPPS 手术复杂，并发症及死亡率均高于传统肝脏切除手术，因此建议严格筛选患者，并由经验丰富的肝脏外科医师实施手术。
+  - 原文位置：`L000164-L000164`
+
+- 放射性同时门静脉和肝静脉栓塞（RASPE），又称肝静脉剥夺术（LVD）。与单纯 PVE 和 ALPPS 相比，RASPE 不仅可使残余肝脏迅速增生，其术后并发症发生率和死亡率也低于 ALPPS，具有操作便捷、创伤小、安全性强等优点，但仍需更多研究进一步评价，临床研究可关注。
+  - 原文位置：`L000166-L000166`
+
+- 放射性微球选择性内放射治疗（SIRT）是兼具控制肿瘤和增大残余肝体积的临床治疗手段。研究显示，钇 90（90Y）-SIRT 用于治疗单侧肝叶肿瘤后1～9 个月，对侧肝叶平均增大 29%～57%，肿瘤控制良好，有利于后续肝转移切除手术。
+  - 原文位置：`L000168-L000168`
+
+- 对于经过肝切除、局部消融、系统性化疗、介入治疗、分子靶向治疗、免疫检查点抑制剂等多种联合或序贯治疗仍无法达到NED 而转移灶局限于肝脏的患者，若对全身化疗有反应，肝移植联合全身治疗可显著提高总体生存率，可酌情谨慎选择。
+  - 原文位置：`L000170-L000170`
+
+### 肝转移灶切除术后复发和肝外转移灶的切除
+
+- 在全身状况和肝脏条件允许的情况下，对于可切除的肝转移灶术后的复发病灶，经 MDT 讨论后，可再次选择手术切除或其他局部治疗。研究显示，再次手术后并发症发生率和死亡率并不高于第 1 次肝转移灶切除后，而且可获得相同的术后生存率（3b 类证据，B 级推荐）。
+  - 原文位置：`L000172-L000172`
+
+- 在患者全身状况允许时，如果肺部和腹腔等肝外转移病灶可完全切除，也应进行同步或分阶段切除（3b 类证据，B 级推荐）。
+  - 原文位置：`L000174-L000174`
+
+### 可以达到NED状态的肿瘤局部毁损治疗
+
+- 除了手术切除肝转移灶外，射频消融、微波消融和放射治疗等方法也能使病灶发生彻底毁损。因此，对于手术切除难度较大的个别肝转移灶，应积极联合此类手段，使更多的患者有机会达到NED状态，提高 5 年生存率。
+  - 原文位置：`L000176-L000176`
+
+- 射频消融能高效破坏肝转移灶肿瘤细胞，具有使用便捷、安全性好、创伤小、可重复性强等优势，可作为肝转移灶切除手术的重要补充，使患者达到NED 状态。应用时建议病灶最大径＜3 cm，且单次消融数量不超过 5 个。然而，该技术局部复发率偏高，不作为可切除病灶的首选推荐。肝转移灶较小的患者消融治疗和手术切除后的长期生存相当。此外，对于一般情况不适宜或不愿意接受手术治疗的可切除结直肠癌肝转移患者，也可以考虑射频消融治疗，但应注意避免肝外热损伤、针道转移、感染和消融不彻底等问题。
+  - 原文位置：`L000178-L000178`
+
+- 微波消融可处理最大径＜5 cm 的肝转移灶，也可处理贴近重要血管的肝转移灶。快速高温消融使肿瘤周边微血管凝固，减少卫星灶残留风险，显著降低大病灶复发率。微波消融深部肝转移灶，也可作为手术切除主要肝转移灶的重要补充。
+  - 原文位置：`L000180-L000180`
+
+- 对于数量≤3 个、最大径≤6 cm 的肝内转移灶，SBRT 可以取得较高的局部控制率。对于最大径≤3 cm 的肝寡转移灶，SBRT 可取得与射频消融相当的局部控制率；对于最大径＞3 cm 的肝转移灶，SBRT 疗效优于射频消融，是首选的非手术局部治疗手段。
+  - 原文位置：`L000182-L000182`
+
+## 可达到 NED 状态结直肠癌肝转移的新辅助及辅助治疗
+
+### 新辅助治疗
+
+- 对可达到 NED 的结直肠癌肝转移患者可考虑进行新辅助治疗，主要基于以下几方面原因：（1）新辅助化疗提供了“窗口期”，观察有无新的无法切除的转移灶的出现，减少手术；（2）新辅助治疗可增加 R0 手术机会，增加术后残余肝脏体积；（3）新辅助化疗可作为评价化疗方案敏感性的依据，指导术后化疗方案的选择；（4）新辅助化疗的疗效可作为患者预后评估的指标之一；（5）新辅助化疗结合辅助化疗，可能改善接受治愈性手术患者的预后。
+  - 原文位置：`L000186-L000186`
+
+- 新辅助治疗的应用需关注以下情况：（1）化疗药物可能会造成肝脏损伤，例如奥沙利铂治疗相关的肝窦阻塞综合征，伊立替康治疗相关的脂肪变性和脂肪性肝炎等，均可能增加肝切除术后并发症。（2）对于影像学检查消失的转移灶，术中仍应积极探查，如使用术中超声造影等，若病灶有残存，应积极切除；若病灶消失而无法精确定位者应慎重考虑是否切除。（3）转移灶进展致使无法达到NED。
+  - 原文位置：`L000188-L000188`
+
+### 结直肠癌确诊时合并肝转移的新辅助治疗
+
+- 在原发病灶无出血、梗阻症状或无穿孔时，除肝转移灶在技术上较易切除且不存在不良预后因素的患者[如临床危险评分（CRS）＜3 分]外，可考虑应用新辅助治疗（2a 类证据，B 级推荐），尤其是肝转移灶体积较大、转移灶数量较多或存在原发病灶淋巴结可疑转移的患者。
+  - 原文位置：`L000190-L000190`
+
+- 对于 dMMR/MSI-H 患者，免疫检查点抑制剂应作为首选的新辅助治疗。对于 pMMR/MSS/MSI-L 患者，系统性化疗方案包括 FOLFOX、FOLFIRI、CapeOX 或 FOLFOXIRI，能否联合分子靶向治疗目前仍有争议，同时也可以考虑联合肝动脉灌注化疗。
+  - 原文位置：`L000192-L000192`、`L000194-L000194`
+
+- 为减少化疗对肝脏手术的不利影响，新辅助化疗原则上不超过 6 个周期（1a 类证据，A 级推荐），一般建议 2～3 个月完成并进行手术。
+  - 原文位置：`L000196-L000196`
+
+### 结直肠癌根治术后发生肝转移的新辅助治疗
+
+- 对于 dMMR/MSI-H 型患者，免疫检查点抑制剂应作为首选的新辅助治疗。对于 pMMR/MSS/MSI-L 型且原发病灶切除术后未接受化疗的患者，或者发现肝转移 12 个月前已完成化疗的患者，可采用新辅助治疗（方法同上），持续2～3个月（2a 类证据，B 级推荐）。对于肝转移发现前 12 个月内接受化疗的患者，一般认为新辅助化疗的作用可能较为有限，可直接切除肝转移灶，继而行术后辅助治疗（2a类证据，B级推荐）。也可考虑更换化疗方案进行新辅助化疗，或术前联合肝动脉灌注化疗。
+  - 原文位置：`L000198-L000198`
+
+### 肝转移灶切除术后的辅助治疗
+
+- 现有证据尚不充分，建议肝转移灶完全切除的患者接受术后辅助化疗；对于未接受过术前化疗及辅助化疗的患者，多推荐手术前后的化疗总时长不超过6个月（1类证据，A级推荐）。对于术前接受过肝动脉灌注化疗且有效的患者，术后也可考虑同时联合肝动脉灌注化疗。经过术前化疗（包括联合分子靶向药物）证实有效的方案，术后如无禁忌应该作为首选的辅助治疗方案。
+  - 原文位置：`L000200-L000200`
+
+## 无法达到 NED 状态结直肠癌肝转移的综合治疗
+
+- 无法达到NED 的结直肠癌肝转移的综合治疗包括系统性化疗和介入化疗、分子靶向治疗、免疫检查点抑制剂治疗以及针对肝脏病灶的局部治疗（如消融治疗、无水乙醇注射、放射治疗等），治疗方案的选择应基于治疗前对患者的精确评估。
+  - 原文位置：`L000202-L000202`、`L000204-L000204`
+
+- 部分初诊无法达到NED 的肝转移患者，经过系统的综合治疗后，可转化为适宜手术切除或达到NED。对于此类患者，应当采取较为积极的诱导方案，应用有效的强烈化疗，并考虑联合肝动脉灌注化疗及分子靶向药物治疗。其术后 5 年生存率与初始肝转移灶手术切除的患者相似。
+  - 原文位置：`L000206-L000206`
+
+- 对于肝转移灶始终无法达到NED 的患者，综合治疗也可明显延长中位生存期，控制疾病快速进展，明显改善生存质量。因此，积极的综合治疗对于适合强烈治疗的晚期结直肠癌肝转移患者同样意义重大。
+  - 原文位置：`L000208-L000208`
+
+## 6 不可切除结直肠癌肝转移的治疗
+
+### 6.1 dMMR/MSI-H 型患者
+
+- dMMR/MSI-H 型患者一线应首选免疫检查点抑制剂治疗，如帕博利珠单抗、纳武利尤单抗等 PD-1 单抗联合伊匹木单抗（CTLA-4 单抗），可明显提高疾病控制率和转化切除率。对于未使用过该类治疗的 dMMR/MSI-H 型患者，二线及三线治疗也可优先选择免疫检查点抑制剂，单药或两药效果较好。
+  - 原文位置：`L000210-L000210`、`L000212-L000212`
+
+### 6.2 pMMR/MSS/MSI-L 型患者
+
+- 化疗开始前应充分评估患者的身体状况和肿瘤分期，事先规划好后续治疗和严重化疗毒性反应时剂量和方案的调整，考虑患者分类、化疗安全性及将来手术或局部病灶毁损治疗的可能性。
+  - 原文位置：`L000216-L000216`
+
+### 6.2.1 系统性化疗和肝动脉灌注化疗
+
+- 对肝转移灶有潜在NED可能的患者，转化治疗至关重要，转移灶出现的早期肿瘤退缩（ETS）是预后重要指标之一。
+  - 原文位置：`L000218-L000218`
+
+### 6.2.1.1 初始化疗
+
+- 对肝转移灶有潜在NED可能的患者，首选5-FU/LV（或卡培他滨）联合奥沙利铂和（或）伊立替康的化疗方案（1b类证据，A级推荐），化疗联合分子靶向药物可进一步提高转化率（1b类证据，A级推荐）。化疗联合贝伐珠单抗有较高的疾病控制率和转化切除率；RAS野生型患者可采用化疗联合西妥昔单抗（1b类证据，A级推荐）。对于RAS野生型患者，抗EGFR治疗疗效与肿瘤部位相关：原发灶位于左半结肠（脾曲至直肠）者，抗EGFR单抗在客观缓解率和总生存期上优于抗VEGF单抗；原发灶位于右半结肠（回盲部至脾曲）者，抗EGFR单抗在客观反应率上优于抗VEGF单抗，但总生存期不如抗VEGF单抗。
+  - 原文位置：`L000220-L000220`
+
+- 以FOLFOXIRI为代表的三药化疗方案也有较高的切除转化率，在分子靶向药物无法使用且综合患者年龄、体能状况及肝功能状态等因素均适宜的情况下应作为首选，但不良反应较多。三药化疗联合贝伐珠单抗在合适的患者中可谨慎应用（2b类证据，B级推荐）。三药化疗联合抗EGFR单抗比单纯三药化疗有更高的客观缓解率，能潜在提升R0切除率，改善总生存期（2b类证据，B级推荐），但与两药化疗联合抗EGFR单抗相比，并未显著提高客观缓解率、转化切除率或长期生存率，且不良反应增加。
+  - 原文位置：`L000222-L000222`
+
+- BRAF V600E突变的结直肠癌肝转移患者预后较差，化疗联合抗EGFR治疗获益有限。初始治疗推荐采用三药化疗联合抗VEGF单抗，或BRAF抑制剂＋抗EGFR单抗±MEK抑制剂，或BRAF抑制剂＋伊立替康＋抗EGFR单抗。
+  - 原文位置：`L000224-L000224`
+
+- 对于肝转移灶始终无法达到NED的患者，首选5-FU/LV（或卡培他滨）联合奥沙利铂或伊立替康的化疗方案，也可联合分子靶向药物治疗（2b类证据，B级推荐）。含奥沙利铂和伊立替康的三药化疗反应率较高但不良反应较大，是否应用尚不明确。
+  - 原文位置：`L000226-L000226`
+
+### 6.2.1.2 维持治疗
+
+- 诱导化疗后病情缓解或稳定但肝转移灶仍无法R0切除时，可考虑进入维持治疗，如采用毒性较低的5-FU/LV或卡培他滨单药（均可联合贝伐珠单抗）或单独使用贝伐珠单抗或暂停化疗，以降低持续高强度联合化疗的毒性反应。
+  - 原文位置：`L000228-L000228`
+
+### 6.2.1.3 初始化疗病情进展后的化疗方案选择
+
+- FOLFOX（或CapeOX）方案±分子靶向治疗进展后，可改用FOLFIRI（或mXELIRI）方案；FOLFIRI方案±分子靶向治疗进展后可改用FOLFOX（或CapeOX）方案，仍可考虑与分子靶向药物联合；二线方案也可选用曲氟尿苷替匹嘧啶联合贝伐珠单抗。
+  - 原文位置：`L000230-L000230`
+
+- 病情第2次进展时，可使用曲氟尿苷替匹嘧啶±贝伐珠单抗、瑞戈非尼、呋喹替尼或西妥昔单抗（未用过此类药者，仅限RAS野生型），或最佳支持治疗（2a类证据，B级推荐）。
+  - 原文位置：`L000232-L000232`
+
+- 5-FU/LV联合分子靶向治疗后进展，应改用FOLFOX、FOLFIRI或CapeOX（均可联合分子靶向治疗），再次进展时推荐瑞戈非尼、呋喹替尼或曲氟尿苷替匹嘧啶±贝伐珠单抗，或最佳支持治疗（3b类证据，B级推荐）。
+  - 原文位置：`L000234-L000234`
+
+- 三线失败后的治疗尚无标准方案。联合抗BRAF V600E（既往未使用过该方案的伊立替康＋抗EGFR＋BRAF抑制剂，或抗EGFR＋BRAF抑制剂±MEK抑制剂）、抗HER2治疗（HER2阳性患者）、KRAS G12C抑制剂＋西妥昔单抗（KRAS G12C突变患者）可能有一定作用，但仅建议在临床研究中谨慎使用，不作为常规推荐。
+  - 原文位置：`L000236-L000236`
+
+### 6.2.1.4 联合治疗
+
+- 对于肝转移为主的肿瘤负荷较大且药物治疗效果不明显、难治性或不能耐受系统治疗的患者，在适当时机联合应用肝动脉灌注（HAI）化疗、经导管肝动脉化疗栓塞（TACE）、药物洗脱微球经动脉化疗栓塞（DEB-TACE）、90Y-SIRT等，有助于延长疾病无进展时间和总体生存期，但单独应用这些治疗并不比全身化疗更具优势。
+  - 原文位置：`L000238-L000238`
+
+### 6.2.2 局部毁损治疗
+
+- 对于无法手术切除的肝转移灶，应根据其位置、治疗目标、治疗相关并发症及患者自身情况，在系统性化疗基础上选择适当的局部毁损工具以加强局部病灶的控制，具体应由MDT进行决策并考虑患者意愿。其他治疗方法包括无水乙醇瘤内注射、局部放射性粒子植入和中医中药治疗等，仅可作为综合治疗的一部分，不推荐单独使用。
+  - 原文位置：`L000240-L000240`、`L000242-L000242`
+
+## 第二部分 诊疗流程
+
+- 包含结直肠癌确诊时肝转移的诊断、结直肠癌肝转移的预防、结直肠癌确诊时合并可切除肝转移的治疗、结直肠癌确诊时合并不可切除肝转移的治疗、结直肠癌根治术后发现肝转移的治疗、不可切除结直肠癌肝转移的治疗等流程图。
+  - 原文位置：`L000244-L000244`、`L000246-L000248`、`L000250-L000251`、`L000253-L000253`、`L000255-L000257`、`L000259-L000260`、`L000262-L000262`、`L000264-L000265`、`L000267-L000267`、`L000269-L000270`、`L000272-L000272`
+
+## 第三部分 附录
+
+### 附录1 循证医学证据级别和推荐分级
+
+- 推荐分级A对应证据级别1a（RCTs的系统综述）、1b（单项RCT，95%CI较窄）、1c（全或无）、2a（队列研究的系统综述）；B对应2b（单项队列研究或质量较差的RCT）、2c（结局研究）、3a（病例对照研究的系统综述）、3b（单项病例对照研究）；C对应4（系列病例分析及质量较差的病例对照研究）；D对应5（没有分析评价的专家意见）。
+  - 原文位置：`L000276-L000276`、`L000278-L000278`
+
+### 附录2 结直肠癌分期
+
+- AJCC第8版TNM分期：T分期包括Tx（原发肿瘤无法评估）、T0（无原发肿瘤）、Tis（原位癌）、T1（侵犯黏膜下层）、T2（侵犯固有肌层）、T3（穿透固有肌层抵达浆膜下或侵犯无腹膜覆盖的结直肠旁组织）、T4a（穿透至脏层腹膜）、T4b（与邻近器官或组织粘连或直接侵犯）。N分期包括Nx（区域淋巴结无法评估）、N0（无转移）、N1（1～3枚转移或存在癌结节而淋巴结阴性）、N1a（1枚转移）、N1b（2～3枚转移）、N1c（无区域淋巴结转移但肿瘤在浆膜下、肠系膜或无腹膜覆盖的结直肠旁或直肠系膜组织中种植）、N2（4枚或以上转移）、N2a（4～6枚）、N2b（7枚或更多）。M分期包括M0（无远处转移）、M1（有远处转移）、M1a（转移局限在单个器官或部位，无腹膜转移）、M1b（转移超过1个器官或部位，无腹膜转移）、M1c（转移至腹膜表面，伴或不伴其他器官或部位转移）。分期分组：0期（TisN0M0）、I期（T1-2N0M0）、IIA期（T3N0M0）、IIB期（T4aN0M0）、IIC期（T4bN0M0）、IIIA期（T1-2N1/1cM0）、IIIB期（T1N2aM0、T3-4aN1/1cM0、T2-3N2aM0）、IIIC期（T1-2N2bM0、T4aN2aM0、T3-4aN2bM0、T4bN1-2M0）、IVA期（任何T任何N M1a）、IVB期（任何T任何N M1b）、IVC期（任何T任何N M1c）。组织学分级：Gx（分化程度不能被评估）、G1（高度分化）、G2（中度分化）、G3（低度分化）、G4（未分化）。
+  - 原文位置：`L000280-L000280`、`L000282-L000282`、`L000284-L000285`、`L000287-L000289`、`L000291-L000291`、`L000293-L000293`、`L000295-L000295`、`L000297-L000297`、`L000299-L000299`、`L000301-L000301`、`L000303-L000303`、`L000305-L000305`、`L000307-L000307`
+
+### 附录3 临床危险评分（CRS）
+
+- CRS包括5项参数，每符合1项计1分（0～2分为低评分，3～5分为高评分）：（1）原发肿瘤淋巴结阳性；（2）同时性肝转移或原发灶切除后无病生存时间＜12个月；（3）肝转移肿瘤数目＞1；（4）术前CEA＞200ng/mL；（5）转移肿瘤最大径＞5cm。
+  - 原文位置：`L000309-L000309`、`L000311-L000311`
+
+### 附录4 分子靶向药物简介
+
+- 在无法达到NED状态的结直肠癌肝转移治疗中应用分子靶向药物已被证实安全有效，但目前不建议多种靶向药物联合应用。西妥昔单抗为人鼠嵌合型EGFR单克隆抗体，单用或联合化疗均有良好临床效果，但仅对RAS基因野生型患者有效，BRAF突变患者获益有限。可联合的化疗方案包括FOLFOX和FOLFIRI，不建议与CapeOX或5-FU静脉注射方案联用，跨线治疗是否有效存在争议。约3%的患者会出现严重输液反应，包括过敏性反应，应引起重视。
+  - 原文位置：`L000313-L000313`、`L000315-L000315`、`L000317-L000317`、`L000319-L000319`
+
+## 靶向治疗
+
+### 西妥昔单抗
+
+- 含西妥昔单抗的方案：（1）西妥昔单抗首次剂量400 mg/m²静脉滴注，输注时间为120 min，然后每周250 mg/m²输注时间为120 min，联合FOLFOXIRI或FOLFIRI或FOLFOX。（2）西妥昔单抗首次剂量400 mg/m²静脉滴注，输注时间为120 min，然后每2周500 mg/m²，输注时间为120 min，联合FOLFOXIRI或FOLFIRI或FOLFOX。
+  - 原文位置：`L000321-L000321`
+
+### 贝伐珠单抗
+
+- 贝伐珠单抗为人源化的单克隆抗体，联合化疗作为不可切除的结直肠癌肝转移一线治疗有良好的效果。同样，贝伐珠单抗在肿瘤进展后的二线治疗中疗效也得到了证实（3b类证据，B级推荐）。但贝伐珠单抗易引起出血和伤口延迟愈合，如在其治疗后需进行手术，建议手术时机选择在最后1次贝伐珠单抗使用后的6～8周。
+  - 原文位置：`L000323-L000323`
+
+- 含贝伐珠单抗的方案：（1）贝伐珠单抗5 mg/kg静脉滴注，每2周重复，联合5-FU或FOLFOX或FOLFIRI或FOLFOXIRI。（2）贝伐珠单抗7.5 mg/kg静脉滴注，每3周重复，联合CapeOX。
+  - 原文位置：`L000325-L000325`
+
+### 瑞戈非尼
+
+- 瑞戈非尼是一种口服多靶点酪氨酸激酶抑制剂（TKI），可以阻断数个促血管生成的血管内皮生长因子受体（VEGFR）、抑制与肿瘤生成和肿瘤微环境相关的多种激酶的活性。近期临床研究结果表明，RAS野生型的转移性结直肠癌患者在初始化疗进展后，应用瑞戈非尼序贯二线化疗联合分子靶向药物治疗有更好的生存获益，但仍需更多的临床研究证实。瑞戈非尼大部分的不良反应发生在治疗的早期阶段，主要包括手足皮肤反应、疲乏、腹泻、高血压、皮疹等，均可预测且可通过暂停给药、剂量下调及对症处理后缓解。
+  - 原文位置：`L000327-L000327`
+
+- 目前，瑞戈非尼已获批用于治疗之前接受过氟尿嘧啶、奥沙利铂和伊立替康为基础的化疗，以及既往接受过抗VEGF治疗，抗EGFR治疗（RAS野生型）的转移性结直肠癌患者。
+  - 原文位置：`L000329-L000329`
+
+- 瑞戈非尼用法：瑞戈非尼160 mg口服，每日1次，第1～21天，每28 d重复。
+  - 原文位置：`L000331-L000331`
+
+### 呋喹替尼
+
+- 呋喹替尼是一种口服酪氨酸激酶抑制剂（TKI），高度选择性抑制血管内皮生长因子受体（VEGFR）1、2和3三种亚型。呋喹替尼可抑制VEGFR磷酸化，从而抑制肿瘤血管生成，最终抑制肿瘤生长。全国多中心FRESCO研究发现，对于二线或以上标准化疗失败的转移性结直肠癌患者，呋喹替尼单药治疗显著延长生存，且安全性良好，不良反应可控。呋喹替尼常见的严重不良反应为高血压、手足综合征和蛋白尿等。
+  - 原文位置：`L000333-L000333`
+
+- 目前呋喹替尼已获批用于既往接受过氟尿嘧啶、奥沙利铂和伊立替康为基础的化疗，以及无论既往是否接受过抗VEGF治疗或抗EGFR治疗（RAS野生型）的转移性结直肠癌患者。
+  - 原文位置：`L000335-L000335`
+
+- 呋喹替尼用法：呋喹替尼5 mg口服，每日1次，第1～21天，每28 d重复。
+  - 原文位置：`L000337-L000337`
+
+## 化疗方案
+
+### 5-FU/LV
+
+- 5-FU/LV方案：LV 500 mg/m²静脉滴注2 h，每周1次，共6次；5-FU 500 mg/m²在LV滴注开始1 h后静脉注射，每周1次，共6次，每8周重复；5-FU 370-400 mg/m²+LV 400 mg/m²，每日1次，共5次，每4周重复。
+  - 原文位置：`L000341-L000341`
+
+### 卡培他滨
+
+- 卡培他滨1250 mg/m²，每日2次口服，第1～14天，每3周重复。
+  - 原文位置：`L000343-L000343`
+
+### FOLFOX
+
+- mFOLFOX6：奥沙利铂85 mg/m²静脉滴注2 h，第1天；LV 400 mg/m²静脉滴注2 h，第1天；5-FU 400 mg/m²静脉注射，第1天，然后1200 mg·m⁻²·d⁻¹持续静脉滴注（共2次，总量2400 mg/m²，输注46～48 h）；每2周重复。
+  - 原文位置：`L000345-L000345`
+
+### CapeOX
+
+- CapeOX：奥沙利铂130 mg/m²，第1天；卡培他滨850～1000 mg/m²，每日2次，持续14 d；每3周重复。
+  - 原文位置：`L000347-L000347`
 
 ### FOLFIRI
-- Irinotecan 180 mg/m² IV over 30–120 min, day 1
-- LV 400 mg/m² IV concurrently with irinotecan, same duration, day 1
-- 5-FU 400 mg/m² IV bolus day 1, then 1200 mg/m²/day continuous IV infusion (total 2400 mg/m² over 46–48 h)
-- Repeat every 2 weeks
+
+- FOLFIRI：伊立替康180 mg/m²，静脉滴注30～120 min，第1天；LV 400 mg/m²与伊立替康同时输注，持续时间相同，第1天；5-FU 400 mg/m²静脉注射，第1天，然后1200 mg·m⁻²·d⁻¹持续静脉滴注（共2次，总量2400 mg/m²，输注46～48 h）；每2周重复。
+  - 原文位置：`L000349-L000349`
 
 ### mXELIRI
-- Irinotecan 200 mg/m² day 1
-- Capecitabine 800 mg/m² orally twice daily for 14 days
-- Repeat every 3 weeks
+
+- mXELIRI：伊立替康200 mg/m²，第1天；卡培他滨800 mg/m²，每日2次，持续14 d；每3周重复。
+  - 原文位置：`L000351-L000351`
 
 ### FOLFOXIRI
-- Irinotecan 150 mg/m², oxaliplatin 85 mg/m², LV 400 mg/m² IV day 1
-- 5-FU 2400 mg/m² 48-h continuous IV infusion starting day 1
-- Repeat every 2 weeks
 
-### TAS-102 (trifluridine/tipiracil)
-- TAS-102 35 mg/m² (maximum single dose ≤80 mg) orally twice daily on days 1–5 and 8–12, every 28 days
-- Trifluridine interferes with DNA synthesis; tipiracil inhibits degradation of trifluridine
-- RECOURSE and TERRA trials demonstrated reduced risk of disease progression and death
-- Main adverse effect: myelosuppression; hand‑foot syndrome and diarrhea are less common
-- Approved for metastatic colorectal cancer previously treated with fluorouracil, oxaliplatin, and irinotecan‑based chemotherapy, regardless of prior anti‑VEGF or anti‑EGFR therapy (RAS wild‑type)
+- FOLFOXIRI：伊立替康150 mg/m²，奥沙利铂85 mg/m²，LV 400 mg/m²静脉滴注，第1天；5-FU 2400 mg/m² 48 h持续滴注，第1天开始；每2周重复。
+  - 原文位置：`L000353-L000353`
 
-### Raltitrexed
-- Raltitrexed 3 mg/m² IV every 3 weeks
-- Antimetabolite folate analogue; specific thymidylate synthase inhibitor causing DNA fragmentation and apoptosis
-- Approved as monotherapy for advanced colorectal cancer when 5‑FU/LV is unsuitable
-- Main adverse effects: gastrointestinal, hematological, and hepatic toxicity
+### 曲氟尿苷替匹嘧啶（TAS-102）
 
-## Immune checkpoint therapy
+- TAS-102 35 mg/m²（单次≤80 mg）口服，每日2次，第1～5天和第8～12天；每28 d重复。
+  - 原文位置：`L000355-L000355`
 
-- Pembrolizumab 200 mg day 1 every 3 weeks IV
-- Nivolumab 3 mg/kg day 1 every 2 weeks IV
-- Toripalimab 3 mg/kg day 1 every 2 weeks IV
-- Sintilimab 200 mg day 1 every 3 weeks IV
-- Camrelizumab 200 mg day 1 every 2 weeks IV
-- Tislelizumab 200 mg day 1 every 3 weeks IV
-- Serplulimab 3 mg/kg day 1 every 2 weeks IV
-- Pucotenlimab 200 mg day 1 every 3 weeks IV
-- Envafolimab 150 mg once weekly subcutaneous injection
+- TAS-102是一种新型口服核苷类复方制剂，其中曲氟尿苷干扰癌细胞DNA合成，抑制细胞增殖；替匹嘧啶抑制曲氟尿苷的代谢降解，维持有效血药浓度。国际多中心研究和研究结果均显示可降低疾病进展风险和死亡风险。常见的不良反应以骨髓抑制为主，而手足综合征、腹泻等非血液学不良反应发生率较低。目前已获批用于既往接受过氟尿嘧啶、奥沙利铂和伊立替康为基础的化疗，以及无论既往是否接受过抗VEGF治疗或抗EGFR治疗（RAS野生型）的转移性结直肠癌患者。
+  - 原文位置：`L000357-L000357`
 
-## Chemoradiotherapy for rectal cancer
+### 雷替曲塞
 
-Radiation dose: 45–54 Gy with conventional fractionation (typically 35 days). Concurrent chemotherapy:
+- 雷替曲塞3 mg/m²静脉滴注，每3周重复。
+  - 原文位置：`L000359-L000359`
 
-### Without liver metastases
-- Capecitabine 850–1000 mg/m² twice daily, 5 days per week
+- 雷替曲塞为抗代谢类叶酸类似物，特异性地抑制胸苷酸合成酶，导致DNA断裂和细胞凋亡。目前已批准在患者无法接受联合化疗时，将雷替曲塞单药用于治疗不适合5-FU/LV的晚期结直肠癌患者。主要的不良反应是对胃肠道、血液系统及肝功能的影响。
+  - 原文位置：`L000361-L000361`
 
-### With liver metastases
-- Option 1: Oxaliplatin 60 mg/m² weekly for 6 weeks; 5‑FU 200 mg/m²/day on days 1–40
-- Option 2: Irinotecan 50 mg/m² days 1, 8, 15, 22; 5‑FU 200 mg/m²/day on days 1–33
-- Option 3: Oxaliplatin 60 mg/m² weekly on day 1; capecitabine 650 mg/m² twice daily on days 1–5, for 6 weeks
+## 免疫检查点治疗
 
-## Hepatic artery and regional perfusion chemotherapy
+- 免疫检查点治疗方案如下：
+  - 原文位置：`L000365-L000365`
 
-- Regimen: oxaliplatin 75 mg/m², floxuridine 650 mg/m², mitomycin 8 mg/m²
-- Technique: Seldinger femoral artery puncture; superselective catheterization of the main tumor‑feeding artery for colorectal lesion, then hepatic artery or tumor‑feeding artery for liver metastases; half of the dose is infused into each site
+### 帕博利珠单抗
 
----
+- 帕博利珠单抗200 mg/次，第1天，每3周重复，静脉滴注。
+  - 原文位置：`L000367-L000367`
 
-## Selective Internal Radiation Therapy (SIRT)/Radioembolization
+### 纳武利尤单抗
 
-- [130] Optimal patient selection for yttrium-90 glass plus chemotherapy in CRLM: quality of life, efficacy, safety (EPOCH study)
-- [131] Systematic review and network meta-analysis of SIRT using Y-90 resin microspheres for mCRC
-- [234] Complications of transarterial radioembolization in hepatic malignancies: pathophysiological insights and management
+- 纳武利尤单抗3 mg/kg，第1天，每2周重复，静脉滴注。
+  - 原文位置：`L000369-L000369`
 
-## Liver Transplantation
+### 特瑞普利单抗
 
-- [132] Salvage liver transplantation after resection of CRLM: case report and review
-- [133] Liver transplantation plus chemotherapy vs chemotherapy alone in permanently unresectable CRLM (TransMet): randomised trial
-- [134] Review on liver transplantation for metastatic colorectal cancer
+- 特瑞普利单抗3 mg/kg，第1天，每2周重复，静脉滴注。
+  - 原文位置：`L000371-L000371`
 
-## Surgical Resection for Colorectal Liver Metastases
+### 信迪利单抗
 
-- [135] Repeat resection for advanced CRLM: potential for cure
-- [136] Outcome of surgical resection for recurrent pulmonary metastasis from colorectal carcinoma
-- [137] Liver resection for metastatic colorectal cancer in the presence of extrahepatic disease
+- 信迪利单抗200 mg/次，第1天，每3周重复，静脉滴注。
+  - 原文位置：`L000373-L000373`
 
-## Guidelines and Treatment Planning for Liver-Directed Therapies
+### 卡瑞利珠单抗
 
-- [138] American Radium Society Appropriate Use Criteria for liver-directed therapies for nonsurgical management of liver metastases: systematic review and guidelines
-- [139] Mathematical 3D liver model for surgical vs ablative therapy treatment planning: recommendations from COLLISION and COLDFIRE trials
+- 卡瑞利珠单抗200 mg/次，第1天，每2周重复，静脉滴注。
+  - 原文位置：`L000375-L000375`
 
-## Thermal Ablation
+### 替雷利珠单抗
 
-- [140] Thermal ablation with and without adjuvant systemic therapy for solitary CRLM: multicenter observational study
-- [141] SAGES/AHPBA guidelines for microwave and radiofrequency liver ablation for HCC or CRLM <5 cm
-- [143] Radiofrequency ablation versus stereotactic body radiation therapy in CRLM
-- [235] First-line radiofrequency ablation combined with systemic chemotherapy plus targeted therapy for initially unresectable CRLM
+- 替雷利珠单抗200 mg/次，第1天，每3周重复，静脉滴注。
+  - 原文位置：`L000377-L000377`
 
-## Radiotherapy (SBRT)
+### 斯鲁利单抗
 
-- [142] Stereotactic body radiation therapy for colorectal cancer liver metastases
+- 斯鲁利单抗3 mg/kg，第1天，每2周重复，静脉滴注。
+  - 原文位置：`L000379-L000379`
 
-## Chemotherapy-Related Hepatotoxicity
+### 普特利单抗
 
-- [144] Oxaliplatin-induced hepatic sinusoidal obstruction syndrome
-- [145] Chemotherapy regimen predicts steatohepatitis and increased 90-day mortality after hepatic resection for CRLM
-- [146] Steatosis predicts postoperative morbidity following hepatic resection for CRLM
-- [147] Sinusoidal injury increases morbidity after major hepatectomy in patients receiving preoperative chemotherapy
-- [168] Chemotherapy-associated hepatotoxicity: review
-- [207] Hepatic toxicities associated with preoperative systemic therapy in patients with metastatic colorectal adenocarcinoma to the liver
+- 普特利单抗200 mg/次，第1天，每3周重复，静脉滴注。
+  - 原文位置：`L000381-L000381`
 
-## Response Assessment and Disappearing Metastases
+### 恩沃利单抗
 
-- [148] Complete pathologic response after preoperative chemotherapy for CRLM: myth or reality?
-- [149] Surgical management of disappearing colorectal liver metastases
-- [150] Imaging in disappearing colorectal liver metastases and their accuracy: systematic review
-- [191] Early tumor shrinkage predicts long-term outcome in mCRC treated with cetuximab
-- [192] Initial change in tumor size predicts response and survival in mCRC treated with combination chemotherapy
-- [193] Impact of early tumor shrinkage on clinical outcome in wild-type-KRAS CRLM treated with cetuximab
-- [194] Oxaliplatin, fluorouracil, and leucovorin for patients with unresectable liver-only metastases from CRC: phase II study
+- 恩沃利单抗150 mg/次，第1次，每周重复，皮下注射。
+  - 原文位置：`L000383-L000383`
 
-## Neoadjuvant and Perioperative Chemotherapy
+## 直肠癌的联合放化疗
 
-- [151] Neoadjuvant chemotherapy before liver resection for patients with unresectable CRLM
-- [152] Rescue surgery for unresectable CRLM downstaged by chemotherapy: prediction model
-- [154] Preoperative neoadjuvant therapies for initial resectable CRLM: current landscape
-- [155] Preoperative chemotherapy in upfront resectable CRLM: review
-- [156] Perioperative chemotherapy associated with superior overall survival in synchronous CRLM
-- [157] Neoadjuvant immunotherapy alone for locally advanced and resectable metastatic CRC of dMMR/MSI-H status
-- [158] Bevacizumab, capecitabine, and oxaliplatin as neoadjuvant therapy for potentially curable mCRC
-- [159] Effect of hepatic steatosis on survival following resection of CRLM without preoperative chemotherapy
-- [164] Extended preoperative chemotherapy does not improve pathologic response and increases liver insufficiency after hepatic resection for CRLM
-- [165] Impact of neoadjuvant chemotherapy on short-term outcomes after minimally invasive minor hepatectomy for CRLM
-- [166] Role of preoperative chemotherapy in synchronous resectable CRLM: meta-analysis
-- [167] Role of preoperative chemotherapy in patients with resectable CRLM
-- [170] Neoadjuvant treatment before resection of liver metastases
-- [171] Is perioperative chemotherapy useful for solitary, metachronous, colorectal liver metastases?
-- [178] Tumor response and secondary resectability of CRLM following neoadjuvant chemotherapy with cetuximab: CELIM trial
-- [179] Chemotherapy and surgery: new perspectives on treatment of unresectable liver metastases
-- [200] Cetuximab plus chronomodulated irinotecan, 5-FU, leucovorin and oxaliplatin as neoadjuvant chemotherapy in CRLM: POCHER trial
-- [205] FOLFOXIRI plus bevacizumab as conversion therapy for initially unresectable mCRC: systematic review and pooled analysis
+- 放疗剂量总量45～54 Gy，采用常规分割剂量（通常为35 d），同时接受如下方案化疗。
+  - 原文位置：`L000387-L000387`
 
-## Adjuvant Chemotherapy and Hepatic Arterial Infusion (HAI)
+### 不伴有肝转移
 
-- [160] Hepatic arterial infusion after curative resection of colorectal cancer metastases: meta-analysis
-- [161] HAI of floxuridine and dexamethasone plus high-dose Mitomycin C for unresectable hepatic metastases
-- [162] Phase I trial of systemic oxaliplatin combination chemotherapy with HAI in unresectable liver metastases from CRC
-- [163] Hepatic artery infusion for unresectable CRC liver metastases: palliation and conversion
-- [169] Adjuvant chemotherapy for colon cancer: evidence on improvement in survival
-- [174] Adjuvant chemotherapy after resection of CRLM in high-risk patients: HAI of oxaliplatin vs modern systemic chemotherapy
-- [175] Comparison of adjuvant systemic chemotherapy with or without HAI after hepatic resection for metastatic CRC
-- [176] Randomized phase II trial of adjuvant HAI and systemic chemotherapy with or without bevacizumab in resected hepatic metastases from CRC
-- [195] Complete pathological response after TACE with DEBIRI and concomitant systemic FOLFOX: case report from FFCD 1201 trial
-- [233] Phase II trial of HAI and systemic chemotherapy for unresectable hepatic metastases from CRC: conversion to resection and long-term outcomes
-- [236] Intraarterial chemotherapy for liver metastases: review
-- [237] Transarterial chemoembolisation with irinotecan (irinotecan-TACE) as salvage or post-inductive therapy for CRC liver metastases: CIREL study
-- [238] Transarterial (chemo)embolisation versus systemic chemotherapy for CRC liver metastases: Cochrane review
-- [239] Outcomes of hepatic artery-based therapies and systemic multiagent chemotherapy in unresectable CRLM: systematic review and meta-analysis
+- 不伴有肝转移：卡培他滨850～1000 mg/m²，每日2次，每周5 d。
+  - 原文位置：`L000389-L000389`
 
-## Commentary on Ablation
+### 伴有肝转移
 
-- [177] Commentary: radiofrequency ablation for CRLM: do not blame the biology when it is the technology
+- 伴有肝转移：奥沙利铂每周60 mg/m²，共6周；5-FU 200 mg/m²，第1～40天。伊立替康50 mg/m²，第1、8、15、22天；5-FU 200 mg/m²，第1～33天。奥沙利铂每周第1天60 mg/m²，卡培他滨第1～5天650 mg/m²每日2次，共6周。
+  - 原文位置：`L000391-L000391`
 
-## Systemic Chemotherapy Regimens
+## 肝动脉和结直肠肿瘤区域联合灌注化疗
 
-- [153] Outcome of primary tumor in patients with synchronous stage IV CRC receiving combination chemotherapy without surgery as initial treatment
-- [180] Randomized trial of reduced-dose bolus fluorouracil/leucovorin and irinotecan vs infused fluorouracil/leucovorin and oxaliplatin in untreated mCRC
-- [181] Dose-finding study of weekly 24-h continuous infusion 5-FU alternating with oxaliplatin or irinotecan in advanced CRC
-- [182] Phase III trial of FOLFOXIRI vs FOLFIRI as first-line treatment for mCRC
-- [183] FOLFIRI followed by FOLFOX6 or reverse sequence in advanced CRC: GERCOR study
-- [184] Safety and efficacy of oxaliplatin/fluoropyrimidine regimens with or without bevacizumab as first-line: TREE study
-- [201] FOLFOXIRI vs FOLFIRI as first-line in mCRC: HORG phase III
-- [202] Upfront FOLFOXIRI+bevacizumab and reintroduction after progression vs sequential mFOLFOX6/FOLFIRI with bevacizumab (TRIBE2)
-- [203] FOLFOXIRI+bevacizumab vs FOLFIRI+bevacizumab: updated overall survival and molecular subgroup analyses (TRIBE)
-- [204] Upfront FOLFOXIRI+bevacizumab followed by maintenance fluoropyrimidine and bevacizumab in molecularly unselected mCRC
-- [215] Modified XELIRI vs FOLFIRI, both with or without bevacizumab, as second-line therapy for mCRC (AXEPT)
-- [216] Sequential vs combination chemotherapy for advanced CRC (FFCD 2000-05)
-- [217] Sequential vs combination chemotherapy with capecitabine, irinotecan, and oxaliplatin in advanced CRC (CAIRO)
-- [218] Different strategies of sequential and combination chemotherapy for poor prognosis advanced CRC (MRC FOCUS)
+- 奥沙利铂75 mg/m²，氟尿嘧啶脱氧核苷650 mg/m²，丝裂霉素8 mg/m²。
+  - 原文位置：`L000395-L000395`
 
-## Immunotherapy for MSI-H/dMMR Colorectal Cancer
+- 采用股动脉穿刺法（Seldinger法），经动脉导管超选择插管至结直肠肿瘤主要的滋养动脉内注入化疗1/2剂量；再超选择插管至肝固有动脉或肝肿瘤的滋养动脉内注入1/2剂量。
+  - 原文位置：`L000397-L000397`
 
-- [185] Pembrolizumab in microsatellite-instability-high advanced colorectal cancer
-- [186] Health-related quality of life in MSI-H/dMMR mCRC treated with first-line pembrolizumab vs chemo (KEYNOTE-177)
-- [187] PD-1 blockade in tumors with mismatch-repair deficiency
-- [188] Efficacy of pembrolizumab in patients with noncolorectal high MSI/dMMR cancer: KEYNOTE-158
-- [189] First-line nivolumab plus low-dose ipilimumab for MSI-H/dMMR mCRC: CheckMate 142
-- [190] Phase II pembrolizumab in treatment-refractory MSI-H/dMMR mCRC: KEYNOTE-164
+## 参考文献
 
-## Targeted Therapy: Anti-EGFR and Bevacizumab
+- Koshariya M, Jagad R B, Kawamoto J, et al. An update and our experience with metastatic liver disease[J]. Hepatogastroenterology, 2007, 54(80): 2232-2239.
+  - 原文位置：`L000447-L000447`
 
-- [196] Bevacizumab plus mFOLFOX6 vs mFOLFOX6 alone as first-line for RAS mutant unresectable colorectal liver-limited metastases: BECOME trial
-- [197] Cetuximab plus chemotherapy for KRAS wild-type unresectable colorectal liver-limited metastases: randomized trial
-- [198] Modified FOLFOXIRI with or without cetuximab as conversion therapy in RAS/BRAF wild-type unresectable liver metastases CRC: FOCULM phase II
-- [199] Cetuximab and chemotherapy as initial treatment for metastatic CRC
-- [206] PIK3CA, BRAF, and PTEN status and benefit from cetuximab in advanced CRC: NCIC CTG/AGITG CO.17
-- [223] Bevacizumab combined with chemotherapy in second-line treatment of mCRC: BEVACOLOR phase II
-- [224] Second-line cetuximab plus FOLFIRI in KRAS wild-type mCRC: FLIER study
-- [225] Bevacizumab plus irinotecan, fluorouracil, and leucovorin for mCRC
+- Komborozos V A, Skrekas G J, Pissiotis C A. The contribution of follow-up programs in the reduction of mortality of rectal cancer recurrences[J]. Dig Surg, 2001, 18(5): 403-408.
+  - 原文位置：`L000449-L000449`
 
-## Maintenance Strategies
+- Tsikitis V L, Malireddy K, Green E A, et al. Postoperative surveillance recommendations for early stage colon cancer based on results from the clinical outcomes of surgical therapy trial[J]. J Clin Oncol, 2009, 27(22): 3671-3676.
+  - 原文位置：`L000451-L000451`
 
-- [208] Maintenance strategy in metastatic colorectal cancer: systematic review
-- [209] Maintenance treatment with capecitabine and bevacizumab vs observation in mCRC: updated CAIRO3 molecular subgroups
-- [210] Maintenance strategies after first-line oxaliplatin+fluoropyrimidine+bevacizumab: AIO 0207 phase 3
-- [211] Maintenance treatment with capecitabine and bevacizumab in mCRC (CAIRO3): phase 3
-- [212] Effect of application and intensity of bevacizumab-based maintenance after induction chemo with bevacizumab: meta-analysis
-- [213] Role of maintenance strategies in mCRC: systematic review and network meta-analysis
-- [214] Bevacizumab maintenance vs no maintenance during chemotherapy-free intervals in mCRC (PRODIGE 9)
+- Pfister D G, Benson A B 3rd, Somerfield M R. Clinical practice. Surveillance strategies after curative treatment of colorectal cancer[J]. N Engl J Med, 2004, 350(23): 2375-2382.
+  - 原文位置：`L000453-L000453`
 
-## Refractory Colorectal Cancer Treatment
+- Locker G Y, Hamilton S, Harris J, et al. ASCO 2006 update of recommendations for the use of tumor markers in gastrointestinal cancer[J]. J Clin Oncol, 2006, 24(33): 5313-5327.
+  - 原文位置：`L000455-L000455`
 
-- [219] Randomized trial of TAS-102 for refractory metastatic colorectal cancer
-- [220] Trifluridine/tipiracil vs placebo in heavily pretreated metastatic gastric cancer (TAGS)
-- [221] Regorafenib monotherapy for previously treated mCRC (CORRECT)
-- [222] Fruquintinib vs placebo on overall survival in previously treated mCRC (FRESCO)
+- Desch C E, Benson A B 3rd, Somerfield M R, et al. Colorectal cancer surveillance: 2005 update of an American Society of Clinical Oncology practice guideline[J]. J Clin Oncol, 2005, 23(33): 8512-8519.
+  - 原文位置：`L000457-L000457`
 
-## BRAF V600E-Mutant Colorectal Cancer
+- Rex D K, Kahi C J, Levin B, et al. Guidelines for colonoscopy surveillance after cancer resection: a consensus update by the American Cancer Society and the US multi-society task force on colorectal cancer[J]. Gastroenterology, 2006, 130(6): 1865-1871.
+  - 原文位置：`L000459-L000459`
 
-- [226] Advances in the therapy of BRAF V600E metastatic CRC
-- [227] Encorafenib plus cetuximab as new standard of care for previously treated BRAF V600E-mutant mCRC: BEACON updated
-- [228] Randomized trial of irinotecan and cetuximab with or without vemurafenib in BRAF-mutant mCRC (SWOG S1406)
+- Moreira L, Balaguer F, Lindor N, et al. Identification of Lynch syndrome among patients with colorectal cancer[J]. JAMA, 2012, 308(15): 1555-1565.
+  - 原文位置：`L000461-L000461`
 
-## HER2-Targeted Therapy
+- Umar A, Boland C R, Terdiman J P, et al. Revised Bethesda guidelines for hereditary nonpolyposis colorectal cancer (Lynch syndrome) and microsatellite instability[J]. J Natl Cancer Inst, 2004, 96(4): 261-268.
+  - 原文位置：`L000463-L000463`、`L000465-L000465`
 
-- [229] Pertuzumab plus trastuzumab for HER2-amplified mCRC (MyPathway): updated
-- [230] Dual-targeted therapy with trastuzumab and lapatinib in treatment-refractory, KRAS wild-type, HER2-positive mCRC (HERACLES)
-- [231] Trastuzumab deruxtecan in HER2-expressing mCRC (DESTINY-CRC01)
-- [232] HER2 targeted therapy in colorectal cancer: new horizons
+- Buchanan D D, Clendenning M, Rosty C, et al. Tumor testing to identify Lynch syndrome in two Australian colorectal cancer cohorts[J]. J Gastroenterol Hepatol, 2017, 32(2): 427-438.
+  - 原文位置：`L000467-L000467`
 
-## Multidisciplinary Management and Expert Consensus
+- Mulet-margalef N, Linares J, Badia-ramentol J, et al. Challenges and therapeutic opportunities in the dMMR/MSI-H colorectal cancer landscape[J]. Cancers (Basel), 2023, 15(4): 1022.
+  - 原文位置：`L000469-L000469`
 
-- [172] Systemic cytotoxic and biological therapies of colorectal liver metastases: expert consensus statement
-- [173] Multidisciplinary management of patients with liver metastasis from colorectal cancer
+- Chen S N, Watson P, Parmigiani G. Accuracy of MSI testing in predicting germline mutations of MSH2 and MLH1: a case study in Bayesian meta-analysis of diagnostic tests without a gold standard[J]. Biostatistics, 2005, 6(3): 450-464.
+  - 原文位置：`L000471-L000471`
 
----
+- Hempelmann J A, Lockwood C M, Konnick E Q, et al. Microsatellite instability in prostate cancer by PCR or next-generation sequencing[J]. J Immunother Cancer, 2018, 6(1): 29.
+  - 原文位置：`L000473-L000473`
 
-## Guideline Citation
+- Stelloo E, Jansen A L, Osse E M, et al. Practical guidance for mismatch repair-deficiency testing in endometrial cancer[J]. Ann Oncol, 2017, 28(1): 96-102.
+  - 原文位置：`L000475-L000475`
 
-- **Title**: 结直肠癌肝转移诊断和综合治疗指南（2025版）
-- **Authors**: Chinese College of Surgeons, Chinese Medical Doctor Association; Gastrointestinal Surgery Group, Chinese Society of Surgery, Chinese Medical Association; Colorectal Surgery Group, Chinese Society of Surgery, Chinese Medical Association; et al.
-- **Reference**: Chin J Clin Med, 2026, 33(1): 160-190. DOI: 10.12025/j.issn.1008-6358.2025.20250902
+- Modest D P, Ricard I, Heinemann V, et al. Outcome according to KRAS-, NRAS- and BRAF-mutation as well as KRAS mutation variants: pooled analysis of five randomized trials in metastatic colorectal cancer by the AIO colorectal cancer study group[J]. Ann Oncol, 2016, 27(9): 1746-1753.
+  - 原文位置：`L000477-L000477`
+
+- Therkildsen C, Bergmann T K, Henrichsen-schnack T, et al. The predictive value of KRAS, NRAS, BRAF, PIK3CA and PTEN for anti-EGFR treatment in metastatic colorectal cancer: a systematic review and meta-analysis[J]. Acta Oncol, 2014, 53(7): 852-864.
+  - 原文位置：`L000479-L000479`
+
+- Schirripa M, Cremolini C, Loupakis F, et al. Role of NRAS mutations as prognostic and predictive markers in metastatic colorectal cancer[J]. Int J Cancer, 2015, 136(1): 83-90.
+  - 原文位置：`L000481-L000481`
+
+- Brudvik K W, Mise Y, Chung M H, et al. RAS mutation predicts positive resection margins and narrower resection margins in patients undergoing resection of colorectal liver metastases[J]. Ann Surg Oncol, 2016, 23(8): 2635-2643.
+  - 原文位置：`L000483-L000483`
+
+- Passot G, Chun Y S, Kopetz S E, et al. Prognostic factors after resection of colorectal liver metastases following preoperative second-line chemotherapy: Impact of RAS mutations[J]. Eur J Surg Oncol, 2016, 42(9): 1378-1384.
+  - 原文位置：`L000485-L000485`
+
+- Margonis G A, Buettner S, Andreatos N, et al. Anatomical resections improve disease-free survival in patients with KRAS-mutated colorectal liver metastases[J]. Ann Surg, 2017, 266(4): 641-649.
+  - 原文位置：`L000487-L000487`、`L000489-L000489`
+
+- Sorich M J, Wiese M D, Rowland A, et al. Extended RAS mutations and anti-EGFR monoclonal antibody survival benefit in metastatic colorectal cancer: a meta-analysis of randomized, controlled trials[J]. Ann Oncol, 2015, 26(1): 13-21.
+  - 原文位置：`L000491-L000491`
+
+- Mao C, Yang Z Y, Hu X F, et al. PIK3CA exon 20 mutations as a potential biomarker for resistance to anti-EGFR monoclonal antibodies in KRAS wild-type metastatic colorectal cancer: a systematic review and meta-analysis[J]. Ann Oncol, 2012, 23(6): 1518-1525.
+  - 原文位置：`L000493-L000493`
+
+- Yaeger R, Weiss J, Pelster M S, et al. Adagrasib with or without cetuximab in colorectal cancer with mutated KRAS G12C[J]. N Engl J Med, 2023, 388(1): 44-54.
+  - 原文位置：`L000495-L000495`
+
+- Fakih M G, Salvatore L, Esaki T, et al. Sotorasib plus panitumumab in refractory colorectal cancer with mutated KRAS G12C[J]. N Engl J Med, 2023, 389(23): 2125-2139.
+  - 原文位置：`L000497-L000497`
+
+- Kopetz S, Grothey A, Yaeger R, et al. Encorafenib, binimetinib, and cetuximab in BRAF V600E-mutated colorectal cancer[J]. N Engl J Med, 2019, 381(17): 1632-1643.
+  - 原文位置：`L000499-L000499`
+
+- van Cutsem E, Huijberts S, Grothey A, et al. Binimetinib, encorafenib, and cetuximab triplet therapy for patients with BRAF V600E-mutant metastatic colorectal cancer: safety lead-in results from the phase Ⅲ BEACON colorectal cancer study[J]. J Clin Oncol, 2019, 37(17): 1460-1469.
+  - 原文位置：`L000501-L000501`
+
+- Guren T K, Thomsen M, Kure E H, et al. Cetuximab in treatment of metastatic colorectal cancer: final survival analyses and extended RAS data from the NORDIC-VII study[J]. Br J Cancer, 2017, 116(10): 1271-1278.
+  - 原文位置：`L000503-L000503`
+
+- Sinicrope F A, Shi Q, Allegra C J, et al. Association of DNA mismatch repair and mutations in BRAF and KRAS with survival after recurrence in stage Ⅲ colon cancers: a secondary analysis of 2 randomized clinical trials[J]. JAMA Oncol, 2017, 3(4): 472-480.
+  - 原文位置：`L000505-L000505`
+
+- Pikoulis E, Margonis G A, Andreatos N, et al. Prognostic role of BRAF mutations in colorectal cancer liver metastases[J]. Anticancer Res, 2016, 36(9): 4805-4811.
+  - 原文位置：`L000507-L000507`
+
+- Guler I, Askan G, Klostergaard J, et al. Precision medicine for metastatic colorectal cancer: an evolving era[J]. Expert Rev Gastroenterol Hepatol, 2019, 13(10): 919-931.
+  - 原文位置：`L000509-L000509`
+
+- Allgäuer M, Budczies J, Christopoulos P, et al. Implementing tumor mutational burden (TMB) analysis in routine diagnostics-a primer for molecular pathologists and clinicians[J]. Transl Lung Cancer Res, 2018, 7(6): 703-715.
+  - 原文位置：`L000511-L000511`
+
+- Ambrosini M, Rousseau B, Manca P, et al. Immune checkpoint inhibitors for POLE or POLD1 proofreading-deficient metastatic colorectal cancer[J]. Ann Oncol, 2024, 35(7): 643-655.
+  - 原文位置：`L000513-L000513`
+
+- Cocco E, Scaltriti M, Drilon A. NTRK fusion-positive cancers and TRK inhibitor therapy[J]. Nat Rev Clin Oncol, 2018, 15(12): 731-747.
+  - 原文位置：`L000515-L000515`
+
+- Kojitani Y, Takeda M. Current status of precision medicine in colorectal cancer in Japan[J]. Int J Mol Sci, 2025, 26(11): 5029.
+  - 原文位置：`L000517-L000517`
+
+- Lin K X, Istl A C, Quan D, et al. PD-1 and PD-L1 inhibitors in cold colorectal cancer: challenges and strategies[J]. Cancer Immunol Immunother, 2023, 72(12): 3875-3893.
+  - 原文位置：`L000519-L000519`
+
+- Artale S, Sartore-bianchi A, Veronese S M, et al. Mutations of KRAS and BRAF in primary and matched metastatic sites of colorectal cancer[J]. J Clin Oncol, 2008, 26(25): 4217-4219.
+  - 原文位置：`L000521-L000521`
+
+- Etienne-grimaldi M C, Formento J L, Francoual M, et al. K-Ras mutations and treatment outcome in colorectal cancer patients receiving exclusive fluoropyrimidine therapy[J]. Clin Cancer Res, 2008, 14(15): 4830-4835.
+  - 原文位置：`L000523-L000523`
+
+- Knijn N, Mekenkamp L J M, Klomp M, et al. KRAS mutation analysis: a comparison between primary tumours and matched liver metastases in 305 colorectal cancer patients[J]. Br J Cancer, 2011, 104(6): 1020-1026.
+  - 原文位置：`L000525-L000525`
+
+- Ho H Y, Chung K K, Kan C M, et al. Liquid biopsy in the clinical management of cancers[J]. Int J Mol Sci, 2024, 25(16): 8594.
+  - 原文位置：`L000527-L000527`
+
+- Kawashima M, Yamada T, Miyasaka T, et al. Impact of minimal residual disease on early recurrence of liver metastatic colorectal cancer[J]. Cancer Sci, 2025, 116(5): 1366-1374.
+  - 原文位置：`L000529-L000529`
+
+- Parikh A R, Chee B H, Tsai J, et al. Minimal residual disease using a plasma-only circulating tumor DNA assay to predict recurrence of metastatic colorectal cancer following curative intent treatment[J]. Clin Cancer Res, 2024, 30(14): 2964-2973.
+  - 原文位置：`L000531-L000531`
+
+- Chau I, Chan S, Cunningham D. Overview of preoperative and postoperative therapy for colorectal cancer: the European and United States perspectives[J]. Clin Colorectal Cancer, 2003, 3(1): 19-33.
+  - 原文位置：`L000533-L000533`、`L000535-L000535`
+
+- Yu J H, Liao L E, Xiao B Y, et al. Long-term outcomes of dMMR/MSI-H rectal cancer treated with anti-PD-1-based immunotherapy as curative-intent treatment[J]. J Natl Compr Canc Netw, 2024, 22(3): e237096.
+  - 原文位置：`L000537-L000537`
+
+- Gervaso L, Ciardiello D, Oliveira R A, et al. Immunotherapy in the neoadjuvant treatment of gastrointestinal tumors: is the time ripe?[J]. J Immunother Cancer, 2024, 12(5): e008027.
+  - 原文位置：`L000539-L000539`
+
+- Zhou L 等的 Meta 分析评估了新辅助免疫治疗在非转移性结直肠癌中的作用。
+  - 原文位置：`L000541-L000541`
+
+- Schrag D 等的 PROSPECT 试验研究了局部晚期直肠癌的术前治疗。
+  - 原文位置：`L000543-L000543`
+
+- Basch E 等报告了 PROSPECT 试验中患者报告结局。
+  - 原文位置：`L000545-L000545`
+
+- Yang L 等的系统评价评估了新辅助放化疗联合免疫治疗对局部晚期直肠癌的疗效和安全性。
+  - 原文位置：`L000547-L000547`
+
+- Tsukada Y 等报告了术前放化疗联合纳武利尤单抗在 MSS 和 MSI-H 局部晚期直肠癌中的三年结局。
+  - 原文位置：`L000549-L000549`
+
+- Gao Y Y 和 Wu A W 讨论了 MSS 直肠癌的器官保留。
+  - 原文位置：`L000551-L000551`
+
+- Cercek A 等探讨了局部晚期直肠癌采用全程新辅助治疗的采纳情况。
+  - 原文位置：`L000553-L000553`
+
+- Petrelli F 等的系统评价和 Meta 分析评估了直肠癌全程新辅助治疗的治疗结局。
+  - 原文位置：`L000555-L000555`
+
+- Turri G 等的网络 Meta 分析比较了全程新辅助治疗时代局部晚期直肠癌的治疗方案。
+  - 原文位置：`L000557-L000557`
+
+- Socha J 等叙述性综述讨论了计划采用全程新辅助治疗和观察等待策略的肿瘤学风险。
+  - 原文位置：`L000559-L000559`、`L000561-L000561`
+
+- Lin W J 等的系统评价和 Meta 分析比较了直肠癌全程新辅助治疗与标准长程放化疗的手术结局。
+  - 原文位置：`L000563-L000563`
+
+- Xu J M 等研究了术前肝动脉和区域动脉化疗预防结直肠癌术后肝转移的作用。
+  - 原文位置：`L000565-L000565`
+
+- Chang W J 等的随机对照试验评估了门静脉化疗联合辅助化疗（mFOLFOX6）对Ⅱ期和Ⅲ期结肠癌的作用。
+  - 原文位置：`L000567-L000567`
+
+- Sugihara K 等比较了亚洲和西方研究中 FOLFOX4 治疗结直肠癌的安全性。
+  - 原文位置：`L000569-L000569`
+
+- Rodríguez-Moranta F 等的随机对照试验评估了结直肠癌根治性切除术后患者的术后监测。
+  - 原文位置：`L000571-L000571`
+
+- André T 等的 MOSAIC 试验显示奥沙利铂、氟尿嘧啶和亚叶酸钙辅助治疗Ⅱ期或Ⅲ期结肠癌可改善总生存期。
+  - 原文位置：`L000573-L000573`
+
+- Philip Kuebler J 等的 NSABP C-07 试验评估了奥沙利铂联合每周推注氟尿嘧啶和亚叶酸钙作为Ⅱ期和Ⅲ期结肠癌的手术辅助化疗。
+  - 原文位置：`L000575-L000575`
+
+- Baxter N N 等的 ASCO 指南更新了Ⅱ期结肠癌的辅助治疗。
+  - 原文位置：`L000577-L000577`
+
+- Yu T K 等研究了直肠癌手术和放疗或放化疗后局部区域复发的模式。
+  - 原文位置：`L000579-L000579`
+
+- Fennell M L 等探讨了多学科护理团队的组织及其对癌症护理质量的影响。
+  - 原文位置：`L000581-L000581`、`L000583-L000583`
+
+- Nordlinger B 等讨论了结直肠癌肝转移化疗和手术的时机。
+  - 原文位置：`L000585-L000585`
+
+- Miller E D 等的专家调查和系统评价考虑了转移灶导向治疗在转移性结直肠癌中的应用。
+  - 原文位置：`L000587-L000587`
+
+- Wright F C 等的系统评价制定了多学科癌症会议实践标准。
+  - 原文位置：`L000589-L000589`
+
+- Jung S M 等研究了多学科团队方法对管理晚期和复发性结直肠癌的影响。
+  - 原文位置：`L000591-L000591`
+
+- Hernandez Dominguez O 等综述了Ⅳ期结直肠癌的管理和治疗。
+  - 原文位置：`L000593-L000593`
+
+- Al Bitar S 等综述了靶向结直肠癌耐药和转移的分子机制。
+  - 原文位置：`L000595-L000595`
+
+- Karaoğlan B B 等全面综述了同时性结直肠癌肝转移的管理进展，包括手术、全身和局部治疗方式。
+  - 原文位置：`L000597-L000597`
+
+- Swan P J 等报告了延迟就诊和切除结直肠癌肝转移后的长期生存。
+  - 原文位置：`L000599-L000599`
+
+- Rahbari N N 等的随机临床试验比较了前入路与传统肝切除术治疗结直肠癌肝转移。
+  - 原文位置：`L000601-L000601`
+
+- Ambrosini M 等综述了 MSI-H/dMMR 癌症的流行病学、发病机制、生物学和不断发展的管理。
+  - 原文位置：`L000603-L000603`
+
+- Margalit O 等研究了 dMMR/MSI-H 转移性结直肠癌患者免疫治疗的持续时间。
+  - 原文位置：`L000605-L000605`
+
+- Andre T 等研究了纳武利尤单抗联合伊匹木单抗治疗微卫星高度不稳定转移性结直肠癌。
+  - 原文位置：`L000607-L000607`、`L000609-L000609`
+
+- Bae H W 等研究了局部晚期直肠癌伴同时性肝转移患者接受前期化疗和短程放疗并延迟手术的治疗方案。
+  - 原文位置：`L000611-L000611`
+
+- Huang Y Y 等研究了直肠癌伴同时性潜在可治疗肝转移患者的盆腔放疗。
+  - 原文位置：`L000613-L000613`
+
+- Datta J 等综述了肝动脉灌注化疗在初始不可切除结直肠癌肝转移治疗中的作用。
+  - 原文位置：`L000615-L000615`
+
+- Kanani A 等综述了新辅助免疫治疗在原发性及转移性结直肠癌中的应用。
+  - 原文位置：`L000617-L000617`
+
+- Mattar R E 等研究了结直肠癌肝转移患者肝切除的术前选择。
+  - 原文位置：`L000619-L000619`
+
+- Lin Q 等的 RECUT 多中心随机对照试验评估了无症状同时性不可切除结直肠肝局限转移患者原发肿瘤切除前化疗的作用。
+  - 原文位置：`L000621-L000621`
+
+- Kobayashi K 等基于预后因素和可切除性探讨了复发性结直肠癌肝转移的治疗策略，以及多学科治疗的潜在获益。
+  - 原文位置：`L000623-L000623`
+
+- Akgül Ö 等综述了手术在结直肠癌肝转移中的作用。
+  - 原文位置：`L000625-L000625`
+
+- Zhu D X 等分析了 1613 例连续结直肠癌肝转移患者的结局。
+  - 原文位置：`L000627-L000627`
+
+- Rengers T 和 Warner S 讨论了结直肠癌肝转移手术的解剖性和非解剖性入路。
+  - 原文位置：`L000629-L000629`
+
+- Kataoka K 等研究了切除的结直肠癌肝转移患者前期手术后无复发生存期与总生存期之间的相关性。
+  - 原文位置：`L000631-L000631`
+
+- Khan A S 等综述了重大肝切除术前肝脏体积的评估和优化指南。
+  - 原文位置：`L000633-L000633`、`L000635-L000635`
+
+- 参考文献[108]-[150]
+  - 原文位置：`L000637-L000637`、`L000639-L000639`、`L000641-L000641`、`L000643-L000643`、`L000645-L000645`、`L000647-L000647`、`L000649-L000649`、`L000651-L000651`、`L000653-L000653`、`L000655-L000655`、`L000657-L000657`、`L000659-L000659`、`L000661-L000661`、`L000663-L000663`、`L000665-L000665`、`L000667-L000667`、`L000669-L000669`、`L000671-L000671`、`L000673-L000673`、`L000675-L000675`、`L000677-L000677`、`L000679-L000679`、`L000681-L000681`、`L000683-L000683`、`L000685-L000685`、`L000687-L000687`、`L000689-L000689`、`L000691-L000691`、`L000693-L000693`、`L000695-L000695`、`L000697-L000697`、`L000699-L000699`、`L000701-L000701`、`L000703-L000703`、`L000705-L000705`、`L000707-L000707`、`L000709-L000709`、`L000711-L000711`、`L000713-L000713`、`L000715-L000715`、`L000717-L000717`、`L000719-L000719`、`L000721-L000721`、`L000723-L000723`、`L000725-L000725`
+
+- Leonard G D, Brenner B, Kemeny N E. Neoadjuvant chemotherapy before liver resection for patients with unresectable liver metastases from colorectal carcinoma[J]. J Clin Oncol, 2005, 23(9): 2038-2048.
+  - 原文位置：`L000727-L000727`
+
+- Adam R, Delvart V, Pascal G, et al. Rescue surgery for unresectable colorectal liver metastases downstaged by chemotherapy: a model to predict longterm survival[J]. Ann Surg, 2004, 240(4): 644-657.
+  - 原文位置：`L000729-L000729`
+
+- Poultsides G A, Servais E L, Saltz L B, et al. Outcome of primary tumor in patients with synchronous stage Ⅳ colorectal cancer receiving combination chemotherapy without surgery as initial treatment[J]. J Clin Oncol, 2009, 27(20): 3379-3384.
+  - 原文位置：`L000731-L000731`
+
+- Cheng X F, Zhao F, Chen D, et al. Current landscape of preoperative neoadjuvant therapies for initial resectable colorectal cancer liver metastasis[J]. World J Gastroenterol, 2024, 30(7): 663-672.
+  - 原文位置：`L000733-L000733`
+
+- Bernardi L, Roesel R, Aghayan D L, et al. Preoperative chemotherapy in upfront resectable colorectal liver metastases: new elements for an old dilemma?[J]. Cancer Treat Rev, 2024, 124: 102696.
+  - 原文位置：`L000735-L000735`
+
+- Sarkar J, Attwood K, Schwarz R E. Perioperative chemotherapy is associated with superior overall survival in patients with synchronous colorectal liver metastases[J]. Ann Surg Oncol, 2023, 30(13): 7986-7995.
+  - 原文位置：`L000737-L000737`
+
+- Li Y J, Tan L X, Chen N, et al. Neoadjuvant immunotherapy alone for patients with locally advanced and resectable metastatic colorectal cancer of dMMR/MSI-H status[J]. Dis Colon Rectum, 2024, 67(11): 1413-1422.
+  - 原文位置：`L000739-L000739`
+
+- Gruenberger B, Tamandl D, Schueller J, et al. Bevacizumab, capecitabine, and oxaliplatin as neoadjuvant therapy for patients with potentially curable metastatic colorectal cancer[J]. J Clin Oncol, 2008, 26(11): 1830-1835.
+  - 原文位置：`L000741-L000741`
+
+- Parkin E, O’reilly D A, Adam R, et al. The effect of hepatic steatosis on survival following resection of colorectal liver metastases in patients without preoperative chemotherapy[J]. HPB (Oxford), 2013, 15(6): 463-472.
+  - 原文位置：`L000743-L000743`
+
+- Clancy T E, Dixon E, Perlis R, et al. Hepatic arterial infusion after curative resection of colorectal cancer metastases: a meta-analysis of prospective clinical trials[J]. J Gastrointest Surg, 2005, 9(2): 198-206.
+  - 原文位置：`L000745-L000745`
+
+- Kemeny N, Eid A, Stockman J, et al. Hepatic arterial infusion of floxuridine and dexamethasone plus highdose Mitomycin C for patients with unresectable hepatic metastases from colorectal carcinoma[J]. J Surg Oncol, 2005, 91(2): 97-101.
+  - 原文位置：`L000747-L000747`
+
+- Kemeny N, Jarnagin W, Paty P, et al. Phase Ⅰ trial of systemic oxaliplatin combination chemotherapy with hepatic arterial infusion in patients with unresectable liver metastases from colorectal cancer[J]. J Clin Oncol, 2005, 23(22): 4888-4896.
+  - 原文位置：`L000749-L000749`、`L000751-L000751`
+
+- Zaidi M Y, Nussbaum D P, Hsu S D, et al. Hepatic artery infusion for unresectable colorectal cancer liver metastases: palliation and conversion[J]. Surgery, 2023, 174(2): 428-430.
+  - 原文位置：`L000753-L000753`
+
+- Kishi Y, Zorzi D, Contreras C M, et al. Extended preoperative chemotherapy does not improve pathologic response and increases postoperative liver insufficiency after hepatic resection for colorectal liver metastases[J]. Ann Surg Oncol, 2010, 17(11): 2870-2876.
+  - 原文位置：`L000755-L000755`
+
+- Hoogteijling T J, Abu Hilal M, Zimmitti G, et al. Impact of neoadjuvant chemotherapy on short-term outcomes after simple and complex minimally invasive minor hepatectomy for colorectal liver metastases: a propensity-score matched and coarsened exact matched study[J]. Eur J Surg Oncol, 2024, 50(6): 108309.
+  - 原文位置：`L000757-L000757`
+
+- Tepelenis K, Pappas-gogos G, Ntellas P, et al. The role of preoperative chemotherapy in the management of synchronous resectable colorectal liver metastases: a meta-analysis[J]. Curr Oncol, 2023, 30(5): 4499-4511.
+  - 原文位置：`L000759-L000759`
+
+- Benoist S, Nordlinger B. The role of preoperative chemotherapy in patients with resectable colorectal liver metastases[J]. Ann Surg Oncol, 2009, 16(9): 2385-2390.
+  - 原文位置：`L000761-L000761`
+
+- Choti M A. Chemotherapy-associated hepatotoxicity: do we need to be concerned?[J]. Ann Surg Oncol, 2009, 16(9): 2391-2394.
+  - 原文位置：`L000763-L000763`
+
+- Samantas E, Dervenis C, Rigatos S K. Adjuvant chemotherapy for colon cancer: evidence on improvement in survival[J]. Dig Dis, 2007, 25(1): 67-75.
+  - 原文位置：`L000765-L000765`
+
+- Benoist S, Nordlinger B. Neoadjuvant treatment before resection of liver metastases[J]. Eur J Surg Oncol, 2007, 33(Suppl 2): S35-S41.
+  - 原文位置：`L000767-L000767`
+
+- Adam R, Bhangui P, Poston G, et al. Is perioperative chemotherapy useful for solitary, metachronous, colorectal liver metastases?[J]. Ann Surg, 2010, 252(5): 774-787.
+  - 原文位置：`L000769-L000769`
+
+- Schwarz R E, Berlin J D, Lenz H J, et al. Systemic cytotoxic and biological therapies of colorectal liver metastases: expert consensus statement[J]. HPB (Oxford), 2013, 15(2): 106-115.
+  - 原文位置：`L000771-L000771`
+
+- De Greef K, Rolfo C, Russo A, et al. Multisciplinary management of patients with liver metastasis from colorectal cancer[J]. World J Gastroenterol, 2016, 22(32): 7215-7225.
+  - 原文位置：`L000773-L000773`、`L000775-L000775`
+
+- Goéré D, Benhaim L, Bonnet S, et al. Adjuvant chemotherapy after resection of colorectal liver metastases in patients at high risk of hepatic recurrence: a comparative study between hepatic arterial infusion of oxaliplatin and modern systemic chemotherapy[J]. Ann Surg, 2013, 257(1): 114-120.
+  - 原文位置：`L000777-L000777`
+
+- House M G, Kemeny N E, Gönen M, et al. Comparison of adjuvant systemic chemotherapy with or without hepatic arterial infusional chemotherapy after hepatic resection for metastatic colorectal cancer[J]. Ann Surg, 2011, 254(6): 851-856.
+  - 原文位置：`L000779-L000779`
+
+- Kemeny N E, Jarnagin W R, Capanu M, et al. Randomized phase Ⅱ trial of adjuvant hepatic arterial infusion and systemic chemotherapy with or without bevacizumab in patients with resected hepatic metastases from colorectal cancer[J]. J Clin Oncol, 2011, 29(7): 884-889.
+  - 原文位置：`L000781-L000781`
+
+- Abdalla E K. Commentary: radiofrequency ablation for colorectal liver metastases: do not blame the biology when it is the technology[J]. Am J Surg, 2009, 197(6): 737-739.
+  - 原文位置：`L000783-L000783`
+
+- Folprecht G, Gruenberger T, Bechstein W O, et al. Tumour response and secondary resectability of colorectal liver metastases following neoadjuvant chemotherapy with cetuximab: the CELIM randomised phase 2 trial[J]. Lancet Oncol, 2010, 11(1): 38-47.
+  - 原文位置：`L000785-L000785`
+
+- Adam R. Chemotherapy and surgery: new perspectives on the treatment of unresectable liver metastases[J]. Ann Oncol, 2003, 14(Suppl 2): ii13-ii16.
+  - 原文位置：`L000787-L000787`
+
+- Goldberg R M, Sargent D J, Morton R F, et al. Randomized controlled trial of reduced-dose bolus fluorouracil plus leucovorin and irinotecan or infused fluorouracil plus leucovorin and oxaliplatin in patients with previously untreated metastatic colorectal cancer: a North American Intergroup Trial[J]. J Clin Oncol, 2006, 24(21): 3347-3353.
+  - 原文位置：`L000789-L000789`
+
+- Cals L, Rixe O, François E, et al. Dose-finding study of weekly 24-h continuous infusion of 5-fluorouracil associated with alternating oxaliplatin or irinotecan in advanced colorectal cancer patients[J]. Ann Oncol, 2004, 15(7): 1018-1024.
+  - 原文位置：`L000791-L000791`
+
+- Falcone A, Ricci S, Brunetti I, et al. Phase Ⅲ trial of infusional fluorouracil, leucovorin, oxaliplatin, and irinotecan (FOLFOXIRI) compared with infusional fluorouracil, leucovorin, and irinotecan (FOLFIRI) as first-line treatment for metastatic colorectal cancer: the Gruppo Oncologico Nord Ovest[J]. J Clin Oncol, 2007, 25(13): 1670-1676.
+  - 原文位置：`L000793-L000793`、`L000795-L000795`
+
+- Tournigand C, André T, Achille E, et al. FOLFIRI followed by FOLFOX6 or the reverse sequence in advanced colorectal cancer: a randomized GERCOR study[J]. J Clin Oncol, 2004, 22(2): 229-237.
+  - 原文位置：`L000797-L000797`
+
+- Hochster H S, Hart L L, Ramanathan R K, et al. Safety and efficacy of oxaliplatin and fluoropyrimidine regimens with or without bevacizumab as first-line treatment of metastatic colorectal cancer: results of the TREE Study[J]. J Clin Oncol, 2008, 26(21): 3523-3529.
+  - 原文位置：`L000799-L000799`
+
+- André T, Shiu K K, Kim T W, et al. Pembrolizumab in microsatellite-instability-high advanced colorectal cancer[J]. N Engl J Med, 2020, 383(23): 2207-2218.
+  - 原文位置：`L000801-L000801`
+
+- Andre T, Amonkar M, Norquist J M, et al. Health-related quality of life in patients with microsatellite instability-high or mismatch repair deficient metastatic colorectal cancer treated with first-line pembrolizumab versus chemotherapy (KEYNOTE-177): an open-label, randomised, phase 3 trial[J]. Lancet Oncol, 2021, 22(5): 665-677.
+  - 原文位置：`L000803-L000803`
+
+- Le D T, Uram J N, Wang H, et al. PD-1 blockade in tumors with mismatch-repair deficiency[J]. N Engl J Med, 2015, 372(26): 2509-2520.
+  - 原文位置：`L000805-L000805`
+
+- Marabelle A, Le D T, Ascierto P A, et al. Efficacy of pembrolizumab in patients with noncolorectal high microsatellite instability/mismatch repair-deficient cancer: results from the phase Ⅱ KEYNOTE-158 study[J]. J Clin Oncol, 2020, 38(1): 1-10.
+  - 原文位置：`L000807-L000807`
+
+- Lenz H J, van Cutsem E, Luisa Limon M, et al. First-line nivolumab plus low-dose ipilimumab for microsatellite instability-high/mismatch repair-deficient metastatic colorectal cancer: the phase Ⅱ CheckMate 142 study[J]. J Clin Oncol, 2022, 40(2): 161-170.
+  - 原文位置：`L000809-L000809`
+
+- Le D T, Kim T W, van Cutsem E, et al. Phase Ⅱ open-label study of pembrolizumab in treatment-refractory, microsatellite instability-high/mismatch repair-deficient metastatic colorectal cancer: KEYNOTE-164[J]. J Clin Oncol, 2020, 38(1): 11-19.
+  - 原文位置：`L000811-L000811`
+
+- Piessevaux H 等关于早期肿瘤缩小预测西妥昔单抗治疗转移性结直肠癌长期结局的研究[J]. J Clin Oncol, 2013, 31(30): 3764-3775.
+  - 原文位置：`L000813-L000813`
+
+- Suzuki C 等关于肿瘤大小初始变化预测联合化疗治疗转移性结直肠癌反应和生存的研究[J]. Ann Oncol, 2012, 23(4): 948-954.
+  - 原文位置：`L000815-L000815`
+
+- Ye L C 等关于早期肿瘤缩小对西妥昔单抗治疗的野生型KRAS结直肠癌肝转移临床结局影响的研究[J]. J Gastroenterol Hepatol, 2015, 30(4): 674-679.
+  - 原文位置：`L000817-L000817`
+
+- Alberts S R 等关于奥沙利铂、氟尿嘧啶和亚叶酸钙治疗不可切除的仅肝转移结直肠癌的Ⅱ期研究[J]. J Clin Oncol, 2005, 23(36): 9243-9249.
+  - 原文位置：`L000819-L000819`
+
+- Pernot S 等关于不可切除结直肠癌肝转移经动脉化疗栓塞联合伊立替康载药微球及全身FOLFOX方案后完全病理缓解的病例报告（来自FFCD 1201试验）[J]. Clin Res Hepatol Gastroenterol, 2015, 39(6): e73-e77.
+  - 原文位置：`L000821-L000821`
+
+- Tang W T 等关于贝伐珠单抗联合mFOLFOX6对比mFOLFOX6单药一线治疗RAS突变不可切除结直肠癌肝转移的BECOME随机对照试验[J]. J Clin Oncol, 2020, 38(27): 3175-3184.
+  - 原文位置：`L000823-L000823`
+
+- Ye L C 等关于西妥昔单抗联合化疗治疗KRAS野生型不可切除结直肠癌肝转移的随机对照试验[J]. J Clin Oncol, 2013, 31(16): 1931-1938.
+  - 原文位置：`L000825-L000825`
+
+- Hu H B 等关于改良FOLFOXIRI联合或不联合西妥昔单抗作为RAS/BRAF野生型不可切除结直肠癌肝转移转化治疗的FOCULM多中心Ⅱ期试验[J]. Oncologist, 2021, 26(1): e90-e98.
+  - 原文位置：`L000827-L000827`
+
+- van Cutsem E 等关于西妥昔单抗联合化疗作为转移性结直肠癌初始治疗的研究[J]. N Engl J Med, 2009, 360(14): 1408-1417.
+  - 原文位置：`L000829-L000829`
+
+- Garufi C 等关于西妥昔单抗联合时辰调节的伊立替康、5-氟尿嘧啶、亚叶酸钙和奥沙利铂作为结直肠癌肝转移新辅助化疗的POCHER试验[J]. Br J Cancer, 2010, 103(10): 1542-1547.
+  - 原文位置：`L000831-L000831`
+
+- Souglakos J 等关于FOLFOXIRI对比FOLFIRI作为转移性结直肠癌一线治疗的多中心随机Ⅲ期试验（HORG）[J]. Br J Cancer, 2006, 94(6): 798-805.
+  - 原文位置：`L000833-L000833`、`L000835-L000835`
+
+- Cremolini C 等关于一线FOLFOXIRI联合贝伐珠单抗并在进展后重新引入对比mFOLFOX6联合贝伐珠单抗后FOLFIRI联合贝伐珠单抗治疗转移性结直肠癌的TRIBE2多中心、开放标签、3期随机对照试验[J]. Lancet Oncol, 2020, 21(4): 497-507.
+  - 原文位置：`L000837-L000837`
+
+- Cremolini C 等关于FOLFOXIRI联合贝伐珠单抗对比FOLFIRI联合贝伐珠单抗一线治疗转移性结直肠癌的TRIBE研究更新总生存和分子亚组分析[J]. Lancet Oncol, 2015, 16(13): 1306-1315.
+  - 原文位置：`L000839-L000839`
+
+- Stein A 等关于一线FOLFOXIRI+贝伐珠单抗后氟尿嘧啶和贝伐珠单抗维持治疗分子未选择的转移性结直肠癌的研究[J]. Br J Cancer, 2015, 113(6): 872-877.
+  - 原文位置：`L000841-L000841`
+
+- Tomasello G 等关于FOLFOXIRI联合贝伐珠单抗作为初始不可切除转移性结直肠癌转化治疗的系统评价和汇总分析[J]. JAMA Oncol, 2017, 3(7): e170278.
+  - 原文位置：`L000843-L000843`
+
+- Karapetis C S 等关于PIK3CA、BRAF和PTEN状态与西妥昔单抗治疗晚期结直肠癌获益的研究（NCIC CTG/AGITG CO.17）[J]. Clin Cancer Res, 2014, 20(3): 744-753.
+  - 原文位置：`L000845-L000845`
+
+- Cleary J M 等关于转移性结直肠腺癌肝转移患者术前全身治疗相关肝脏毒性的研究[J]. Oncologist, 2009, 14(11): 1095-1105.
+  - 原文位置：`L000847-L000847`
+
+- Esin E, Yalcin S. 转移性结直肠癌维持策略的系统评价[J]. Cancer Treat Rev, 2016, 42: 82-90.
+  - 原文位置：`L000849-L000849`
+
+- Goey K H 等关于卡培他滨和贝伐珠单抗维持治疗对比观察在转移性结直肠癌中的CAIRO3研究更新结果和分子亚组分析[J]. Ann Oncol, 2017, 28(9): 2128-2134.
+  - 原文位置：`L000851-L000851`
+
+- Hegewisch-Becker S 等关于一线奥沙利铂加氟尿嘧啶加贝伐珠单抗后维持策略的AIO 0207随机、非劣效性、开放标签、3期试验[J]. Lancet Oncol, 2015, 16(13): 1355-1369.
+  - 原文位置：`L000853-L000853`、`L000855-L000855`
+
+- Simkens L H J 等关于卡培他滨和贝伐珠单抗维持治疗转移性结直肠癌的CAIRO3 3期随机对照试验[J]. Lancet, 2015, 385(9980): 1843-1852.
+  - 原文位置：`L000857-L000857`
+
+- Stein A 等关于贝伐珠单抗为基础维持治疗在转移性结直肠癌诱导化疗后应用和强度的荟萃分析[J]. Clin Colorectal Cancer, 2016, 15(2): e29-39.
+  - 原文位置：`L000859-L000859`
+
+- Sonbol M B 等关于转移性结直肠癌维持策略作用的系统评价和随机临床试验网络荟萃分析[J]. JAMA Oncol, 2020, 6(3): e194489.
+  - 原文位置：`L000861-L000861`
+
+- Aparicio T 等关于贝伐珠单抗维持对比无维持治疗在转移性结直肠癌化疗间歇期的随机Ⅲ期试验（PRODIGE 9）[J]. J Clin Oncol, 2018, 36(7): 674-681.
+  - 原文位置：`L000863-L000863`
+
+- Xu R H 等关于改良XELIRI对比FOLFIRI（均联合或不联合贝伐珠单抗）作为转移性结直肠癌二线治疗的AXEPT多中心、开放标签、随机、非劣效性3期试验[J]. Lancet Oncol, 2018, 19(5): 660-671.
+  - 原文位置：`L000865-L000865`
+
+- Ducreux M 等关于晚期结直肠癌序贯与联合化疗的FFCD 2000-05开放标签随机3期试验[J]. Lancet Oncol, 2011, 12(11): 1032-1044.
+  - 原文位置：`L000867-L000867`
+
+- Koopman M 等关于卡培他滨、伊立替康和奥沙利铂在晚期结直肠癌中序贯与联合化疗的CAIRO 3期随机对照试验[J]. Lancet, 2007, 370(9582): 135-142.
+  - 原文位置：`L000869-L000869`
+
+- Seymour M T 等关于预后不良晚期结直肠癌患者序贯和联合化疗不同策略的MRC FOCUS随机对照试验[J]. Lancet, 2007, 370(9582): 143-152.
+  - 原文位置：`L000871-L000871`、`L000873-L000873`
+
+- Mayer R J 等关于TAS-102治疗难治性转移性结直肠癌的随机试验[J]. N Engl J Med, 2015, 372(20): 1909-1919.
+  - 原文位置：`L000875-L000875`
+
+- Shitara K 等关于曲氟尿苷/替匹嘧啶对比安慰剂治疗重度预处理的转移性胃癌的TAGS随机、双盲、安慰剂对照、3期试验[J]. Lancet Oncol, 2018, 19(11): 1437-1448.
+  - 原文位置：`L000877-L000877`
+
+- Grothey A 等关于瑞戈非尼单药治疗既往治疗过的转移性结直肠癌的CORRECT国际多中心随机安慰剂对照3期试验[J]. Lancet, 2013, 381(9863): 303-312.
+  - 原文位置：`L000879-L000879`
+
+- Li J 等关于呋喹替尼对比安慰剂对既往治疗过的转移性结直肠癌总生存影响的FRESCO随机临床试验[J]. JAMA, 2018, 319(24): 2486-2496.
+  - 原文位置：`L000881-L000881`
+
+- Bennouna J 等关于贝伐珠单抗联合化疗二线治疗转移性结直肠癌的BEVACOLORⅡ期研究结果[J]. Clin Colorectal Cancer, 2012, 11(1): 38-44.
+  - 原文位置：`L000883-L000883`
+
+- Iwamoto S 等关于二线西妥昔单抗联合亚叶酸钙/5-氟尿嘧啶/伊立替康（FOLFIRI）治疗KRAS野生型转移性结直肠癌的FLIER多中心Ⅱ期研究[J]. Anticancer Res, 2014, 34(4): 1967-1973.
+  - 原文位置：`L000885-L000885`
+
+- Hurwitz H 等关于贝伐珠单抗联合伊立替康、氟尿嘧啶和亚叶酸钙治疗转移性结直肠癌的研究[J]. N Engl J Med, 2004, 350(23): 2335-2342.
+  - 原文位置：`L000887-L000887`
+
+- Jin Z H, Sinicrope F A. BRAF V600E突变转移性结直肠癌治疗的进展[J]. Expert Rev Anticancer Ther, 2019, 19(9): 823-829.
+  - 原文位置：`L000889-L000889`
+
+- Tabernero J 等关于恩考芬尼联合西妥昔单抗作为既往治疗过的BRAF V600E突变转移性结直肠癌新标准治疗的BEACON研究更新生存结果和亚组分析[J]. J Clin Oncol, 2021, 39(4): 273-284.
+  - 原文位置：`L000891-L000891`
+
+- 参考文献228：Kopetz S, Guthrie K A, Morris V K, et al. Randomized trial of irinotecan and cetuximab with or without vemurafenib in BRAF-mutant metastatic colorectal cancer (SWOG S1406)[J]. J Clin Oncol, 2021, 39(4): 285-294.
+  - 原文位置：`L000893-L000893`、`L000895-L000895`
+
+- 参考文献229：Meric-Bernstam F, Hurwitz H, Raghav K P S, et al. Pertuzumab plus trastuzumab for HER2-amplified metastatic colorectal cancer (MyPathway): an updated report from a multicentre, open-label, phase 2a, multiple basket study[J]. Lancet Oncol, 2019, 20(4): 518-530.
+  - 原文位置：`L000897-L000897`
+
+- 参考文献230：Sartore-Bianchi A, Trusolino L, Martino C, et al. Dual-targeted therapy with trastuzumab and lapatinib in treatment-refractory, KRAS Codon 12/13 wild-type, HER2-positive metastatic colorectal cancer (HERACLES): a proof-of-concept, multicentre, open-label, phase 2 trial[J]. Lancet Oncol, 2016, 17(6): 738-746.
+  - 原文位置：`L000899-L000899`
+
+- 参考文献231：Siena S, di Bartolomeo M, Raghav K, et al. Trastuzumab deruxtecan (DS-8201) in patients with HER2-expressing metastatic colorectal cancer (DESTINY-CRC01): a multicentre, open-label, phase 2 trial[J]. Lancet Oncol, 2021, 22(6): 779-789.
+  - 原文位置：`L000901-L000901`
+
+- 参考文献232：Suwaidan A A, Lau D K, Chau I. HER2 targeted therapy in colorectal cancer: new horizons[J]. Cancer Treat Rev, 2022, 105: 102363.
+  - 原文位置：`L000903-L000903`
+
+- 参考文献233：D'Angelica M I, Correa-Gallego C, Paty P B, et al. Phase Ⅱ trial of hepatic artery infusional and systemic chemotherapy for patients with unresectable hepatic metastases from colorectal cancer: conversion to resection and long-term outcomes[J]. Ann Surg, 2015, 261(2): 353-360.
+  - 原文位置：`L000905-L000905`
+
+- 参考文献234：Qi M D, Tao Z J, Yu D, et al. Complications of transarterial radioembolization in hepatic malignancies: pathophysiological insights and management paradigms[J]. Eur J Radiol, 2025, 190: 112224.
+  - 原文位置：`L000907-L000907`
+
+- 参考文献235：Kong Y Q, Huang X Y, Peng G, et al. Efficacy of first-line radiofrequency ablation combined with systemic chemotherapy plus targeted therapy for initially unresectable colorectal liver metastases[J]. Int J Hyperthermia, 2025, 42(1): 2432988.
+  - 原文位置：`L000909-L000909`
+
+- 参考文献236：Connell L C, Kemeny N E. Intraarterial chemotherapy for liver metastases[J]. Hematol Oncol Clin North Am, 2025, 39(1): 143-159.
+  - 原文位置：`L000911-L000911`
+
+- 参考文献237：Arnold D, Pereira P L, Iezzi R, et al. Transarterial chemoembolisation with irinotecan (irinotecan-TACE) as salvage or post-inductive therapy for colorectal cancer liver metastases: effectiveness results from the CIREL study[J]. ESMO Open, 2025, 10(3): 104292.
+  - 原文位置：`L000913-L000913`
+
+- 参考文献238：Swierz M J, Storman D, Mitus J W, et al. Transarterial (chemo)embolisation versus systemic chemotherapy for colorectal cancer liver metastases[J]. Cochrane Database Syst Rev, 2024, 8(8): CD012757.
+  - 原文位置：`L000915-L000915`、`L000917-L000917`
+
+- 参考文献239：Sugumar K, Stitzel H, Wu V, et al. Outcomes of hepatic artery-based therapies and systemic multiagent chemotherapy in unresectable colorectal liver metastases: a systematic review and meta-analysis[J]. Ann Surg Oncol, 2024, 31(7): 4413-4426.
+  - 原文位置：`L000919-L000919`
+
+## 附录
+
+### 专家组名单
+
+- 《结直肠癌肝转移诊断和综合治疗指南（2025 版）》专家组名单（以拼音排序）包括编写组组长：樊嘉（复旦大学附属中山医院）、顾晋（北京大学肿瘤医院）、贾宝庆（中国人民解放军总医院）、李进（同济大学附属东方医院）、秦新裕（复旦大学附属中山医院）、王锡山（中国医学科学院肿瘤医院）、许剑民（复旦大学附属中山医院）、徐瑞华（中山大学肿瘤防治中心）、叶颖江（北京大学人民医院）、张苏展（浙江大学医学院附属第二医院）、张忠涛（首都医科大学附属北京友谊医院）。
+  - 原文位置：`L000921-L000921`、`L000923-L000923`、`L000925-L000925`、`L000927-L000927`、`L000929-L000929`、`L000931-L000931`、`L000933-L000933`、`L000935-L000935`、`L000937-L000937`、`L000939-L000939`、`L000941-L000941`、`L000943-L000943`、`L000945-L000945`、`L000947-L000947`
+
+### 编写组成员
+
+- 编写组成员包括：巴一（北京协和医院）、卜建红（《中华胃肠外科杂志》编辑部）、蔡建辉（河北省人民医院）、蔡建强（中国医学科学院肿瘤医院）、蔡三军（复旦大学附属肿瘤医院）、陈功（中山大学肿瘤防治中心）、陈敏（《中华消化外科杂志》编辑部）、陈子华（中南大学湘雅医院）、程洁敏（复旦大学附属中山医院）、程勇（重庆医科大学附属第一医院）、池畔（福建医科大学附属协和医院）、崔滨滨（哈尔滨医科大学附属肿瘤医院）、崔明（北京大学肿瘤医院）、戴朝六（中国医科大学附属盛京医院）、戴广海（中国人民解放军总医院）、戴勇（山东大学齐鲁医院）、邓艳红（中山大学附属第六医院）、丁克峰（浙江大学医学院附属第二医院）等。
+  - 原文位置：`L000949-L000949`、`L000951-L000951`、`L000953-L000953`、`L000955-L000955`、`L000957-L000957`、`L000959-L000959`、`L000961-L000961`、`L000963-L000963`、`L000965-L000965`、`L000967-L000967`、`L000969-L000969`、`L000971-L000971`、`L000973-L000973`、`L000975-L000975`、`L000977-L000977`、`L000979-L000979`、`L000981-L000981`、`L000983-L000983`、`L000985-L000985`
+
+### 编写组成员（续）
+
+- 编写组成员还包括：樊嘉（复旦大学附属中山医院）、房学东（吉林大学中日联谊医院）、龚建平（华中科技大学同济医学院附属同济医院）、顾晋（北京大学肿瘤医院）、顾艳宏（江苏省人民医院）、韩卫东（浙江省肿瘤医院）、何裕隆（中山大学附属第一医院）、黄平（江苏省人民医院）、黄忠诚（湖南省人民医院）、贾宝庆（中国人民解放军总医院）、江晓晖（江苏省南通市肿瘤医院）、姜可伟（北京大学人民医院）、金晶（中国医学科学院肿瘤医院）、孔大陆（天津医科大学附属肿瘤医院）、兰平（中山大学附属第六医院）、冷建军（北京大学首钢医院）、李德川（浙江省肿瘤医院）、李海（宁夏医科大学总医院）、李进（同济大学附属东方医院）、李乐平（山东省立医院）、李胜棉（河北医科大学第四医院）、李宇红（中山大学肿瘤防治中心）、李云峰（云南省肿瘤医院）、梁后杰（陆军军医大学西南医院）、林锋（海南医科大学第二附属医院）、林建江（浙江大学医学院附属第一医院）、林俊忠（中山大学肿瘤防治中心）、林小燕（福建医科大学附属协和医院）、刘凡隆（浙江大学医学院附属第一医院）、刘海义（山西省肿瘤医院）、刘洪俊（山东省立医院）、刘天舒（复旦大学附属中山医院）、刘云鹏（中国医科大学附属第一医院）、楼征（海军军医大学第一附属医院（上海长海医院））、卢云（青岛大学附属医院）、潘宏铭（浙江大学医学院附属邵逸夫医院）、潘志忠（中山大学肿瘤防治中心）、裴海平（中南大学湘雅医院）、裴炜（中国医学科学院肿瘤医院）、彭涛（广西医科大学第一附属医院）、秦新裕（复旦大学附属中山医院）、邱萌（四川大学华西医院）、任黎（复旦大学附属中山医院）、申占龙（北京大学人民医院）、沈琳（北京大学肿瘤医院）、沈伟（上海交通大学医学院附属新华医院）、宋纯（同济大学附属东方医院）、苏向前（北京大学肿瘤医院）、孙立峰（浙江大学医学院附属第二医院）、孙益红（复旦大学附属中山医院）、陶敏（苏州大学附属第一医院）、田利国（《中国实用外科杂志》编辑部）、童卫东（陆军军医大学陆军特色医学中心（大坪医院））、王峰（中山大学肿瘤防治中心）、王贵英（河北医科大学第四医院）、王贵玉（哈尔滨医科大学附属第二医院）、王海江（新疆医科大学附属肿瘤医院）、王健（复旦大学附属中山医院）、王康（四川省人民医院）、王杉（北京大学人民医院）、王锡山（中国医学科学院肿瘤医院）、王新（空军军医大学唐都医院）、王屹（北京大学人民医院）、王自强（四川大学华西医院）、韦烨（复旦大学附属华东医院）、吴斌（北京协和医院）、吴现瑞（中山大学孙逸仙纪念医院）、夏锋（陆军军医大学西南医院）、夏立建（山东第一医科大学第一附属医院）、谢丹（中山大学附属肿瘤防治中心）、邢宝才（北京大学肿瘤医院）、熊斌（武汉大学中南医院）、徐建明（中国人民解放军总医院）、徐农（浙江大学医学院附属第一医院）、徐瑞华（中山大学肿瘤防治中心）、徐烨（复旦大学附属肿瘤医院）、徐泽宽（江苏省人民医院）、徐忠法（山东第一医科大学第三附属医院）。
+  - 原文位置：`L000987-L001026`
+
+### 编写组成员（续2）
+
+- 编写组成员还包括：许剑民（复旦大学附属中山医院）、杨润祥（云南省肿瘤医院）、杨树军（河南省肿瘤医院）、姚宏伟（首都医科大学附属北京友谊医院）、叶青海（复旦大学附属中山医院）、叶盛威（湖北省肿瘤医院）、叶颖江（北京大学人民医院）、依荷芭丽·迟（中国医学科学院肿瘤医院）、殷先利（湖南省肿瘤医院）、余佩武（陆军军医大学西南医院）、余一祎（复旦大学附属中山医院）、袁瑛（浙江大学医学院附属第二医院）、曾珊（中南大学湘雅医院）、曾昭冲（复旦大学附属中山医院）、张俊（上海交通大学医学院附属瑞金医院）、张克亮（湖北省肿瘤医院）、张汝一（贵州医科大学附属医院）、张苏展（浙江大学医学院附属第二医院）、张涛（华中科技大学同济医学院附属协和医院）、张卫（海军军医大学第一附属医院（上海长海医院））、张艳桥（哈尔滨医科大学附属肿瘤医院）、张有成（兰州大学第二医院）、张忠涛（首都医科大学附属北京友谊医院）、章真（复旦大学附属肿瘤医院）、赵青川（空军军医大学西京医院）、赵任（上海交通大学医学院附属瑞金医院）、周爱萍（中国医学科学院肿瘤医院）、周波（复旦大学附属中山医院）、周俭（复旦大学附属中山医院）、周卫平（海南省肿瘤医院）、周总光（四川大学华西医院）、朱德祥（复旦大学附属中山医院）、朱陵君（江苏省人民医院）。执笔人：朱德祥（复旦大学附属中山医院）、任黎（复旦大学附属中山医院）。
+  - 原文位置：`L001028-L001028`
+
+## 引用本文
+
+- 引用本文：中国医师协会外科医师分会，中华医学会外科学分会胃肠外科学组，中华医学会外科学分会结直肠外科学组，等. 结直肠癌肝转移诊断和综合治疗指南（2025 版）[J]. 中国临床医学, 2026, 33(1): 160-190. DOI: 10.12025/j.issn.1008-6358.2025.20250902
+  - 原文位置：`L001030-L001030`、`L001032-L001033`

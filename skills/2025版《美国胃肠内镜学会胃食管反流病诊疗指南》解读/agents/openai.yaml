@@ -1,0 +1,4 @@
+interface:
+  display_name: "2025版ASGE胃食管反流病诊疗指南解读"
+  short_description: "查询2025版ASGE胃食管反流病诊疗指南解读中的临床建议"
+  default_prompt: "请使用2025版ASGE胃食管反流病诊疗指南解读回答关于胃食管反流病诊断、内镜评估和治疗的问题"

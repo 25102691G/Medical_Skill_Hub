@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国胰腺囊性肿瘤诊断指南"
+  short_description: "查询中国胰腺囊性肿瘤诊断指南中的临床建议"
+  default_prompt: "请使用中国胰腺囊性肿瘤诊断指南回答临床问题"

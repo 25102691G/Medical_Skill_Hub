@@ -1,0 +1,4 @@
+interface:
+  display_name: "成人急性感染性腹泻诊疗专家共识"
+  short_description: "查询成人急性感染性腹泻诊疗专家共识中的临床建议"
+  default_prompt: "请使用成人急性感染性腹泻诊疗专家共识回答临床问题"

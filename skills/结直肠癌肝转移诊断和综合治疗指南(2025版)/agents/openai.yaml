@@ -1,4 +1,4 @@
 interface:
-  display_name: "结直肠癌肝转移诊断和综合治疗指南（2025版）"
-  short_description: "查询结直肠癌肝转移诊断和综合治疗指南中的临床建议"
-  default_prompt: "请使用结直肠癌肝转移诊断和综合治疗指南回答临床问题"
+  display_name: "结直肠癌肝转移指南"
+  short_description: "查询结直肠癌肝转移指南中的临床建议"
+  default_prompt: "请使用结直肠癌肝转移指南回答临床问题"

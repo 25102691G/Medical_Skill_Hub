@@ -1,0 +1,4 @@
+interface:
+  display_name: "药物性肝损伤基层诊疗与管理指南"
+  short_description: "查询药物性肝损伤基层诊疗与管理指南中的临床建议"
+  default_prompt: "请使用药物性肝损伤基层诊疗与管理指南回答临床问题"

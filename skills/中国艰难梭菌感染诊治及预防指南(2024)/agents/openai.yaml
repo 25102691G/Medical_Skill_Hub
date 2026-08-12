@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国艰难梭菌感染诊治及预防指南（2024）"
+  short_description: "查询中国艰难梭菌感染诊治及预防指南中的临床建议"
+  default_prompt: "请使用中国艰难梭菌感染诊治及预防指南（2024）回答临床问题"

@@ -1,4 +1,0 @@
-interface:
-  display_name: "阑尾上皮肿瘤腹膜转移专家共识"
-  short_description: "查询阑尾上皮肿瘤腹膜转移综合诊治专家共识中的临床建议"
-  default_prompt: "请使用《阑尾上皮肿瘤腹膜转移综合诊治专家共识(2025版)》回答临床问题"

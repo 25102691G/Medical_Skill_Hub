@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国结直肠癌诊疗规范（2023版）"
+  short_description: "查询中国结直肠癌诊疗规范中的临床建议"
+  default_prompt: "请使用中国结直肠癌诊疗规范（2023版）回答临床问题"

@@ -1,4 +1,0 @@
-interface:
-  display_name: "早期结直肠癌全程管理指南(2025版)"
-  short_description: "查询早期结直肠癌全程管理指南中的临床建议"
-  default_prompt: "请使用早期结直肠癌全程管理指南回答临床问题"

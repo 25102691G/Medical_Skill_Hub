@@ -1,0 +1,4 @@
+interface:
+  display_name: "原发性肝癌诊疗指南（2026年版）"
+  short_description: "查询肝细胞癌诊疗指南中的筛查、诊断和治疗建议"
+  default_prompt: "请使用原发性肝癌诊疗指南（2026年版）回答肝细胞癌相关的临床问题"

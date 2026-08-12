@@ -1,4 +1,4 @@
 interface:
-  display_name: "慢加急性肝衰竭诊治指南(2025年版)"
-  short_description: "查询慢加急性肝衰竭诊治指南中的临床建议"
+  display_name: "慢加急性肝衰竭诊治指南"
+  short_description: "查询慢加急性肝衰竭诊治指南中的推荐意见"
   default_prompt: "请使用慢加急性肝衰竭诊治指南回答临床问题"

@@ -1,45 +1,55 @@
-# 阑尾炎诊断与治疗指南(2024)重要信息索引
+# 美国胃肠内镜外科医师学会《阑尾炎诊断与治疗指南(2024)》解读重要信息索引
 
-## Diagnosis of Acute Appendicitis
+## 指南背景与方法
 
-- CT and MRI are recommended as primary diagnostic modalities due to higher sensitivity and specificity compared to ultrasound (CT: 96.9%/92.4%; MRI: 95.7%/92.4%; ultrasound: 68.8%/67.0%; P<0.05)
-- MRI is the gold standard for women of reproductive age (avoids radiation)
-- Ultrasound is a reasonable first-line screening tool, but operator-dependent and limited in complicated appendicitis or obesity
+- 阑尾炎是最常见的急性外科疾病之一，临床诊断具有挑战性；SAGES于2024年召集多学科指南制定专家小组（GDG），围绕阑尾炎诊断与治疗相关的8个关键问题，采用GRADE方法制定《阑尾炎诊断与治疗指南（2024）》。
+  - 原文位置：`L000025-L000025`、`L000027-L000027`、`L000029-L000029`
 
-## Treatment of Appendicitis
+## 急性阑尾炎的诊断
 
-### Acute Uncomplicated Appendicitis
+### 影像学检查
 
-- Surgery (appendectomy) recommended (expert consensus)
-- Non-operative management (antibiotics) is an alternative if patient accepts recurrence risk (5‑year recurrence ~39%, success rates 58–75%)
+- 影像学检查在急性阑尾炎诊断中占据重要地位，CT和MRI的敏感度和特异度接近且显著高于超声（CT 96.9%/92.4%，MRI 95.7%/92.4% vs 超声68.8%/67.0%，P<0.05）。CT适合大多数成年病人，但孕妇及儿童需谨慎辐射；MRI推荐为所有育龄期女性病人的诊断“金标准”，但因麻醉需求、费用较高和可及性较低限制了在儿童中的应用；超声可作为合理的一线筛查手段，能减少CT/MRI需求，不增加并发症或住院时间，减轻经济负担，但依赖操作人员技术，且在复杂性阑尾炎及肥胖病人中受限。GDG认为腹部CT和MRI是确诊的最优影像学检查方式，超声仍可作为合理的一线检查。
+  - 原文位置：`L000033-L000033`
 
-### Complicated Appendicitis
+## 阑尾炎的治疗
 
-- Surgery is superior to non-operative management: shorter hospital stay and lower readmission rates
-- Initial non-operative management may be considered in diffuse abscess, severe typhlitis, or duration >1 week
+### 急性单纯性阑尾炎的治疗方式
 
-### Timing of Surgery in Acute Uncomplicated Appendicitis
+- 急性单纯性阑尾炎定义为术前未出现脓肿或穿孔。GDG推荐对成人及儿童实施手术治疗（专家共识），阑尾切除术是标准化治疗方法，风险低、住院时间短。随机试验显示术后3个月和12个月手术组生活质量评分显著高于单纯抗生素组（94.3 vs 91.0，94.5 vs 90.4，P<0.01）；非手术治疗5年内复发率高达39%。CODA试验显示抗生素治疗30d生活质量略优于手术、总体效果不劣于手术；非手术治疗成功率为58%~75%，复发不增加额外并发症风险。非手术适用于炎症性肠病、无法确诊的阑尾炎或严重盲肠炎等特殊病人。GDG认为阑尾切除术是有效治疗手段，但病人可接受复发风险时，非手术治疗亦可作为替代方案。
+  - 原文位置：`L000037-L000037`、`L000039-L000039`
 
-- Delayed (>12 h) or immediate (<12 h) surgery both acceptable
-- Decision based on patient perforation risk, resource availability
+### 复杂性阑尾炎的治疗方式
 
-### Irrigation vs. Suction Alone in Complicated Appendicitis Surgery
+- 复杂性阑尾炎定义为术前存在脓肿或穿孔证据，占所有病例30%。GDG指出大多数病人通过手术治疗获益更大：一项611例研究显示手术治疗的住院时间更短、再入院率较低；儿童病人多个结局指向非手术治疗较差。非手术治疗的风险和收益与单纯性阑尾炎相似，尤其对于弥漫性脓肿、严重盲肠炎或病程>1周的病人，初始非手术治疗可能规避手术风险。
+  - 原文位置：`L000041-L000041`
 
-- Irrigation may increase operative time, drainage placement, and reoperation rates
-- Suction alone appears comparable; decision based on contamination and patient immune status
+### 急性单纯性阑尾炎的手术时机
 
-### Drain Placement in Complicated Appendicitis Surgery
+- 对于急性单纯性阑尾炎，延迟手术（>12h）或立即手术（<12h）均为可接受选择。成年病人延迟手术可能减少再手术及术后引流需求，但也可能延长住院时间、增加术后脓肿及再住院；儿童延迟手术可能减少再入院风险，但仍有术后脓肿及再手术可能。证据级别较低，GDG未推荐具体方案，建议灵活处理：若考虑病人穿孔风险较高可选择立即手术；若手术室资源紧张、医护人力不足可延迟手术1d。
+  - 原文位置：`L000043-L000043`
 
-- Routine drainage is not recommended (adults and children)
-- No high-level evidence of benefit; potential for organ space infection, readmission, reoperation, increased antibiotic use
+### 复杂性阑尾炎术中灌洗与单纯抽吸
 
-### Postoperative Antibiotics in Complicated Appendicitis
+- 在复杂性阑尾炎抽吸时是否加入灌洗：多项成人RCT显示腹腔灌洗会延长手术时间、增加术后引流及再手术可能；儿童灌洗和抽吸影响较小但证据有限。GDG认为腹腔灌洗与单纯抽吸在多数病人中获益相似，推荐术者根据腹腔污染程度及病人免疫状态选择操作方式。
+  - 原文位置：`L000045-L000045`
 
-- Short-course antibiotic therapy (3–5 days) preferred
-- Recommend 4 days of antibiotics after adequate source control
+### 复杂性阑尾炎术后引流放置
 
-### Elective Appendectomy After Non-Operative Management of Complicated Appendicitis (Asymptomatic Patients)
+- GDG不建议在行复杂性阑尾切除术的成人及儿童病人中常规放置引流。当前无高级别证据显示引流能够缩短手术时间，而器官间隙感染、再入院率及再手术等不良因素对预后影响显著，成年病人还可能增加抗生素使用风险。
+  - 原文位置：`L000047-L000047`
 
-- Recommend in adults to confirm diagnosis and reduce risk of missed malignancy
-- Especially important if age >40 or family history of colorectal/gastrointestinal malignancy
-- Less benefit in children and young adults; long-term follow-up suggested if surgery not performed
+### 复杂性阑尾炎术后抗生素策略
+
+- 一项80例随机对照试验表明术后短期抗生素使用（3~5d）可减少术后总并发症；短期使用还可减少器官间隙感染如艰难梭菌感染、缩短住院时间并降低再手术率。GDG认为绝大多数病人在充分感染控制后使用短期抗生素效果较佳，结合STOP-IT试验，建议在感染源控制后使用4d抗生素即可满足需求。
+  - 原文位置：`L000049-L000049`、`L000051-L000051`
+
+### 非手术治疗后无症状复杂性阑尾炎的处理
+
+- 对于非手术治疗后无症状的复杂性阑尾炎病人，择期阑尾切除术是明确的治疗手段，可提供确诊机会并减少恶性肿瘤漏诊风险。一项170例成人观察性研究显示择期阑尾切除术降低了病死率。GDG建议成年病人接受择期阑尾切除术；多数肿瘤病人年龄在40岁以上，手术对儿童或年轻病人获益较少，但有结直肠或其他胃肠道恶性肿瘤家族史者择期手术可能提供更多保障。GDG建议对未接受择期手术的年轻病人开展长期随访研究，统计阑尾炎复发率及潜在恶性肿瘤发生率。
+  - 原文位置：`L000053-L000053`
+
+## 总结
+
+- 该指南针对阑尾炎的影像学选择、治疗方式、手术时机及再手术等方面进行全面分析，为临床提供科学建议；外科医生应结合病人情况及当地医疗条件灵活应用指南，以确保最佳治疗效果。
+  - 原文位置：`L000055-L000055`

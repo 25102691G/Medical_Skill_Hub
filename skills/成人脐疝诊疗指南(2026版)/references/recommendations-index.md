@@ -1,106 +1,107 @@
-# 成人脐疝诊疗指南(2026版)重要信息索引
+# 成人脐疝诊疗指南（2026版）重要信息索引
 
-## Definition
+## 定义
 
-- Umbilical hernia is a primary ventral hernia with a defect in the umbilical ring at the midline (2020 欧美指南).
-- May be asymptomatic; can present as a painless bulge with increased intra‑abdominal pressure; rarely, pain, incarceration, or strangulation.
+- 脐疝指缺损位于脐环内腹中线的原发性疝。脐部缺乏脂肪组织，皮肤、筋膜及腹膜直接连接，为腹壁薄弱部位，腹腔内容物易突出形成脐疝。部分病人无症状，可在腹内压增加时出现脐部或上腹壁无痛性包块；少数病人有疼痛及活动受限，极少数可嵌顿，表现为无法复位的隆起伴呕吐、心动过速和低血压，严重者可绞窄。
+  - 原文位置：`L000023-L000023`、`L000025-L000025`、`L000027-L000027`
 
-## Etiology
+## 病因
 
-- Weak umbilical ring and elevated intra‑abdominal pressure.
-- Risk factors: obesity, metabolic syndrome, ascites, pregnancy, rectus diastasis, colonic diverticulosis, connective tissue diseases, racial background.
+- 成人脐疝的发病与脐环组织薄弱及腹腔压力增高有关，常见危险因素包括肥胖、代谢综合征、腹腔积液、妊娠、腹直肌分离、结肠憩室、某些结缔组织疾病和种族背景等。
+  - 原文位置：`L000029-L000029`、`L000031-L000031`
 
-## Diagnosis and Differential Diagnosis
+## 诊断
 
-- Usually clinical: reducible soft mass at the umbilicus, palpable defect edge.
-- **Imaging:** When diagnosis is uncertain or for preoperative planning, ultrasound or CT is recommended (证据级别:4级; 推荐强度:C).
-- **Differential diagnoses:** Epigastric hernia (defect centre between umbilical ring and xiphoid), paraumbilical hernia (definition unclear), and linea alba hernia (includes umbilical, epigastric, and some paraumbilical hernias).
+- 大多数脐疝可依据病史和体格检查确诊，典型表现为脐部可复性、质软包块，常于站立、咳嗽或腹内压增加时出现。诊断不明确或术前准备时建议行超声或CT检查（证据级别：4级；推荐强度：C）。腹腔镜手术偶可发现无症状脐疝。
+  - 原文位置：`L000035-L000035`、`L000037-L000037`
 
-## Classification and Measurement
+## 鉴别诊断
 
-- By defect diameter (欧美指南): small (0–1 cm), medium (>1–4 cm), large (>4 cm) (4, C).
-- **Measurement:** Preoperative CT is recommended for preoperative assessment because it is reproducible and less affected by external factors (4, C).
+- 脐疝需与上腹壁疝、脐旁疝及腹白线疝鉴别。上腹壁疝缺损中心位于脐环与剑突之间腹中线；腹白线疝发生于腹部正中线（腹白线），包含脐疝、上腹壁疝及部分缺损在白线处的脐旁疝。
+  - 原文位置：`L000039-L000039`
 
-## Surgical Treatment
+## 分型
 
-### Indications
-- Surgery is the only curative treatment.
-- Indications: quality‑of‑life impairment, symptomatic hernia, defect ≥2 cm, history of incarceration, CT evidence of bowel in the sac, or cosmetic concerns (4, C).
+- 参考欧美指南，按脐疝直径分为小型疝（0～1 cm）、中型疝（>1 cm～4 cm）和大型疝（>4 cm）（证据级别：4级，推荐强度：C）。缺损测量方法包括术前CT、术中测量等，尚无统一标准；术前CT干扰因素少、可行性高，可用于术前评估（证据级别：4级，推荐强度：C）。
+  - 原文位置：`L000049-L000049`、`L000051-L000051`、`L000053-L000053`
 
-### Laparoscopic vs Open
-- **Laparoscopic advantages:** Less trauma, less pain, faster recovery, lower surgical site occurrence (SSO), ability to address other intra‑abdominal pathology, better for obesity, diabetes, recurrent hernias, and large sacs.
-- For defects >4 cm or high infection risk, laparoscopic repair is recommended (欧美指南).
-- **This guideline:** For medium/large defects (>1 cm), consider laparoscopic repair (2b, B); for defects ≤1 cm, decide together with the patient.
+## 手术治疗
 
-### Suture Repair
-- **Material:** Use slow‑absorbable or non‑absorbable sutures; fast‑absorbable sutures are not recommended. Suture technique (interrupted or continuous) does not influence recurrence (4, C).
-- For defects ≤1 cm, suture or mesh repair can both be safe; mesh may reduce recurrence without increasing infection/pain. **Recommendation:** For asymptomatic small hernias, suture or mesh repair may be chosen after shared decision‑making; preservation of the umbilical ring is essential (4, C).
+### 手术指征
 
-### Mesh Repair
-- Mesh significantly reduces recurrence compared to suture repair and does not increase complications (2a, B). **Recommendation:** Routine mesh use for medium and large umbilical hernias (2a, B).
+- 手术是成人脐疝唯一治愈方法。影响生活质量、伴随症状明显、疝环直径≥2 cm、有嵌顿史、CT示肠管进入疝囊或对美观有要求者，建议积极手术（证据级别：4级，推荐强度：C）。手术方式包括开放和腹腔镜，可分为单纯缝合修补和补片加强修补。
+  - 原文位置：`L000057-L000057`
 
-### Defect Closure
-- In open preperitoneal mesh repair, close the defect with non‑absorbable or slow‑absorbable sutures (2a, B).
-- In laparoscopic repair, closing the defect (IPOM‑plus or Sublay) reduces bulging and seroma. **Recommendation:** Close the defect with non‑absorbable or slow‑absorbable sutures (3a, B).
+### 腹腔镜手术
 
-### Mesh Placement Layer
-- **Open surgery:** Place mesh in the preperitoneal space (3b, B). Intraperitoneal mesh via open approach is discouraged.
-- **Laparoscopic surgery:** Intraperitoneal mesh (IPOM) is standard (1c, A). Newer preperitoneal/retromuscular techniques (e‑TEP, TEA, TAPP) may avoid intra‑abdominal mesh contact and use polypropylene mesh; they require more evidence and expertise (4, C).
+- 腹腔镜脐疝修补术创伤小、疼痛轻、SSO发生率低、可同时处理腹腔病变、有助于判断嵌顿组织活力、保留脐部美观，尤其适用于肥胖、糖尿病、复发疝、大疝囊病人。本指南建议：缺损直径>1 cm的中或大型脐疝可考虑腹腔镜手术修补（证据级别：2b级，推荐强度：B）；缺损直径≤1 cm的小型脐疝可沟通后决定术式。
+  - 原文位置：`L000059-L000059`
 
-### Mesh Overlap
-- Overlap ≥3 cm reduces recurrence; 1 cm overlap is insufficient.
-- **Open preperitoneal repair:** Overlap ≥3 cm beyond the defect (3a, B).
-- **Laparoscopic IPOM/Sublay:** Overlap ≥5 cm (3a, B).
-- **Laparoscopic preperitoneal repair:** Overlap 3–5 cm (3a, B).
+## 单纯缝合修补
 
-### Mesh Material and Fixation
-- **Open preperitoneal repair:** Flat, preformed, or plug meshes can be used; fixation is not routinely required (4, C).
-- **Laparoscopic IPOM:** Use anti‑adhesive mesh (1c, A). Fixation with titanium tacks, absorbable tacks, sutures, or combinations (4, C). Absorbable tacks may reduce early pain. Fibrin glue is not recommended due to higher 1‑year recurrence.
+- 单纯缝合修补应使用慢吸收缝线或不可吸收缝线，间断或连续缝合均可，不推荐快吸收缝线（证据级别：4级，推荐强度：C）。对缺损直径<2 cm的腹壁疝，单纯缝合修补可能不增加复发率并减少并发症，但部分研究显示其复发率高于补片；单纯缝合修补不适用于合并腹直肌分离或既往有其他部位疝的病人。
+  - 原文位置：`L000061-L000061`、`L000063-L000063`
 
-## Special Types
+## 小型脐疝修补
 
-### Asymptomatic Umbilical Hernia
-- "Watchful waiting" is safe in the short term but 19–24% eventually undergo surgery; emergency repair carries higher mortality. **Recommendation:** Surgical treatment is recommended if no contraindications and the patient desires it (2b, B).
+- 对缺损直径≤1 cm的脐疝，补片修补和单纯缝合均安全有效，补片可能降低复发率且不增加感染和疼痛风险。无症状小型脐疝可选择单纯缝合或补片修补，应结合病人自身情况及意愿协商决定；保留脐环解剖结构至关重要（证据级别：4级，推荐强度：C）。
+  - 原文位置：`L000065-L000065`、`L000067-L000067`
 
-### Incarcerated and Strangulated Hernia
-- Emergency surgery is mandatory.
-- Mesh repair is safe in clean and clean‑contaminated wounds; use of mesh is recommended (3b, B).
-- In strangulated hernia, synthetic mesh is not advised. In contaminated fields with defects <3 cm, primary suture repair is preferred; if unsatisfactory, consider biological mesh (欧美指南).
+## 补片修补
 
-## Perioperative Management
+- 补片加强修补可显著降低脐疝术后复发率，不增加切口感染、血清肿、血肿及慢性疼痛等并发症。中、大型脐疝修补手术推荐常规使用补片（证据级别：2a，推荐强度：B）。
+  - 原文位置：`L000069-L000069`
 
-### Preoperative Preparation
-- **Elderly patients:** Lung function tests, echocardiography; optimise oxygenation in chronic lung disease.
-- **Smoking cessation** >3 weeks; **weight loss** for obesity; **glycaemic control** in diabetes; **nutritional optimisation**; **infection control**.
-- **Cirrhotic patients:** Ascites control is critical; elective repair only in Child‑Pugh A/B; diuretics and nutrition; for refractory massive ascites, pre‑ and postoperative drainage; abdominal binder for 2 weeks for large defects.
-- **General recommendation:** Preoperative smoking cessation, weight loss, and ascites control (4, C). Fasting for 12 h and bowel preparation are standard.
+## 脐疝缺损关闭
 
-### Anaesthesia and Antibiotics
-- ASA risk assessment; general anaesthesia is standard.
-- **Antibiotics:** For clean wounds with mesh placement, prophylactic antibiotics are recommended (4, C). Prolonged surgery (>3 h), contaminated field, or immunocompromised state may warrant perioperative antibiotics.
+- 使用补片行开放腹膜前脐疝修补时，建议用不可吸收线或慢吸收线关闭缺损（证据级别：2a级，推荐强度：B）。腹腔镜IPOM术中关闭缺损（IPOMplus）可重建腹壁、预防突起或膨出、减少血清肿；腹腔镜Sublay等术式也建议关闭缺损，推荐用不可吸收线或慢吸收线（证据级别：3a级，推荐强度：B）。
+  - 原文位置：`L000071-L000071`、`L000073-L000073`
 
-## Day Surgery Anaesthesia
+## 补片置入层次
 
-- Local anaesthesia is safe and shortens hospital stay (3b, B). It can be combined with nerve blocks (e.g., transversus abdominis, rectus sheath) for better analgesia (3b, B).
+- Onlay在缺损直径≤2 cm且合并肝硬化或腹膜透析腹腔积液的病人中具有一定优势；Inlay复发率高不建议采用；开放手术推荐将补片放置在腹膜前间隙（证据级别：3b级，推荐强度：B）。腹腔镜脐疝修补常采用IPOM，将补片置于腹腔内（证据级别：1c级，推荐强度：A）。新型Sublay/TEA/TAPP等可将补片置于肌后或腹膜外，避免接触腹腔器官，但需更多高质量证据且学习曲线长，建议在技术成熟的医疗单位开展（证据级别：4级，推荐强度：C）。
+  - 原文位置：`L000075-L000075`、`L000077-L000077`、`L000079-L000079`、`L000081-L000081`
 
-## Robotic‑Assisted Repair
+## 补片覆盖范围
 
-- Facilitates defect closure and mesh placement in the retromuscular space. Advantages: less trauma, shorter hospital stay, easier suturing, less pain. Disadvantages: longer operative time, learning curve. Should be performed in qualified institutions (4, C).
+- 开放腹膜前补片修补推荐补片覆盖超过缺损边缘3 cm（证据级别：3a级，推荐强度：B）。腹腔镜IPOM和Sublay推荐覆盖超过缺损边缘5 cm；腹腔镜腹膜前修补因空间限制推荐覆盖3～5 cm（证据级别：3a级，推荐强度：B）。
+  - 原文位置：`L000083-L000083`、`L000085-L000085`
 
----
+## 补片材料与固定
 
-## Anesthesia considerations
+- 开放腹膜前脐疝修补可选用平片、预制补片或网塞等材料（证据级别：4级，推荐强度：C），推荐无需固定补片边缘（证据级别：4级，推荐强度：C）。腹腔镜IPOM须使用防粘连补片（证据级别：1c级，推荐强度：A），并采用钛钉、可吸收钉、缝合或联合方式固定补片边缘（证据级别：4级，推荐强度：C），可吸收钉可能减轻术后早期疼痛。单纯纤维蛋白胶固定术后1年复发率较高。
+  - 原文位置：`L000087-L000087`、`L000089-L000089`、`L000091-L000091`
 
-- Local anesthesia is feasible for surgical treatment of umbilical hernia (systematic review) [99].
-- Local anesthesia is associated with fewer complications in umbilical hernia repair in frail veterans [100].
-- Transversus abdominis plane block versus wound infiltration: systematic review and meta-analysis on analgesic efficacy for inguinal and infra-umbilical hernia repairs [101].
-- Bilateral rectus sheath blocks can be used in open umbilical hernia repair [102].
+## 特殊类型脐疝
 
-## Robotic-assisted surgery
+### 无症状脐疝
 
-- Robot-assisted abdominal wall surgery: systematic review and meta-analysis [103].
-- Dual docking technique for robotic repair of simultaneous inguinal and umbilical hernia: preliminary single center experience [104].
-- Robot-assisted transabdominal preperitoneal ventral hernia repair [105].
-- Robotic TAPP ventral hernia repair: early lessons learned at an inner city safety net hospital [106].
-- Robotic-assisted approach reduces length of stay in retromuscular ventral hernia repair: comparative analysis from the Americas Hernia Society quality collaborative [107].
-- Standard laparoscopic versus robotic retromuscular ventral hernia repair [108].
+- 无症状脐疝可短期观察等待，但最终19%～24%病人接受手术，其中4%为急诊手术，急诊手术病死率、再次手术率及再入院率明显升高。如无明显手术禁忌证且有明确手术意愿，建议行外科手术（证据级别：2b级，推荐强度：B）。
+  - 原文位置：`L000095-L000095`
+
+### 嵌顿及绞窄性脐疝
+
+- 嵌顿及绞窄性脐疝需急诊手术。清洁或清洁-污染切口推荐使用补片（证据级别：3b级，推荐强度：B）。绞窄疝不建议使用合成补片；污染切口且缺损直径<3 cm时建议一期缝合修补，缝合不满意时可加用生物补片。
+  - 原文位置：`L000097-L000097`
+
+## 围手术期管理
+
+### 术前准备
+
+- 老年病人术前行肺功能及心脏超声；术前戒烟时间>3周；肥胖病人须减重；糖尿病病人控制血糖；改善营养；控制感染。肝硬化合并脐疝者控制腹腔积液是关键，肝功能Child-Pugh分级应控制在A/B级；顽固性大量腹腔积液建议术前术后持续腹腔引流；较大缺损术后腹带加压包扎约2周。推荐择期手术病人术前积极戒烟、减重、控制腹腔积液（证据级别：4级，推荐强度：C），术前禁食12 h及肠道准备。
+  - 原文位置：`L000101-L000101`
+
+### 麻醉与抗生素
+
+- 依据ASA标准评估手术耐受性。常采用气管插管或静脉复合全身麻醉。需植入补片的脐疝手术建议术前常规预防性使用抗菌药物（证据级别：4级，推荐强度：C）；手术时间>3 h、术野污染严重或特殊情况（糖尿病、肝硬化、免疫抑制剂）建议围手术期预防性和治疗性使用抗生素。
+  - 原文位置：`L000103-L000103`
+
+## 日间手术麻醉
+
+- 脐疝病人在局部麻醉下行修补手术安全可行，可缩短住院时间。日间脐疝手术病人可选择局部麻醉（证据级别：3b级，推荐强度：B）；条件允许时可联合下腹壁神经阻滞增强镇痛（证据级别：3b级，推荐强度：B）。全身麻醉可使腹壁松弛，有利于修补和减少复发，但无证据表明局部麻醉优于全身麻醉。
+  - 原文位置：`L000107-L000107`、`L000109-L000109`
+
+## 机器人辅助脐疝修补术
+
+- 机器人辅助手术可便捷完成缺损关闭并将补片置入腹直肌后间隙，具有创伤小、住院时间短、缝合便利、减少术后疼痛等优点，但手术时间和学习曲线长。术后并发症与开放及腹腔镜手术相近，应在具备资质的医疗机构谨慎开展（证据级别：4级，推荐强度：C）。
+  - 原文位置：`L000111-L000111`、`L000113-L000113`

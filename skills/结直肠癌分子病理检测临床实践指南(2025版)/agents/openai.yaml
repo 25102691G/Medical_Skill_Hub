@@ -1,4 +1,0 @@
-interface:
-  display_name: "结直肠癌分子病理检测临床实践指南(2025版)"
-  short_description: "查询结直肠癌分子病理检测的临床建议"
-  default_prompt: "请使用该指南回答关于结直肠癌分子病理检测的问题"

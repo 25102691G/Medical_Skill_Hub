@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from agents import Agent, Runner
 from openai import OpenAI
@@ -10,6 +11,7 @@ from config import (
     DEEPSEEK_API_KEY,
     DEEPSEEK_BASE_URL,
     DEEPSEEK_MODEL,
+    DEEPSEEK_THINKING,
     OPENAI_MODEL,
     SKILL_COMPILER_MODEL,
     SKILL_COMPILER_PROVIDER,
@@ -25,10 +27,9 @@ class SkillCompilerMetadata(BaseModel):
     guideline_title: str = Field(description="Official guideline or consensus title")
     skill_description: str = Field(
         description=(
-            "Disease-specific front matter description for SKILL.md. Include the Chinese and English "
-            "disease names, common abbreviations, applicable clinical scope, and clear trigger boundary. "
-            "Do not include a broad disease category because the compiler adds the verified source "
-            "directory category."
+            "Primary-disease front matter description for SKILL.md. Include the Chinese and English "
+            "primary disease names, common abbreviations, and applicable clinical scope. Do not "
+            "include a broad disease category."
         )
     )
     display_name: str = Field(description="Display name for agents/openai.yaml")
@@ -40,6 +41,13 @@ class SkillCompilerMetadata(BaseModel):
     common_abbreviations: list[SkillCompilerAbbreviation] = Field(
         default_factory=list,
         description="Common abbreviations useful for this skill",
+    )
+    explicit_differential_diseases: list[str] = Field(
+        description=(
+            "Diseases explicitly covered by substantive differential diagnosis, exclusion, or "
+            "disease-comparison content in the guideline. Exclude incidental mentions, references, "
+            "comorbidities, and treatment-only mentions."
+        ),
     )
 
 
@@ -80,7 +88,7 @@ class GuidelineSourceBlock(BaseModel):
     text: str
 
 
-DEEPSEEK_INDEX_CHUNK_CHARS = 30_000
+DEEPSEEK_INDEX_CHUNK_CHARS = 12_000
 
 
 SKILL_COMPILER_INSTRUCTIONS = """
@@ -108,10 +116,14 @@ You will receive a Markdown full text extracted from a clinical PDF.
 7. If OCR line breaks or missing context make an item unclear, explicitly mark that uncertainty in
    the entry content instead of filling unsupported fields.
 8. Generate concise metadata for SKILL.md and agents/openai.yaml. The skill description must identify
-   the specific disease in Chinese and English, common abbreviations when supported, applicable
-   clinical scope, and when the skill should be used. Do not assign or mention a broad disease
-   category; the compiler adds the verified category from the source directory.
-9. The source document is divided into SOURCE_BLOCK elements with stable IDs derived from the exact
+   the guideline's primary disease in Chinese and English, common abbreviations when supported, and
+   applicable clinical scope. Do not assign or mention a broad disease category.
+9. Populate explicit_differential_diseases only with diseases for which the guideline contains
+   substantive differential diagnosis, explicit exclusion, or disease-comparison content. Do not
+   include diseases mentioned only in background text, references, comorbidity discussions, treatment
+   indications, adverse effects, or other non-diagnostic contexts. Return an empty list when the
+   guideline contains no explicit differential disease.
+10. The source document is divided into SOURCE_BLOCK elements with stable IDs derived from the exact
    Markdown line ranges. For every index entry, return all and only the supplied source_block_ids that
    directly support it. Never create, alter, or infer a source block ID.
 
@@ -132,26 +144,69 @@ def build_skill_compiler_agent() -> Agent:
     )
 
 
-def _build_source_blocks(full_text: str) -> list[GuidelineSourceBlock]:
+def _build_source_blocks(
+    full_text: str,
+    *,
+    max_chars: int | None = None,
+) -> list[GuidelineSourceBlock]:
     lines = full_text.splitlines()
     blocks: list[GuidelineSourceBlock] = []
     start_line: int | None = None
+    block_lines: list[str] = []
 
     for index, line in enumerate(lines, start=1):
-        if line.strip() and start_line is None:
-            start_line = index
-        if start_line is not None and (not line.strip() or index == len(lines)):
-            end_line = index - 1 if not line.strip() else index
-            block_id = f"L{start_line:06d}-L{end_line:06d}"
-            blocks.append(
-                GuidelineSourceBlock(
-                    block_id=block_id,
-                    start_line=start_line,
-                    end_line=end_line,
-                    text="\n".join(lines[start_line - 1 : end_line]),
+        if not line.strip():
+            if start_line is not None:
+                end_line = index - 1
+                block_id = f"L{start_line:06d}-L{end_line:06d}"
+                blocks.append(
+                    GuidelineSourceBlock(
+                        block_id=block_id,
+                        start_line=start_line,
+                        end_line=end_line,
+                        text="\n".join(block_lines),
+                    )
                 )
+                start_line = None
+                block_lines = []
+            continue
+
+        if start_line is None:
+            start_line = index
+
+        if max_chars and block_lines:
+            candidate = GuidelineSourceBlock(
+                block_id=f"L{start_line:06d}-L{index:06d}",
+                start_line=start_line,
+                end_line=index,
+                text="\n".join([*block_lines, line]),
             )
-            start_line = None
+            if len(_render_source_blocks([candidate])) > max_chars:
+                end_line = index - 1
+                block_id = f"L{start_line:06d}-L{end_line:06d}"
+                blocks.append(
+                    GuidelineSourceBlock(
+                        block_id=block_id,
+                        start_line=start_line,
+                        end_line=end_line,
+                        text="\n".join(block_lines),
+                    )
+                )
+                start_line = index
+                block_lines = []
+        block_lines.append(line)
+
+    if start_line is not None:
+        end_line = len(lines)
+        block_id = f"L{start_line:06d}-L{end_line:06d}"
+        blocks.append(
+            GuidelineSourceBlock(
+                block_id=block_id,
+                start_line=start_line,
+                end_line=end_line,
+                text="\n".join(block_lines),
+            )
+        )
     return blocks
 
 
@@ -173,12 +228,35 @@ def _render_recommendations_index(
     current_subsection: str | None = None
 
     for entry in entries:
+        source_block_ids = []
+        for block_id in entry.source_block_ids:
+            if block_id not in valid_block_ids and len(block_id) == 7 and block_id.startswith("L"):
+                single_line_block_id = f"{block_id}-{block_id}"
+                if single_line_block_id in valid_block_ids:
+                    block_id = single_line_block_id
+            if block_id not in valid_block_ids:
+                range_match = re.fullmatch(r"L(\d{6})-L(\d{6})", block_id)
+                if range_match:
+                    range_start, range_end = map(int, range_match.groups())
+                    covered_blocks = [
+                        block
+                        for block in source_blocks
+                        if block.start_line >= range_start and block.end_line <= range_end
+                    ]
+                    if (
+                        covered_blocks
+                        and covered_blocks[0].start_line == range_start
+                        and covered_blocks[-1].end_line == range_end
+                    ):
+                        source_block_ids.extend(block.block_id for block in covered_blocks)
+                        continue
+            source_block_ids.append(block_id)
         invalid_block_ids = [
             block_id
-            for block_id in entry.source_block_ids
+            for block_id in source_block_ids
             if block_id not in valid_block_ids
         ]
-        if not entry.source_block_ids or invalid_block_ids:
+        if not source_block_ids or invalid_block_ids:
             raise RuntimeError(
                 "Skill compiler returned an index entry without valid source blocks: "
                 f"{entry.content}; invalid IDs: {invalid_block_ids}"
@@ -196,7 +274,7 @@ def _render_recommendations_index(
             current_subsection = subsection
 
         content = " ".join(entry.content.splitlines()).strip()
-        source_ids = "、".join(f"`{block_id}`" for block_id in entry.source_block_ids)
+        source_ids = "、".join(f"`{block_id}`" for block_id in source_block_ids)
         lines.extend(["", f"- {content}", f"  - 原文位置：{source_ids}"])
 
     return "\n".join(lines)
@@ -231,12 +309,13 @@ def _build_compile_prompt(full_text: str) -> str:
 def _build_deepseek_metadata_system_prompt() -> str:
     schema = {
         "guideline_title": "示例指南",
-        "skill_description": "用于示例疾病（Example disease，ED）的诊断、鉴别诊断、治疗和随访，仅在病例候选诊断包含该疾病时使用。",
+        "skill_description": "用于示例疾病（Example disease，ED）的诊断、鉴别诊断、治疗和随访。",
         "display_name": "示例指南",
         "short_description": "查询示例指南中的临床建议",
         "default_prompt": "请使用示例指南回答临床问题",
         "recommendations_label": "推荐意见",
         "common_abbreviations": [{"abbreviation": "CD", "meaning": "Crohn disease"}],
+        "explicit_differential_diseases": ["示例鉴别疾病（Example differential disease）"],
     }
     return f"""
 ## DEEPSEEK METADATA INSTRUCTIONS
@@ -251,10 +330,14 @@ Use only the supplied source text. Do not generate the recommendation index in t
 
 Prefer Chinese user-facing metadata when the source document is Chinese.
 
-The skill_description must identify the specific disease in Chinese and English, include common
-abbreviations when supported, describe the applicable clinical scope and trigger boundary, and must not
-assign or mention a broad disease category because the compiler adds the verified source directory
-category.
+The skill_description must identify the guideline's primary disease in Chinese and English, include
+common abbreviations when supported, describe the applicable clinical scope, and must not assign or
+mention a broad disease category.
+
+Populate explicit_differential_diseases only with diseases for which the guideline contains substantive
+differential diagnosis, explicit exclusion, or disease-comparison content. Do not include incidental
+mentions, references, comorbidities, treatment-only mentions, or adverse-effect mentions. Use an empty
+list when no disease meets this requirement.
 
 ### 3. Output Requirements
 
@@ -346,6 +429,11 @@ def _request_deepseek_text(
         temperature=0,
         max_tokens=max_tokens,
         response_format={"type": "json_object"},
+        extra_body={
+            "thinking": {
+                "type": "enabled" if DEEPSEEK_THINKING else "disabled",
+            }
+        },
     )
     choice = response.choices[0]
     content = choice.message.content or ""
@@ -389,7 +477,10 @@ def _compile_guideline_text_with_deepseek(full_text: str) -> SkillCompilerResult
     )
     metadata = _parse_deepseek_metadata(metadata_content)
 
-    source_blocks = _build_source_blocks(full_text)
+    source_blocks = _build_source_blocks(
+        full_text,
+        max_chars=DEEPSEEK_INDEX_CHUNK_CHARS,
+    )
     chunks = _chunk_source_blocks(source_blocks)
     index_entries: list[SkillCompilerIndexEntry] = []
     for chunk_number, chunk in enumerate(chunks, start=1):

@@ -1,0 +1,4 @@
+interface:
+  display_name: "结肠憩室炎诊疗指南（2019版）"
+  short_description: "查询2019版日本指南中结肠憩室炎的诊断和治疗建议"
+  default_prompt: "请使用2019版日本结肠憩室出血和结肠憩室炎治疗指南回答关于结肠憩室炎的临床问题"

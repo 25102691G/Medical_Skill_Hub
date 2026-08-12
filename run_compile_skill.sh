@@ -36,7 +36,13 @@ export MINERU_DEVICE_MODE
 export NO_PROXY
 export no_proxy
 
+if [[ $# -gt 0 ]]; then
+    INPUT_ARGS=("$@")
+else
+    INPUT_ARGS=(--pdfs "$INPUT_PDFS" --workers 10)
+fi
+
 .venv/bin/python compile_skill.py \
-    --pdfs "$INPUT_PDFS" \
+    "${INPUT_ARGS[@]}" \
     --skills-dir "$SKILLS_DIR" \
     --mineru-command "$MINERU_COMMAND"

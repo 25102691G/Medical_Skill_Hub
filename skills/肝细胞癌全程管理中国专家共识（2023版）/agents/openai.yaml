@@ -1,0 +1,4 @@
+interface:
+  display_name: "肝细胞癌全程管理中国专家共识（2023版）"
+  short_description: "查询肝细胞癌全程管理中的治疗、随访与支持治疗建议"
+  default_prompt: "请使用肝细胞癌全程管理中国专家共识回答临床问题"

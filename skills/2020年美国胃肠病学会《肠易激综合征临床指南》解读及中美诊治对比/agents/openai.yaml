@@ -1,0 +1,4 @@
+interface:
+  display_name: "2020年美国胃肠病学会肠易激综合征指南"
+  short_description: "查询2020年ACG肠易激综合征指南中的临床建议"
+  default_prompt: "请使用2020年美国胃肠病学会肠易激综合征指南回答临床问题"

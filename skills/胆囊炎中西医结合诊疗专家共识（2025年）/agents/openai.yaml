@@ -1,0 +1,4 @@
+interface:
+  display_name: "胆囊炎中西医结合诊疗专家共识(2025年)"
+  short_description: "查询胆囊炎中西医结合诊疗专家共识中的临床建议"
+  default_prompt: "请使用胆囊炎中西医结合诊疗专家共识回答临床问题"

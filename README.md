@@ -89,17 +89,13 @@ NCBI_TOOL=medical_skill_hub
 
 ## 指南 Skill 编译与检索
 
-批量编译前，需要将每份 PDF 放入人工确认的疾病类别目录：
+批量编译前，将所有 PDF 直接放入 `guidelines/`：
 
 ```text
 guidelines/
-├── 非感染性小肠炎和结肠炎/
-│   ├── 中国克罗恩病诊治指南（2023年·广州）.pdf
-│   └── 中国溃疡性结肠炎诊治指南（2023年·西安）.pdf
-├── 肠的其他疾病/
-│   └── ...
-└── 肝疾病/
-    └── ...
+├── 中国克罗恩病诊治指南（2023年·广州）.pdf
+├── 中国溃疡性结肠炎诊治指南（2023年·西安）.pdf
+└── ...
 ```
 
 运行：
@@ -108,9 +104,21 @@ guidelines/
 bash run_compile_skill.sh
 ```
 
+默认同时编译 2 份指南，但 MinerU 的 CUDA 解析固定为单任务，避免争抢显存；模型请求可与
+下一份 PDF 的解析重叠执行。需要调整并发数时显式传入输入目录和 `--workers`：
+
+```bash
+bash run_compile_skill.sh --pdfs ./guidelines --workers 3
+```
+
 编译器会将 MinerU 生成的 Markdown 直接保存为 `references/guideline-full-text.md`，并为
 每个非空原文段落生成稳定的全文行号块。LLM 生成的 `references/recommendations-index.md`
 中每个条目都引用对应原文块；检索时完整读取索引进行语义匹配，再按块ID读取全文核实。
+编译器还会把指南的主要疾病及适用范围和有实质性诊断内容支持的明确鉴别疾病写入
+`SKILL.md` 描述。病例候选直接对应主要疾病，或出现在明确鉴别疾病中时，都会选择该
+Skill。对于主要疾病被病例候选直接命中的 Skill，系统还会选择其明确鉴别疾病各自对应
+的主要疾病 Skill；该扩展只执行一层，不从反向匹配或扩展得到的 Skill 继续递归。所有
+选中的 Skill 均执行相同的完整检索流程，且不限制匹配数量。
 
 ## 医疗声明
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "腹股沟疝诊疗指南(2025版)"
-  short_description: "查询腹股沟疝的临床建议"
+  short_description: "查询腹股沟疝诊疗指南(2025版)中的推荐意见和临床建议"
   default_prompt: "请使用《腹股沟疝诊疗指南(2025版)》回答临床问题"

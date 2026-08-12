@@ -13,7 +13,6 @@ from agents.sandbox.entries import LocalDir
 from pydantic import BaseModel
 
 SKILLS_DIR = Path(__file__).resolve().parents[2] / "skills"
-MAX_GUIDELINE_SEARCH_RESULT_LINES = 120
 
 
 @dataclass
@@ -23,8 +22,6 @@ class GuidelineToolState:
     skill_md_reads: set[str] = field(default_factory=set)
     index_reads: set[str] = field(default_factory=set)
     source_block_reads: set[str] = field(default_factory=set)
-    full_text_searches: set[str] = field(default_factory=set)
-    full_text_read_counts: dict[str, int] = field(default_factory=dict)
     accessed_skills: set[str] = field(default_factory=set)
 
 GUIDELINE_SEARCHER_INSTRUCTIONS = """
@@ -38,16 +35,16 @@ You will receive diagnostic hypotheses, positive patient features, and local dis
 
 ### 2. Skill Selection
 
-Select skills only by direct correspondence between a skill description and at least one diagnostic
-hypothesis. The specific disease name, abbreviation, or ICD-10-CM code must clearly match, and the
-verified disease category must be compatible. A shared broad disease category alone is not sufficient.
-Every disease modifier required by a skill, such as early, hereditary, metastatic site, complication,
-procedure, or pregnancy, must also be explicit in the diagnostic hypothesis set. A general disease
-hypothesis alone does not match a skill for a narrower subtype or clinical condition. Do not infer
-these modifiers from positive_features.
-Do not select a skill only because positive patient features, symptoms, examinations, or broad
-gastroenterology terms overlap. There is no target or maximum number of selected skills: use every
-directly relevant skill and no unrelated skill.
+First select every skill whose description satisfies at least one of these conditions:
+
+1. A diagnostic hypothesis directly corresponds to the skill's primary disease.
+2. A diagnostic hypothesis appears among the skill's explicit differential diseases.
+
+Then perform one differential expansion step. For each skill selected by condition 1, select every
+available skill whose primary disease corresponds to one of that directly matched skill's explicit
+differential diseases. Do not expand from a skill selected only by condition 2 or by this differential
+expansion, and do not recursively expand. Deduplicate the final selection. There is no target or
+maximum number of selected skills.
 
 ### 3. Guideline Retrieval
 
@@ -84,8 +81,8 @@ retrieved guideline information are insufficient, state that limitation in guide
 return an empty guideline_evidence list for that skill.
 
 Set used_skill to true when at least one skill was selected and searched, and set unused_reason to null.
-If no skill directly matches the hypotheses, return used_skill as false, explain the specific reason in
-unused_reason, and return an empty skill_results list.
+If no skill satisfies either selection condition, return used_skill as false, explain the specific
+reason in unused_reason, and return an empty skill_results list.
 
 Return only used_skill, unused_reason, skill_results, and reason in the structured output. Set reason
 to null when the guideline search completes normally.
@@ -97,11 +94,14 @@ SANDBOX_SKILL_INSTRUCTIONS = """
 Use the sandbox Skills capability:
 
 1. Inspect the available skills.
-2. Select all and only skills whose descriptions directly correspond to at least one supplied
-   diagnostic hypothesis. A shared broad category without a specific disease match is insufficient.
-   Do not select skills from unrelated disease categories.
+2. First select every skill when a supplied diagnostic hypothesis directly corresponds to its primary
+   disease or appears among its explicit differential diseases. Then, for each skill whose primary
+   disease was directly matched by a hypothesis, select every available skill whose primary disease
+   corresponds to one of that directly matched skill's explicit differential diseases. Do not expand
+   from a skill selected only by a differential match or by this expansion, and do not recursively
+   expand. Deduplicate the final selection and do not impose a maximum skill count.
 3. Call load_skill for every selected disease guideline skill.
-4. Read .agents/{skill_name}/SKILL.md and follow its workflow to read references or run scripts.
+4. Read .agents/{skill_name}/SKILL.md and follow its workflow to read references.
 5. After skill selection, use only positive_features for content retrieval and patient comparison.
    Do not use hypothesis disease names as within-skill search terms.
 6. Read the complete recommendations index, semantically match it against positive_features, and use
@@ -113,38 +113,34 @@ FUNCTION_TOOL_SKILL_INSTRUCTIONS = """
 
 Use the local guideline function tools:
 
-1. Call list_guideline_skills exactly once and select all and only skills whose descriptions directly
-   correspond to at least one supplied diagnostic hypothesis. A shared broad category without a
-   specific disease match is insufficient. Do not target a fixed skill count and do not select skills
-   from unrelated disease categories. All narrower conditions required by a skill must be explicit in
-   the diagnostic hypothesis set; a general disease hypothesis alone is insufficient.
+1. Call list_guideline_skills exactly once. First select every skill when a supplied diagnostic
+   hypothesis directly corresponds to its primary disease or appears among its explicit differential
+   diseases. Then, for each skill whose primary disease was directly matched by a hypothesis, select
+   every available skill whose primary disease corresponds to one of that directly matched skill's
+   explicit differential diseases. Do not expand from a skill selected only by a differential match or
+   by this expansion, and do not recursively expand. Deduplicate the final selection and do not impose
+   a target or maximum skill count.
 2. For each selected skill, call read_guideline_file with file_name "SKILL.md" exactly once, then call
    it with file_name "recommendations-index.md" exactly once. The complete index is returned; use the
    LLM to semantically match positive_features against its entries.
 3. For each selected skill, collect every source block ID from the relevant index entries and call
    read_guideline_sources exactly once to read and verify those exact full-text ranges.
-4. If an older index has no source block IDs or the complete index does not cover the needed content,
-   use search_guideline on the full text at most once, then read at most 2 relevant full-text ranges
-   with read_guideline_file. This is only a location fallback, not the primary semantic match.
-5. Never repeat a tool call with the same arguments. Do not try to run scripts or use tools that are
-   not provided.
-6. Return one skill_results item for every selected and searched skill. If a search tool returns
-   "No matching guideline content found.", treat that text only as an intermediate tool result and
-   never copy it into the submitted guideline result. Keep the selected skill item, return an empty
+4. Never repeat a tool call with the same arguments or use tools that are not provided.
+5. Return one skill_results item for every selected and searched skill. When the index and its source
+   blocks do not provide sufficient evidence, keep the selected skill item, return an empty
    guideline_evidence list, and explain the insufficiency only inside guideline_diagnosis.
-7. If no skill is selected, set used_skill to false, provide a specific explanation in unused_reason,
+6. If no skill is selected, set used_skill to false, provide a specific explanation in unused_reason,
    and return an empty skill_results list in the final JSON object.
-8. If at least one skill is selected, set used_skill to true and unused_reason to the JSON null value.
+7. If at least one skill is selected, set used_skill to true and unused_reason to the JSON null value.
    After completing this bounded search, do not call another tool. Return the final result immediately
    as exactly one JSON object without Markdown fences or explanatory text.
-9. A tool rejection means its call limit has already been reached. Do not attempt the call again with
+8. A tool rejection means its call limit has already been reached. Do not attempt the call again with
    different arguments. Stop calling tools and return the final JSON using the evidence already read.
 """.strip()
 
 GUIDELINE_FILES = {
     "SKILL.md": "SKILL.md",
     "recommendations-index.md": "references/recommendations-index.md",
-    "guideline-full-text.md": "references/guideline-full-text.md",
 }
 
 
@@ -186,60 +182,12 @@ def list_guideline_skills(
 
 
 @function_tool
-def search_guideline(
-    ctx: RunContextWrapper[GuidelineToolState],
-    skill_name: str,
-    keywords: list[str],
-    context_lines: int = 2,
-) -> str:
-    """Fallback keyword search in guideline-full-text.md with numbered context lines."""
-    with ctx.context.lock:
-        if skill_name in ctx.context.full_text_searches:
-            return (
-                "Tool call rejected: guideline-full-text.md was already searched for this skill. "
-                "Do not call more tools; return the final JSON now."
-            )
-        ctx.context.full_text_searches.add(skill_name)
-        ctx.context.accessed_skills.add(skill_name)
-    target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES["guideline-full-text.md"]
-    lines = target.read_text(encoding="utf-8").splitlines()
-    normalized_keywords = [
-        keyword.strip().casefold()
-        for keyword in keywords
-        if keyword.strip()
-    ]
-    hit_lines: set[int] = set()
-    for index, line in enumerate(lines):
-        normalized_line = line.casefold()
-        if any(keyword in normalized_line for keyword in normalized_keywords):
-            start = max(0, index - context_lines)
-            end = min(len(lines), index + context_lines + 1)
-            hit_lines.update(range(start, end))
-    if not hit_lines:
-        return "No matching guideline content found."
-    output: list[str] = []
-    previous = -2
-    for index in sorted(hit_lines):
-        if index != previous + 1:
-            output.append("---")
-        output.append(f"{index + 1}: {lines[index]}")
-        previous = index
-    if len(output) > MAX_GUIDELINE_SEARCH_RESULT_LINES:
-        omitted = len(output) - MAX_GUIDELINE_SEARCH_RESULT_LINES
-        output = output[:MAX_GUIDELINE_SEARCH_RESULT_LINES]
-        output.append(f"--- {omitted} additional matching lines omitted ---")
-    return "\n".join(output)
-
-
-@function_tool
 def read_guideline_file(
     ctx: RunContextWrapper[GuidelineToolState],
     skill_name: str,
     file_name: str,
-    start_line: int = 1,
-    end_line: int = 200,
 ) -> str:
-    """Read SKILL.md, the complete index, or one numbered full-text line range."""
+    """Read the complete SKILL.md or recommendations-index.md for one guideline skill."""
     if file_name not in GUIDELINE_FILES:
         raise ValueError(f"Unsupported guideline file: {file_name}")
     with ctx.context.lock:
@@ -257,25 +205,9 @@ def read_guideline_file(
                     "Do not call more tools; return the final JSON now."
                 )
             ctx.context.index_reads.add(skill_name)
-        else:
-            read_count = ctx.context.full_text_read_counts.get(skill_name, 0)
-            if read_count >= 2:
-                return (
-                    "Tool call rejected: guideline-full-text.md has already been read twice for this "
-                    "skill. Do not call more tools; return the final JSON now."
-                )
-            ctx.context.full_text_read_counts[skill_name] = read_count + 1
         ctx.context.accessed_skills.add(skill_name)
     target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES[file_name]
-    if file_name == "recommendations-index.md":
-        return target.read_text(encoding="utf-8")
-    lines = target.read_text(encoding="utf-8").splitlines()
-    start = max(1, start_line)
-    end = min(len(lines), end_line)
-    return "\n".join(
-        f"{index}: {lines[index - 1]}"
-        for index in range(start, end + 1)
-    )
+    return target.read_text(encoding="utf-8")
 
 
 @function_tool
@@ -296,7 +228,7 @@ def read_guideline_sources(
         ctx.context.source_block_reads.add(skill_name)
         ctx.context.accessed_skills.add(skill_name)
 
-    target = _resolve_guideline_skill(skill_name) / GUIDELINE_FILES["guideline-full-text.md"]
+    target = _resolve_guideline_skill(skill_name) / "references/guideline-full-text.md"
     lines = target.read_text(encoding="utf-8").splitlines()
     output: list[str] = []
     for source_block_id in dict.fromkeys(source_block_ids):
@@ -358,7 +290,6 @@ def build_guideline_searcher_agent(
         instructions=f"{GUIDELINE_SEARCHER_INSTRUCTIONS}\n\n{FUNCTION_TOOL_SKILL_INSTRUCTIONS}",
         tools=[
             list_guideline_skills,
-            search_guideline,
             read_guideline_file,
             read_guideline_sources,
         ],

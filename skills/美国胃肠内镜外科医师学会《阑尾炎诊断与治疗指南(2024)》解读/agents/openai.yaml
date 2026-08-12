@@ -1,4 +1,4 @@
 interface:
-  display_name: "阑尾炎诊断与治疗指南(2024)"
-  short_description: "查询阑尾炎诊断与治疗指南(2024)中的临床建议"
-  default_prompt: "请使用阑尾炎诊断与治疗指南(2024)回答临床问题"
+  display_name: "阑尾炎诊断与治疗指南解读"
+  short_description: "查询阑尾炎诊断、治疗、手术时机及抗生素策略的推荐意见"
+  default_prompt: "请使用美国胃肠内镜外科医师学会《阑尾炎诊断与治疗指南(2024)》回答临床问题"

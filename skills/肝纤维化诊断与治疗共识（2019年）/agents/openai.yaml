@@ -1,0 +1,4 @@
+interface:
+  display_name: "肝纤维化诊断及治疗共识（2019年）"
+  short_description: "查询肝纤维化诊断及治疗共识中的临床建议"
+  default_prompt: "请使用肝纤维化诊断及治疗共识回答临床问题"

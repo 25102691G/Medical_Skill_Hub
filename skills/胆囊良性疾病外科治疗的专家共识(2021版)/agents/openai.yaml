@@ -1,4 +1,4 @@
 interface:
-  display_name: "胆囊良性疾病外科治疗的专家共识 (2021版)"
-  short_description: "查询胆囊良性疾病外科治疗的专家共识中的临床建议"
-  default_prompt: "请使用胆囊良性疾病外科治疗的专家共识回答临床问题"
+  display_name: "胆囊良性疾病外科治疗专家共识"
+  short_description: "查询胆囊良性疾病外科治疗共识中的临床建议"
+  default_prompt: "请使用胆囊良性疾病外科治疗专家共识回答临床问题"

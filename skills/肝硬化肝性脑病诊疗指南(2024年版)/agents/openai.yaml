@@ -1,4 +1,4 @@
 interface:
   display_name: "肝硬化肝性脑病诊疗指南(2024年版)"
   short_description: "查询肝硬化肝性脑病诊疗指南中的临床建议"
-  default_prompt: "请使用肝硬化肝性脑病诊疗指南回答临床问题"
+  default_prompt: "请使用肝硬化肝性脑病诊疗指南(2024年版)回答临床问题"

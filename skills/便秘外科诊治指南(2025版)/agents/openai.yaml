@@ -1,0 +1,4 @@
+interface:
+  display_name: "便秘外科诊治指南（2025版）"
+  short_description: "查询便秘外科诊治指南（2025版）中的临床建议"
+  default_prompt: "请使用便秘外科诊治指南（2025版）回答临床问题"

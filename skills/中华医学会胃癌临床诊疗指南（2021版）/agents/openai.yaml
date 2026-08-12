@@ -1,0 +1,4 @@
+interface:
+  display_name: "胃癌临床诊疗指南（2021版）"
+  short_description: "查询胃癌临床诊疗指南（2021版）中的临床建议"
+  default_prompt: "请使用中华医学会胃癌临床诊疗指南（2021版）回答临床问题"

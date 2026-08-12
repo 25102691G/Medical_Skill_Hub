@@ -1,0 +1,4 @@
+interface:
+  display_name: "缺血性肠病诊治指南"
+  short_description: "查询缺血性肠病指南中的临床建议"
+  default_prompt: "请使用缺血性肠病指南回答临床问题"

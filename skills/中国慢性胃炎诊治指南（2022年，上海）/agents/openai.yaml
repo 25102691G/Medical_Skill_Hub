@@ -1,0 +1,4 @@
+interface:
+  display_name: "中国慢性胃炎诊治指南"
+  short_description: "查询中国慢性胃炎诊治指南中的临床推荐意见"
+  default_prompt: "请使用中国慢性胃炎诊治指南回答临床问题"

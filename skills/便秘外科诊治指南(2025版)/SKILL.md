@@ -1,0 +1,51 @@
+---
+name: 便秘外科诊治指南(2025版)
+description: "主要疾病及适用范围：用于便秘（Constipation，包括STC、OOC、MC）的诊断、鉴别诊断、非手术治疗（饮食、药物、生物反馈等）和外科手术治疗，重点涵盖手术指征评估、术式选择及围手术期处理。明确鉴别疾病：结直肠癌（Colorectal cancer）、盆底肌痉挛综合征（Spastic pelvic floor syndrome）、耻骨直肠肌综合征（Puborectalis syndrome）。"
+---
+
+# 便秘外科诊治指南（2025版）
+
+## 工作流程
+
+使用本 skill 回答与《便秘外科诊治指南（2025版）》相关的问题时，以 `references/guideline-full-text.md` 为原文依据。
+
+1. 完整读取 `references/recommendations-index.md`，根据问题或病例阳性特征语义匹配相关推荐意见、诊断标准、鉴别诊断、检查、治疗、监测、随访等重要信息。
+2. 按索引条目的“原文位置”直接读取 `references/guideline-full-text.md` 对应行，核实适用人群、限制条件、解释依据和上下文。
+3. 如用户询问该文件之外的最新证据、药品获批状态、医保或现实可及性，应使用当前权威来源另行核实。
+
+## 回答规则
+
+- 明确说明回答依据《便秘外科诊治指南（2025版）》。
+- 有推荐意见编号时，列出对应编号。
+- 有证据等级和推荐强度时，按索引或原文原样列出。
+- 区分“指南/共识推荐、建议、可考虑、不推荐”和 Codex 自己的解释性总结。
+- 不要编造原文没有给出的剂量、疗程、监测阈值、禁忌证或随访间隔。
+- 对患者个体化决策，说明指南或共识不能替代临床医生评估；诊疗选择需结合疾病分期、活动度、并发症、既往治疗反应、感染风险、合并症和药物可及性。
+- 如果原文和索引不一致，以 `guideline-full-text.md` 原文为准。
+
+## 资源
+
+- `references/recommendations-index.md`：LLM 根据全文自动生成的重要信息索引；每个条目带有确定性的全文行号范围，用于直接定位原文。
+- `references/guideline-full-text.md`：MinerU 解析得到的指南 Markdown 全文。
+
+## 常用缩写
+
+- STC：慢传输型便秘（Slow transit constipation）
+- OOC：出口梗阻型便秘（Outlet obstructive constipation）
+- MC：混合型便秘（Mixed constipation）
+- IRP：直肠内脱垂（Internal rectal prolapse）
+- BFT：生物反馈治疗（Biofeedback therapy）
+- TC-IRA：全结肠切除回肠直肠吻合术（Total colectomy with ileorectal anastomosis）
+- SC-CRA：次全结肠切除盲肠直肠吻合术（Subtotal colectomy with cecorectal anastomosis）
+- ARM：肛门直肠测压（Anorectal manometry）
+- BET：球囊逼出试验（Balloon expulsion test）
+- MRD：磁共振排粪造影（Magnetic resonance defecography）
+- SNS：骶神经电刺激术（Sacral nerve stimulation）
+- PTNS：胫后神经刺激术（Percutaneous tibial nerve stimulation）
+- LVMR：腹腔镜腹侧补片直肠悬吊术（Laparoscopic ventral mesh rectopexy）
+- STARR：经肛吻合器直肠切除术（Stapled transanal rectal resection）
+- SPFS：盆底肌痉挛综合征（Spastic pelvic floor syndrome）
+- PRS：耻骨直肠肌综合征（Puborectalis syndrome）
+- ODS：排便梗阻综合征（Obstructed defecation syndrome）
+- WCS：Wexner便秘评分（Wexner constipation scale）
+- GIQLI：胃肠生活质量指数（Gastrointestinal quality of life index）

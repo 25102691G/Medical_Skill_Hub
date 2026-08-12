@@ -1,0 +1,4 @@
+interface:
+  display_name: "食管癌诊疗指南（2022年版）"
+  short_description: "查询食管癌诊疗指南（2022年版）中的临床建议"
+  default_prompt: "请使用食管癌诊疗指南（2022年版）回答临床问题"

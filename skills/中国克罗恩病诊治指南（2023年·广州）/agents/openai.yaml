@@ -1,4 +1,4 @@
 interface:
   display_name: "中国克罗恩病诊治指南（2023年·广州）"
-  short_description: "查询克罗恩病诊治指南中的临床建议"
-  default_prompt: "请使用中国克罗恩病诊治指南回答临床问题"
+  short_description: "查询中国克罗恩病诊治指南（2023年·广州）中的临床建议"
+  default_prompt: "请使用中国克罗恩病诊治指南（2023年·广州）回答临床问题"

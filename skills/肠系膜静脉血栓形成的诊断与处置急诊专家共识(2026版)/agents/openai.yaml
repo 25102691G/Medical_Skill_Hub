@@ -1,4 +1,4 @@
 interface:
-  display_name: "肠系膜静脉血栓形成专家共识"
-  short_description: "查询肠系膜静脉血栓形成专家共识中的临床建议"
-  default_prompt: "请使用肠系膜静脉血栓形成专家共识回答临床问题"
+  display_name: "肠系膜静脉血栓形成急诊专家共识"
+  short_description: "查询肠系膜静脉血栓形成急诊诊疗建议"
+  default_prompt: "请使用肠系膜静脉血栓形成急诊专家共识回答临床问题"

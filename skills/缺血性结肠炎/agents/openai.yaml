@@ -1,0 +1,4 @@
+interface:
+  display_name: "缺血性结肠炎"
+  short_description: "查询缺血性结肠炎诊疗相关临床建议"
+  default_prompt: "请使用缺血性结肠炎指南中的内容回答临床问题"

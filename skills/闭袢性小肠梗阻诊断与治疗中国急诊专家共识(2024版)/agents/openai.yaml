@@ -1,4 +1,4 @@
 interface:
-  display_name: "闭袢性小肠梗阻共识"
-  short_description: "查询闭袢性小肠梗阻共识中的临床建议"
-  default_prompt: "请使用闭袢性小肠梗阻共识回答临床问题"
+  display_name: "闭袢性小肠梗阻诊断与治疗中国急诊专家共识(2024版)"
+  short_description: "查询闭袢性小肠梗阻诊疗共识中的临床建议"
+  default_prompt: "请使用《闭袢性小肠梗阻诊断与治疗中国急诊专家共识(2024版)》回答相关临床问题"

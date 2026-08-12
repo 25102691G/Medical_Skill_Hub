@@ -1,0 +1,4 @@
+interface:
+  display_name: "便秘型肠易激综合征治疗指南"
+  short_description: "查询便秘型肠易激综合征治疗指南中的治疗建议"
+  default_prompt: "请使用便秘型肠易激综合征治疗指南回答临床问题"

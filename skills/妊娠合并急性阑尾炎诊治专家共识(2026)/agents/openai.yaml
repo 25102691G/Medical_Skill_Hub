@@ -1,4 +1,0 @@
-interface:
-  display_name: "妊娠合并急性阑尾炎诊治专家共识(2026)"
-  short_description: "查询妊娠合并急性阑尾炎诊治专家共识中的临床建议"
-  default_prompt: "请使用妊娠合并急性阑尾炎诊治专家共识回答临床问题"

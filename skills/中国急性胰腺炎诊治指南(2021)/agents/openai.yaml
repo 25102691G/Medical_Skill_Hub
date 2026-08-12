@@ -1,4 +1,4 @@
 interface:
   display_name: "中国急性胰腺炎诊治指南(2021)"
-  short_description: "查询急性胰腺炎诊治指南中的临床建议"
+  short_description: "查询中国急性胰腺炎诊治指南中的临床建议"
   default_prompt: "请使用中国急性胰腺炎诊治指南回答临床问题"

@@ -1,162 +1,363 @@
 # 结核性腹膜炎多学科诊疗专家共识重要信息索引
 
-## Epidemiology
+## 概述
 
-- Tuberculous peritonitis can occur at any age, with a slight female predominance. Infection mainly spreads directly from intra-abdominal tuberculous foci; it is a relatively common form of extrapulmonary tuberculosis (TB). (Consensus 1, A1)
+- 本共识旨在规范结核性腹膜炎的诊疗流程，提高诊治水平。据WHO估算，2023年全球结核病新发患者约1080万例，发病率134/10万；我国新发患者约74.1万例，发病率52/10万。
+  - 原文位置：`L000007-L000007`、`L000025-L000025`
 
-## Pathophysiology
+## 制定方法
 
-- **Pathological types**: exudative (early ascites), adhesive (extensive adhesions, possible bowel obstruction), caseous (necrosis, abscess, fistula). Types may coexist or progress. (Consensus 2, A1)
+### 共识制定过程
 
-## Diagnosis
+- 采用会议共识法，系统检索了PubMed、Embase、Cochrane Library、中国知网、万方数据库和中国生物医学文献数据库等2024年11月前的文献，纳入指南、专家共识、综述、荟萃分析和原始研究，采用GRADE系统进行证据质量分级和推荐强度分级。
+  - 原文位置：`L000029-L000029`、`L000031-L000031`
 
-### Clinical Manifestations
+### GRADE证据质量分级
 
-- Common: abdominal distension, pain, fever (usually low-grade), night sweats, fatigue, weight loss, diarrhea/constipation.
-- Signs: ascites (in 90%), abdominal tenderness, "doughy" abdomen, shifting dullness, fluid thrill.
-- (Consensus 3, A1)
+- 证据质量分四级：高级证据(A)为随机对照试验或质量升高二级的观察性研究，未来研究几乎不可能改变现有评价结果；中级证据(B)为质量降低一级的随机对照试验或质量升高一级的观察性研究；低级证据(C)为质量降低二级的随机对照试验或观察性研究；极低级证据(D)为质量降低三级的随机对照试验、质量降低一级的观察性研究、系列病例观察或个案报道。
+  - 原文位置：`L000033-L000034`
 
-### Imaging
+### GRADE推荐强度分级
 
-- **Ultrasound**: first-line; detects ascites ≥300 mL; types: ascitic, peritoneal thickening, mass-forming, lymphadenopathy; guided biopsy/drainage.
-- **X-ray**: calcifications, bowel separation, signs of obstruction.
-- **CT**: high-density ascites, smooth peritoneal thickening, omental caking, lymph node enhancement. New sign: omental rim sign for differential.
-- **MRI**: detailed soft tissue; T2 hyperintense ascites with septations, peritoneal nodules with rim enhancement.
-- **PET/CT**: sensitivity/specificity ~80%; lower ascites SUVmax vs. carcinomatosis, delayed rise; diffuse smooth peritoneal uptake suggests TB.
-- Consensus 4: ultrasound (A1); X-ray/CT (B1); MRI usually not first-line (B1); PET/CT for differential diagnosis (B1).
+- 推荐强度分两级：强推荐(1)为评价者确信干预措施利大于弊（高级证据）或弊大于利（极低级证据）；弱推荐(2)为利弊不确定或利弊相当（中级或低级证据）。
+  - 原文位置：`L000036-L000037`
 
-### Laboratory Tests
+## 流行病学
 
-- **Blood**: mild anemia, thrombocytosis, elevated ESR/CRP (non-specific).
-- **Pathogen detection**: gold standard.
-  - Smear/culture: sensitivity 21–39%; culture 17–30%, slow.
-  - PCR: sensitivity 4–80%, specificity 80–100%.
-  - Xpert MTB/RIF: sensitivity 18–82%, specificity 100%.
-  - mNGS: sensitivity 45–84%, rapid (≈24 h).
-  - (Consensus 5, A1)
-- **Immunology**:
-  - TST: positive in 50–100%; EC skin test: sensitivity 93.94%.
-  - IGRA: pooled sensitivity 93%, specificity 99%; combining with ADA and CA125 improves accuracy.
-  - Antibody: limited role.
-  - (Consensus 6, A1)
-- **Ascitic fluid**:
-  - Gross: straw-colored, rarely bloody/chylous.
-  - Exudate: protein >30 g/L, WBC 500–1500/mm³ (lymphocytic).
-  - SAAG <11 g/L (rules out portal hypertension).
-  - **ADA**: >39 U/L; sensitivity 90%, specificity 94%.
-  - **IFN-γ**: cut-off 112 pg/mL; sensitivity 96.8%, specificity 96.6%.
-  - CA125: elevated, useful for monitoring.
-  - Consensus 7: ADA (A1), IFN-γ (B1).
+- 结核性腹膜炎是指结核分枝杆菌复合群引起的急慢性脏壁层腹膜弥漫性感染性疾病，可发生于任何年龄段，中青年居多，女性略多，可能因输卵管/卵巢结核直接蔓延。感染途径以腹腔内病灶直接蔓延为主，少数为淋巴或血行播散。腹膜是肺外结核第六大好发部位，占肺外结核4.9%；国内多中心研究显示肺结核患者中并发结核性腹膜炎率为1.59%，居肺外结核第三位；在消化系统结核病中发病率最高(44.4%)。共识1：结核性腹膜炎可发生于任何年龄段，女性患者略多，感染途径以腹腔内结核病灶的直接蔓延为主，是较为常见的肺外结核之一(A1)。
+  - 原文位置：`L000041-L000041`、`L000043-L000043`
 
-### Pathology
+## 病理生理
 
-- Gold standard alongside microbiology.
-- **Closed percutaneous biopsy**: sensitivity improved by combining histology and molecular tests; guided by US/CT.
-- **Laparoscopy**: direct visualization (miliary nodules, adhesions); high diagnostic speed/accuracy; contraindicated in severe adhesions.
-- **Laparotomy**: highest diagnostic rate (100%); indications: complete obstruction with suspected strangulation, failed conservative management, diagnostic uncertainty.
-- Consensus 8: pathology is gold standard (A1); closed biopsy (B1); laparoscopy (A1); laparotomy (C1).
+- 病理生理为MTB感染腹膜后引起充血、水肿、炎性渗出，纤维组织增生，腹膜和肠系膜增厚，腹腔粘连，严重时肠梗阻；干酪型可有干酪坏死、脓肿和瘘管。病理分三型：渗出型（早期，腹腔积液，草黄色，可形成包裹性积液）、粘连型（纤维蛋白沉积致广泛粘连，可致腹腔闭塞）、干酪型（干酪样坏死，可致脓肿或瘘管）。三型可并存且可转化。共识2：结核性腹膜炎的病理表现为结核分枝杆菌复合群感染腹膜后引发的充血、水肿、渗出、纤维增生及粘连，据此可分为渗出型、粘连型和干酪型3种主要类型(A1)。
+  - 原文位置：`L000047-L000047`、`L000049-L000049`、`L000051-L000051`
 
-### Diagnostic Criteria
+## 诊断
 
-1. Evidence of TB elsewhere (history, imaging, microbiology).
-2. TB symptoms + abdominal signs; ascitic fluid exudative, lymphocytic, SAAG <11 g/L, ADA >39 U/L; exclude other causes.
-3. Imaging findings consistent with tuberculous peritonitis.
-4. Positive ascitic fluid/pathology for *M. tuberculosis*.
-5. Positive TST/IGRA.
-6. Response to empirical anti-TB therapy.
+### 临床表现
 
-- **Confirmed**: meets 2+4 or 3+4.
-- **Clinical diagnosis**: meets 1+2+5/6 or 1+3+5/6, excluding other causes.
-- Consensus 9: comprehensive assessment; confirm by pathogen/pathology; clinical diagnosis with supporting evidence (B1).
+- 临床表现缺乏特异性，常见腹胀、腹痛、发热，90%有腹腔积液；腹痛多为非局限性隐痛；发热多为低热，<39℃；可有盗汗、乏力、体质量下降，腹泻便秘。部分患者以急性高热、严重腹胀腹痛起病，易误诊。查体常见轻度压痛，可触及肠袢肿块；液波震颤和移动性浊音提示中等量及以上腹腔积液；腹部柔韧感为特殊体征。共识3：结核性腹膜炎的常见症状为腹胀、腹痛和发热，也可出现盗汗、乏力、体质量下降等。部分患者查体可见腹腔积液及腹部柔韧感等体征(A1)。
+  - 原文位置：`L000057-L000057`、`L000059-L000059`
 
-### Differential Diagnosis
+### 影像学检查-总体
 
-- **Ascites**: cirrhosis, constrictive pericarditis, peritoneal malignancy, Budd-Chiari syndrome, Meigs syndrome, connective tissue disease.
-- **Abdominal mass**: hepatic/colonic/ovarian cancer, Crohn’s disease.
-- **Acute abdomen**: perforated viscus, appendicitis, pancreatitis, ectopic pregnancy, ruptured ovarian cyst.
+- 常用影像学方法包括腹部超声、CT、MRI。对疑似患者建议同时行胸部CT或胸片排除肺结核。共识4：超声检查是诊断结核性腹膜炎最常采用的影像学检查方法之一(A1)；腹部X线和CT检查推荐用于诊断及严重程度评估(B1)；MRI在显示软组织病变方面更具优势，但通常不作为首选(B1)；18F-FDG PET/CT可选择作为与腹膜肿瘤的鉴别诊断方法，但需结合其他临床信息(B1)。
+  - 原文位置：`L000063-L000063`、`L000079-L000079`
 
-## Treatment
+### 影像学检查-超声
 
-### Antituberculosis Therapy
+- 超声可显示低至300ml的非局限性液体，可早期发现少量腹腔积液，动态观察疗效，对实质性、炎性或包裹性积液有鉴别作用，可引导腹腔穿刺或腹膜活检。超声分型：①腹腔积液型：肠袢间液性暗区，可有纤维分隔；②腹膜增厚型：大网膜、腹壁膜、肠系膜增厚，边缘粗糙，低回声；③团块型：实质性肿块或包裹性积液，血流丰富；④淋巴结肿大型：腹腔淋巴结肿大，回声不均匀，血供异常。同一患者可有多种表现，但超声不能作为确诊手段。
+  - 原文位置：`L000065-L000065`、`L000067-L000067`
 
-- Regimen similar to pulmonary TB (2HRZE/4HR) but **duration ≥12 months**; extend to 18–24 months if drug resistance or interruptions.
-- Strengthen with fluoroquinolones (e.g., levofloxacin) in severe cases.
-- Special populations: ≥3 effective drugs, therapeutic drug monitoring.
-- IV therapy in complete bowel obstruction.
-- Monitor blood counts, liver/renal function, vision, hearing, uric acid.
-- Consensus 10: standard regimen, at least 12 months (C1).
+### 影像学检查-X线
 
-### Glucocorticoids (GCs)
+- 腹部X线可见腹腔内斑点状或结节状钙化影，大量腹腔积液时可见双侧膈肌升高、小肠肠管分离、肠管浮游征象。钡餐造影见腹膜增厚粘连时小肠袢排列不规则、聚集、移动度降低。合并肠梗阻时立位平片见阶梯状气液平面。
+  - 原文位置：`L000069-L000069`
 
-- **Indication**: exudative peritonitis with persistent severe toxic symptoms or recurrent ascites despite anti-TB and drainage.
-- **Contraindications**: adhesive or caseous type (risk of perforation/dissemination); active peptic ulcer, diabetes, uncontrolled infection, etc.
-- **Dosage**: prednisone 20–30 mg/day, taper by 5 mg/week, total ≤6 weeks.
-- **Administration**: single morning dose preferred; monitor for hyperglycemia, hypertension, osteoporosis, infection.
-- Consensus 11: (B1 for exudative; B1 against adhesive/caseous).
+### 影像学检查-CT
 
-### Interventional Management
+- CT表现：少量、高密度腹腔积液；腹膜增厚粘连（壁腹膜、网膜、肠系膜增厚，粟粒状结节，可形成饼状软组织团块）；肿大淋巴结中心低密度伴环形强化或分隔样强化。鉴别：腹膜弥漫光滑均匀增厚提示结核，恶性病变多结节状、不规则增厚；大网膜边缘征有更高敏感性和特异性。超声更易显示多发细小可移动分隔，CT可突出腹膜、肠系膜或网膜累及。
+  - 原文位置：`L000071-L000071`、`L000073-L000073`
 
-- **Paracentesis/drainage**: for symptomatic ascites; avoid long-term catheter to prevent sinus tract.
-- **Intraperitoneal instillation**: urokinase (for loculated effusions), isoniazid, rifampicin, GCs.
-- Consensus 12: drain ascites to relieve symptoms and reduce adhesions (C1).
+### 影像学检查-MRI
 
-### Gastrointestinal Decompression
+- MRI显示腹腔积液长T1长T2信号，常见条索和分隔；壁层腹膜增厚，以上中腹部为主，肝周常见，可伴丘状或椭圆形凸起结节，增强后凸起边缘及增厚腹膜明显强化，中心干酪样坏死区无强化。
+  - 原文位置：`L000075-L000075`
 
-- **Nasogastric tube**: simple, limited for low obstruction.
-- **Long intestinal tube (e.g., endoscopically placed)**: advances to obstruction, superior drainage; can administer medications locally.
-- Consensus 13: for adhesive bowel obstruction (B1).
+### 影像学检查-PET/CT
 
-### Traditional Chinese Medicine
+- 18F-FDG PET/CT对弥漫性腹膜病变有较高价值，总敏感度和特异度可达80%。由于肉芽肿摄取FDG，与腹膜肿瘤鉴别困难，但结核性腹膜炎腹腔积液的SUVmax通常较低，延迟显像出现延迟上升。符合结核病变的腹部以外病灶也有提示意义。
+  - 原文位置：`L000077-L000077`
 
-- Syndrome differentiation: e.g., damp-heat with stasis → Ba Zheng San + Tao Hong Si Wu Tang; qi stagnation and blood stasis → Ge Xia Zhu Yu Tang; spleen-kidney deficiency → Fu Zi Li Zhong Wan + Wu Ling San.
-- Adjuncts: moxibustion, infrared, herbal packs, massage.
-- Consensus 14: improves efficacy and reduces adverse effects (C1).
+### 实验室检查-血液常规
 
-### Surgery
+- 常见轻度至中度正细胞正色素性贫血，血小板计数增高，ESR和CRP普遍升高。但这些指标为非特异性，诊断价值有限。
+  - 原文位置：`L000085-L000085`
 
-- **Indications**: complete/incomplete obstruction unresponsive to medical therapy or with suspected strangulation; acute/chronic perforation or fistula; abscess/fistula not healing.
-- **Contraindications**: inability to tolerate anesthesia/surgery; severe anesthetic allergy.
-- **Preoperative**: multidisciplinary planning; ≥2 weeks anti-TB (except emergencies); nutritional optimization.
-- **Procedures**: adhesiolysis, segmental resection, strictureplasty, repair/resection for perforation, abscess drainage, abdominal washout with antiseptics/anti-TB drugs, adhesion barriers.
-- **Postoperative**: continue anti-TB, antibiotics, nutrition (parenteral until bowel function returns), early rehabilitation; monitor for wound infection, enteric fistula.
-- Consensus 15: surgery for complications; elective cases after TB control and nutrition improvement (C1).
+### 实验室检查-病原学
 
-### Nutritional Support
+- 从腹腔积液或腹膜组织中检测到MTB或其核酸片段是诊断金标准。涂片查抗酸杆菌敏感度低(21.21%~38.9%)，且不能区分MTB和NTM；培养需2-6周，阳性率17.2%~30.3%。MTB核酸检测（PCR）敏感度4%~80%，特异度80%~100%；新一代自动化系统敏感度18.20%~81.82%，特异度100%。mNGS阳性率和敏感度45.2%~84.0%，确诊时间约24小时，可作为早期病原学诊断和鉴别诊断的补充。共识5：患者腹腔积液或腹膜组织中查到MTB或其特异核酸片段是诊断结核性腹膜炎的金标准(A1)。
+  - 原文位置：`L000089-L000089`、`L000091-L000091`、`L000093-L000093`、`L000095-L000095`、`L000097-L000097`
 
-- Screen and assess all patients; follow five-step therapy (oral → enteral → parenteral).
-- **Enteral** preferred if gut functional; for obstruction, use low-fiber formulas; chylous ascites → total parenteral nutrition; complete obstruction → nil per os, parenteral nutrition.
-- Consensus 16: systematic nutritional therapy throughout treatment (B1).
+### 实验室检查-免疫学
 
-### Psychological Intervention
+- 免疫学检查包括TST、IGRA和结核抗体。TST在50%~100%患者阳性，儿科人群80%~90%；EC敏感度93.94%，PPD敏感度91.41%。IGRA特异度高，不受卡介苗和大多数NTM影响；荟萃分析显示诊断结核性腹膜炎总敏感度93%，总特异度99%；IGRA联合腹腔积液ADA、CA125可提高诊断效能。结核抗体IgG在肺外结核敏感度81%，特异度85%，但有假阴/阳性，需谨慎解读。共识6：结核性腹膜炎的结核免疫学检查包括TST、IGRA和结核抗体检测等，具有辅助诊断价值(A1)。
+  - 原文位置：`L000101-L000101`、`L000103-L000103`、`L000105-L000105`、`L000107-L000107`
 
-- Address depression, stigma, adherence barriers.
-- Consensus 17: integral to comprehensive care (C1).
+### 实验室检查-腹腔积液
 
-## Prognosis
+- 腹腔积液多为草黄色渗出液，总蛋白>30g/L，白细胞计数500~1500/mm³，以淋巴细胞为主；SAAG降低(<11g/L)，SAAG≥11g/L提示门静脉高压。生物标志物：ADA>39U/L为诊断标准，荟萃分析总敏感度90.0%，总特异度94.0%；INF-γ最佳临界值112pg/ml，敏感度96.8%，特异度96.6%；CA125可增高，用于监测治疗反应，可作为间接诊断标志物。共识7：腹腔积液的常规化验和生物标志物检查对结核性腹膜炎的诊断具有重要作用，其中腹腔积液ADA(A1)和INF-γ检测(B1)具有较高的敏感度和特异度。
+  - 原文位置：`L000111-L000111`、`L000113-L000113`、`L000115-L000115`
 
-- Best for exudative type; worse for caseous type, delayed diagnosis, comorbidities (cirrhosis, HIV).
-- Regular follow-up and complete treatment essential.
+### 病理学检查
 
----
+- 腹膜组织病理学检查也是诊断金标准。闭合式腹膜活检典型表现为上皮样肉芽肿伴干酪样坏死，但典型干酪样肉芽肿仅占30%，活检组织研磨后进一步检查可提高15%~50%确诊率；超声/CT引导下闭式腹膜活检诊断率可接近97%，但受限于组织量少。腹腔镜检查可在直视下活检，诊断速度快、准确性高，术中所见为腹膜粟粒状结节、充血水肿、增厚粘连等，但严重腹膜粘连者禁用。剖腹探查确诊率最高（可达100%），但创伤最大，用于多种手段不能确诊或需与急腹症、恶性肿瘤鉴别时。宜尽早剖腹探查的情况：合并完全性小肠梗阻且不排除绞窄；肠梗阻内科保守治疗无效或反复发作；合并不完全性小肠梗阻并腹部包块或包裹性积液经非手术治疗无效；诊断不明的小肠梗阻。共识8：病理学检查也是诊断的金标准(A1)；通常采用最易开展且创伤较小的闭合式腹膜活检，但阳性率偏低(B1)；腹腔镜检查对诊断速度及准确性均较高，但严重腹膜粘连者禁用(A1)；剖腹探查术确诊率最高，但创伤较大，有手术指征时可采用(C1)。
+  - 原文位置：`L000119-L000119`、`L000121-L000121`、`L000123-L000123`、`L000125-L000125`、`L000127-L000127`、`L000129-L000129`、`L000131-L000131`
 
-## Diagnostic Approaches
+## 诊断标准
 
-- **Immunodiagnostic tests**: Recombinant tuberculosis fusion protein (EC) expert consensus [47]; interferon‑γ release assays (IGRAs) [49][50][51]; combined IGRA with ascitic fluid ADA and CA125 [52]
-- **Ascitic fluid biomarkers**: Adenosine deaminase (ADA) diagnostic accuracy [59][60]; CA125 and CEA for differentiation from carcinomatosis [62]
-- **Invasive procedures**: Peritoneal biopsy indications [63][65]; laparoscopy versus laboratory tests [66][67][68][69][70]
-- **Differential diagnoses**: Peritoneal carcinomatosis [61][62]; cirrhotic ascites [89][90]; other causes of abdominal TB [103]
+- 诊断依据：①有肺部或其他器官结核病证据；②有结核中毒症状伴腹痛、腹胀、腹腔积液、腹部包块或腹壁柔韧感，腹腔积液为典型渗出液，以淋巴细胞为主，SAAG<11g/L，ADA>39U/L，排除其他病原体感染及肝硬化、肾病综合征等；③影像学见腹膜增厚、腹腔积液、淋巴结肿大、肠系膜增厚或粘连等；④腹腔积液MTB病原学阳性或病理学见典型结核病变；⑤TST或IGRA证实MTB感染；⑥排除其他病因后试验性抗结核治疗有效。符合2、4或3、4即可确诊；符合1、2、5或6，或1、3、5或6且排除其他病因者可临床诊断。共识9：诊断需综合病史、临床表现、体格检查、影像学及实验室检查；病原学阳性或病理学典型病变可确诊；影像学特异性改变+TST/IGRA阳性或试验性治疗有效可临床诊断；有肺或其他器官结核证据则可能性增加(B1)。
+  - 原文位置：`L000135-L000135`、`L000137-L000137`、`L000139-L000139`、`L000141-L000141`、`L000143-L000143`、`L000145-L000145`、`L000147-L000147`、`L000149-L000149`
 
-## Treatment Strategies
+## 鉴别诊断
 
-- **Antituberculous therapy**: Extrapulmonary TB management [74][75][76]; clinical case series [53][72]
-- **Role of corticosteroids**: Expert consensus on rational use [81]; meta‑analysis [88]; intraperitoneal routes [80][85][93]; mechanisms and side effects [86][87]
-- **Surgical intervention**: Indications and dilemmas [77][104][113]; intestinal obstruction [79][107][110]; enterocutaneous fistula [115]; pediatric referrals [109]
-- **Intraperitoneal therapies**: Urokinase with or without rifampicin [91][92]; isoniazid plus dexamethasone [93]; combined puncture techniques [85]
-- **Obstruction management**: Transnasal catheter [94][95][96]; adhesive small bowel obstruction guidelines [111]
+- 需与多种疾病鉴别：腹腔积液需与肝硬化、缩窄性心包炎、腹腔恶性肿瘤(腹膜间皮瘤、腹膜转移癌等)、Budd-Chiari综合征、Meige综合征、结缔组织病等鉴别；腹腔包块需与腹部肿瘤(肝癌、结肠癌、卵巢癌等)、克罗恩病等鉴别；急腹症需与消化道急性穿孔、急性阑尾炎、急性胰腺炎、妇科疾病(异位妊娠破裂、黄体破裂等)等鉴别。
+  - 原文位置：`L000153-L000153`、`L000155-L000155`、`L000160-L000160`、`L000162-L000162`
 
-## Supportive and Special Considerations
+## 治疗
 
-- **Nutritional care**: WHO guidance [118]; expert consensus on nutrition in severe TB [121]; screening tools [120]; importance of nutritional therapy [119]
-- **Psychosocial support**: Interventions to improve outcomes [123]; psychotherapy and compliance [124]; psychological distress and adherence [125]
-- **Traditional Chinese medicine**: Combined therapies [97][98][99][100][101][102]; effect on T-cell subsets [100]
-- **Special populations**: Pediatric abdominal TB [61][109]; high‑altitude settings [92]; spontaneous miscarriage [71]
+### 内科治疗-抗结核治疗
+
+- 抗结核治疗是最重要治疗方式。WHO推荐除结核性脑膜炎和骨关节结核外，其他肺外结核采用与肺结核相同方案，疗程至少6个月。本共识推荐结核性腹膜炎疗程不少于12个月；耐药或药物不良反应者总疗程可延长至18~24个月。强化期+巩固期两阶段，遵循早期、联合、规律、适量、全程原则。对需要加强治疗强度者可加用氟喹诺酮类如左氧氟沙星。特殊人群(慢性肝病、药物性肝炎、肾功能不全、孕期哺乳期、老年人)原则不少于3种有效药物联合，有条件应监测血浆药物浓度。治疗期间需定期检测血象、肝肾功能、视野视力、关节和尿酸；注意药物不良反应；完全性肠梗阻需静脉制剂。共识10：抗结核化疗方案与肺结核基本一致，疗程不可少于12个月，耐药或发生中重度不良反应时应根据药敏选用耐药方案，调整药物并保证足够强度和疗程(C1)。
+  - 原文位置：`L000168-L000168`、`L000170-L000170`、`L000172-L000172`
+
+### 内科治疗-糖皮质激素
+
+- GCs为非病因治疗，在强力有效抗结核治疗前提下可作为辅助。适应证：渗出型，尤其伴高热严重中毒症状或积液反复渗出；主张早期在化疗、抽液同时口服。禁忌证：腹腔积液趋于结核性化脓、合并肠结核、粘连型或干酪型(可能增加肠穿孔和播散)；合并活动性消化性溃疡、肾上腺皮质功能亢进、近期胃肠吻合术后、严重高血压、角膜溃疡、创伤修复期、骨折、糖尿病、孕妇、抗菌药不能控制的感染；艾滋病合并结核；有精神病或癫痫病史者禁用或慎用。用法用量：口服为主，可局部给药；一般治疗无缓解且危及重要脏器时加用20~30mg/d，体温正常后小剂量递减，每周减5mg，总疗程尽量不超过6周；每日顿服于晨7-8时。注意事项：长期使用注意库欣综合征，补钾补钙加维生素D，低盐低糖高蛋白饮食；监测血糖、血压、骨质疏松等；注意药物相互作用；停药需逐渐减量防反跳。共识11：渗出型在全身抗结核治疗及积极抽液后，高热等中毒症状无缓解或积液反复渗出危及重要脏器时可加用GCs(B1)；粘连型不推荐，干酪型禁用(B1)。
+  - 原文位置：`L000174-L000174`、`L000176-L000176`、`L000178-L000178`、`L000180-L000180`、`L000182-L000182`、`L000184-L000184`
+
+### 介入治疗
+
+- 腹腔穿刺抽液或置管引流安全有效，可快速缓解腹胀，但不建议长期留置引流管以免形成窦道。严重凝血功能障碍者谨慎穿刺。并发症包括腹壁血肿、穿刺点渗液、肠穿孔、低血容量、肾损伤及大量放液后循环障碍等，总体发生率<1%。对于纤维分隔多不易引流者可给予尿激酶腹腔内注射；异烟肼、利福平和GCs均可腹腔注射治疗。共识12：结核性腹膜炎因渗出导致腹腔积液且可行定位穿刺时，需采用腹腔穿刺抽取或腹腔置管引流，缓解腹胀，减少粘连发生(C1)。
+  - 原文位置：`L000188-L000188`、`L000190-L000190`、`L000192-L000192`
+
+### 胃肠减压
+
+- 对于粘连型肠梗阻可常规胃肠减压。传统经鼻胃管对低位肠梗阻引流效果差；可胃镜下或造影下置入肠梗阻导管，导管前端水囊可向远端移动到达梗阻近端，提高引流效果，并可经导管注入中药、液体石蜡油等。共识13：对于结核性腹膜炎所致粘连型肠梗阻，可采用鼻胃管或肠梗阻导管行胃肠减压处理(B1)。
+  - 原文位置：`L000196-L000196`、`L000198-L000198`
+
+### 中医治疗
+
+- 中医认为属本虚标实，病位在腹，与肺、脾、肝、肾有关，分证论治：毒热夹瘀证用八正散加桃红四物汤清热利湿、活血化瘀；气滞血瘀选膈下逐瘀汤；气虚血瘀用桃红四物汤加一贯煎；脾肾两虚用附子理中丸加五苓散。葶劳大枣泻肺汤联合西药抗痨可提高疗效、降低复发、减少肝损伤；葶苓白泽汤内服及红藤汤灌肠有效。可配合穴位艾灸、红外线理疗、中药封包、推拿。共识14：针对结核性腹膜炎，中医采取分证论治，结合清热解毒、活血化瘀、温补脾肾等中药方剂及辅助治疗手段，可综合提升临床疗效并减少不良反应(C1)。
+  - 原文位置：`L000202-L000202`、`L000204-L000204`
+
+### 外科治疗-适应证与禁忌证
+
+- 手术主要用于治疗并发症：肠梗阻、肠穿孔、瘘管、脓肿和出血。适应证：①合并完全性/不完全性肠梗阻，不能排除肠绞窄，或长期内科保守治疗不缓解或反复发作；②急性肠穿孔，或慢性肠穿孔瘘管形成经内科治疗长期未闭合；③腹腔脓肿、肠瘘保守治疗不愈。禁忌证：全身状况差不能耐受麻醉及手术；对麻醉药物过敏或有严重过敏史。
+  - 原文位置：`L000208-L000208`、`L000212-L000212`、`L000214-L000214`、`L000216-L000216`
+
+### 外科治疗-术前与术后管理
+
+- 术前需多学科会诊(结核科、普外科、麻醉科、消化科、营养科、放射科、超声科)。择期手术者：①控制结核活动，术前行规范抗结核药物治疗，术后继续；②改善营养状况，可肠内要素饮食或肠外营养。术后继续抗结核治疗，早期抗感染及康复锻炼；胃肠功能未恢复时全肠外营养，恢复后逐渐过渡至肠内营养。常见并发症为切口感染裂开，最严重为术后肠瘘。
+  - 原文位置：`L000220-L000220`、`L000240-L000240`
+
+### 外科治疗-手术方式
+
+- 手术方式无特定要求，依据病变状况选择，原则为彻底清除病灶、解除梗阻、预防肠粘连、恢复肠道功能。单纯肠粘连行粘连松解术；紧密粘连剥离困难者可段性切除肠管；粘连严重甚至腹茧症行小肠分离排列术；纤维板形成者行纤维板剥脱加病灶清除。不完全性肠梗阻充分探查后碘伏或抗结核药物冲洗腹腔并放置引流；存在肠结核或明显狭窄行肠切除+吻合/造瘘；多发性肠狭窄或短肠综合征高风险者行肠狭窄成形术。肠穿孔：穿孔处无增厚或狭窄行修补术；有病变行切除吻合术，切除不宜过长。腹腔脓肿行切开引流术。合并肠结核、腹腔脓肿或淋巴结结核采用多种方式联合。所有患者关腹前反复冲洗腹腔，冲洗水加碘伏或抗结核药物，放置引流，可应用透明质酸羧甲基纤维素防粘连，切口可行减张缝合。
+  - 原文位置：`L000224-L000224`、`L000226-L000226`、`L000228-L000228`、`L000230-L000230`、`L000232-L000232`、`L000234-L000234`、`L000236-L000236`
+
+### 外科治疗-共识15
+
+- 共识15：当结核性腹膜炎出现内科治疗效果欠佳的肠梗阻、肠穿孔、急性腹膜炎、消化道大量出血及鉴别诊断困难者，需行手术；除紧急手术外，择期手术者应在抗结核治疗起效、结核急性炎症缓解、营养明显改善后再进行手术。术后尽早应用抗结核药物，积极行并发症处理，行营养支持治疗和康复锻炼。不能耐受麻醉和手术，以及对麻醉药物过敏者为手术禁忌(C1)。
+  - 原文位置：`L000242-L000242`
+
+### 营养支持治疗
+
+- 营养状况与结核病有双向关系。规范化流程包括筛查、评估、诊断、干预及监测。根据NRS2002评分，对有营养风险及营养不良者进行营养评估和支持。治疗遵循五阶梯原则，优先肠内营养。不合并肠结核时可用整蛋白型肠内营养剂；肠粘连或粘连型/干酪型应给予少纤维素、高蛋白高维生素高热量流质，防止诱发梗阻；不完全性肠梗阻首选少纤维素肠内营养剂，不耐受时用肠外营养；乳糜样腹腔积液应全胃肠外营养；完全性肠梗阻禁食，选择肠外营养。共识16：应遵循规范化营养诊疗流程，阳性营养风险患者应给予个体化营养治疗且贯穿整个治疗；肠道功能正常者优先肠内营养，当出现肠梗阻、肠道不耐受或肠内营养不满足需求时使用补充性或全肠外营养(B1)。
+  - 原文位置：`L000246-L000246`、`L000248-L000248`、`L000250-L000250`
+
+### 心理干预治疗
+
+- 社会心理因素如贫困、歧视、羞耻感、不了解疾病、宗教文化信仰等影响治疗依从性。管理抑郁等心理问题可改善服药依从性。心理科干预和人文关怀在疾病、心理和社会康复中发挥重要作用。共识17：心理干预与人文关怀对结核性腹膜炎患者的全面康复具有重要作用，应给予更多重视(C1)。
+  - 原文位置：`L000254-L000254`、`L000256-L000256`
+
+## 预后
+
+- 预后取决于病理类型、诊断及时性、治疗合理性及有无并发症。渗出型预后相对较好，粘连型次之，干酪型较差；合并粘连型肠梗阻、肝硬化或艾滋病者预后较差。大多数患者经及时规范治疗可痊愈。全程个体化规律治疗及定期复查至关重要。
+  - 原文位置：`L000260-L000260`、`L000262-L000262`
+
+## 诊断
+
+### 概述与流行病学
+
+- 引用文献包括腹膜结核诊断（Koff）、肺结核住院患者并发肺外结核多中心研究（于佳佳）、中国肺外结核全国调查（Li）、腹部结核诊治进展（Mandavdhare）、临床结核病学（唐神结/高文）、腹水ADA诊断结核性腹膜炎（Mehershahi）、肺外结核译著（Sener/Erdem）、腹膜透析患者结核性腹膜炎（Yang）。
+  - 原文位置：`L000280-L000280`、`L000282-L000282`、`L000284-L000284`、`L000286-L000286`、`L000288-L000288`、`L000290-L000290`、`L000292-L000292`、`L000294-L000294`、`L000296-L000296`
+
+## 影像学检查
+
+### 超声
+
+- 引用文献包括腹膜结核超声表现（Mbengue）、超声判断腹水病因价值（Getnet）、超声诊断结核性腹膜炎效果评价（张玉福）。
+  - 原文位置：`L000298-L000298`、`L000300-L000300`、`L000302-L000302`
+
+## 临床特征
+
+### 并发症
+
+- 引用文献：Kim等报告以小肠梗阻为表现的结核性腹膜炎病例。
+  - 原文位置：`L000304-L000304`
+
+## 影像学检查
+
+### CT
+
+- 引用文献包括CT鉴别恶性腹膜间皮瘤与结核性腹膜炎（Yin）、64排螺旋CT平扫及增强特征（张志飞）、结核性与癌性腹膜炎CT对比（王静海）、临床及影像参数鉴别结核性腹膜炎与腹膜癌病（Jha）、结核性腹膜炎模拟腹膜癌病CT及病理对照（Aslan）、CT对腹膜弥漫性病变鉴别诊断（洪盟）、大网膜边缘征鉴别腹膜结核与腹膜癌病（Ramanan）。
+  - 原文位置：`L000306-L000306`、`L000308-L000308`、`L000310-L000310`、`L000312-L000312`、`L000314-L000314`、`L000316-L000316`、`L000318-L000318`
+
+## 诊断
+
+### 系统评价与影像学
+
+- 引用文献包括结核性腹膜炎表现、诊断策略与治疗的系统评价（Sanai）、腹部结核DWI-MRI（Das P）、腹部淋巴结/腹膜/胃肠道结核拟瘤表现（Das CJ）、PET/CT双时相显像对不明原因发热的诊断价值（邵明岩）。
+  - 原文位置：`L000320-L000320`、`L000322-L000322`、`L000324-L000324`、`L000326-L000326`
+
+## 影像学检查
+
+### PET/CT
+
+- 引用文献包括PET/CT鉴别结核性腹膜炎与腹膜癌病（Wang）、18F-FDG PET/CT评估不明原因腹膜增厚（Chen）、PET/CT双时相显像鉴别结核性与肿瘤性腹膜弥漫病变（张建功/史讯）、结核性腹膜炎与腹膜转移癌PET/CT特征（杜昕）。
+  - 原文位置：`L000328-L000328`、`L000330-L000330`、`L000332-L000332`、`L000334-L000334`、`L000336-L000336`
+
+## 实验室检查
+
+### 细菌学与分子检测
+
+- 引用文献包括线性探针技术检测分枝杆菌（罗燕）、中国多中心评估涂片/培养/Xpert MTB/RIF/ADA诊断结核性腹膜炎（Liu R）、腹膜透析合并结核性腹膜炎诊断（杨月）。
+  - 原文位置：`L000338-L000338`、`L000340-L000340`、`L000342-L000342`
+
+### 儿童结核与分子诊断
+
+- 引用文献包括儿童结核病现代诊断（Neu）、儿童标本PCR检测结核分枝杆菌（Smith）、Xpert MTB/RIF诊断腹部结核的系统评价/Meta分析（Sharma）。
+  - 原文位置：`L000344-L000344`、`L000346-L000346`、`L000348-L000348`
+
+### 宏基因组测序与组织Xpert
+
+- 引用文献包括mNGS用于腹膜透析相关腹膜炎病原学诊断（张庆燕）、肝硬化腹水感染mNGS诊断优化（Shi）、终末期肝病腹膜炎mNGS诊断（He）、终末期肝病胸腹部感染mNGS病因诊断（Chen）、腹膜结核组织Xpert MTB/RIF检测（Dahale）。
+  - 原文位置：`L000350-L000350`、`L000352-L000352`、`L000354-L000354`、`L000356-L000356`、`L000358-L000358`
+
+## 特殊人群
+
+### 儿童
+
+- 引用文献包括BCG接种儿童青少年结核感染（Druszczynska）、结核性腹膜炎26例诊治问题（Demir）、发达国家儿童腹部结核病例系列及文献综述（Delisle）、印度儿童腹部结核经验（Talwar）。
+  - 原文位置：`L000360-L000360`、`L000362-L000362`、`L000364-L000364`、`L000366-L000366`、`L000368-L000368`
+
+## 实验室检查
+
+### 免疫学诊断
+
+- 引用文献包括重组结核杆菌融合蛋白(EC)临床应用专家共识（中国防痨协会）、新型检测技术进展（张焕）、IGRA及临床应用专家意见（中华医学会结核病学分会）、γ-干扰素诊断结核性腹膜炎Meta分析（Su）、IGRA联合多指标诊断价值（He）、IGRA联合ADA/CA125诊断价值（蒋冬梅）。
+  - 原文位置：`L000370-L000370`、`L000372-L000372`、`L000374-L000374`、`L000376-L000376`、`L000378-L000378`、`L000380-L000380`
+
+## 诊断
+
+### 临床病例与教科书
+
+- 引用文献包括25例结核性腹膜炎临床诊治分析（王涵）、商业血清学检测诊断活动性结核的系统评价/Meta分析（Steingart）、结核病免疫学专著（吴雪琼/吴长有）、结核性腹膜炎诊断现状（李强/张建）、临床结核病学译著（Friedman等）。
+  - 原文位置：`L000382-L000382`、`L000384-L000384`、`L000386-L000386`、`L000388-L000388`、`L000390-L000390`
+
+## 实验室检查
+
+### 腹水指标与肿瘤标志物
+
+- 引用文献包括23例结核性腹膜炎临床回顾（Poyrazoglu）、腹水ADA诊断准确性的系统评价/Meta分析（Mahajan）、腹水IFN-γ与ADA诊断结核性腹水（Sharma）、儿童腹膜结核模拟癌性腹水（Rossi）、CA125和CEA鉴别结核性腹膜炎与癌性腹膜炎（Tong）。
+  - 原文位置：`L000392-L000392`、`L000394-L000394`、`L000396-L000396`、`L000398-L000398`、`L000400-L000400`
+
+## 诊断
+
+### 腹膜活检与腹腔镜检查
+
+- 引用文献包括腹膜活检指征（Chow）、腹部结核诊断与治疗循证方法（Jha）、不明原因腹腔积液200例腹膜活检分析（郑国启）、腹腔镜探查诊断结核性腹膜炎Meta分析（杜明南）。
+  - 原文位置：`L000402-L000402`、`L000404-L000404`、`L000406-L000406`、`L000408-L000408`、`L000410-L000410`
+
+### 腹腔镜检查
+
+- 引用文献包括腹腔镜在不明原因腹水诊断中的作用（严安芝/徐杨）、腹腔镜与实验室检查诊断结核性腹膜炎比较（Huang）、多模态影像与腹腔镜联合诊断结核性腹膜炎（Yamada）、腹腔镜探查诊断及鉴别诊断腹腔结核（冉辰辰）。
+  - 原文位置：`L000412-L000412`、`L000414-L000414`、`L000416-L000416`、`L000418-L000418`
+
+### 病例分析与误诊
+
+- 引用文献包括腹部结核与自然流产（Islam）、腹水待查结核性腹膜炎116例诊断体会（张胜利）、结核性腹膜炎误诊分析（朱健）。
+  - 原文位置：`L000420-L000420`、`L000422-L000422`、`L000424-L000424`
+
+### 低流行区经验
+
+- 引用文献包括肺外结核诊治（Lee）、巴黎地区三甲医院腹部结核经验（Calin）、低流行国家腹部结核（Fillion）。
+  - 原文位置：`L000426-L000426`、`L000428-L000428`、`L000430-L000430`
+
+## 治疗
+
+### 手术角色与肠梗阻
+
+- 引用文献包括腹部结核手术角色（Weledji）、结核性腹膜炎临床治疗（冯治宇）、腹腔结核合并肠梗阻治疗（包靖宇）。
+  - 原文位置：`L000432-L000432`、`L000434-L000434`、`L000436-L000436`
+
+### 糖皮质激素
+
+- 引用文献包括糖皮质激素治疗腹膜结核（Alrajhi）、糖皮质激素在结核病治疗中的合理应用专家共识（解放军总医院第八医学中心等）、结核病患者应用糖皮质激素临床效果（张雪琴）、糖皮质激素治疗结核性腹膜炎经验（Yu）、糖皮质激素在结核病中的应用价值（黄健/李春香）。
+  - 原文位置：`L000438-L000438`、`L000440-L000440`、`L000442-L000442`、`L000444-L000444`、`L000446-L000446`
+
+### 腹腔穿刺
+
+- 引用文献：徐妍/张丽娜报道联合腹腔和阴道后穹窿穿刺术治疗结核性腹膜炎30例。
+  - 原文位置：`L000448-L000448`
+
+### 糖皮质激素不良反应与机制
+
+- 引用文献包括糖皮质激素副作用及并发症对策（杨清儒/杨璐舟）、糖皮质激素治疗机制（Vandewalle）、腹部结核使用类固醇的系统评价/Meta分析（Soni）。
+  - 原文位置：`L000450-L000450`、`L000452-L000452`、`L000454-L000454`
+
+## 并发症管理
+
+### 肝硬化腹水
+
+- 引用文献包括肝硬化腹水诊治（Biecker）、肝硬化腹水及相关并发症诊疗指南2017（中华医学会肝病学分会）。
+  - 原文位置：`L000456-L000456`、`L000458-L000458`
+
+## 治疗
+
+### 腹腔内注射尿激酶
+
+- 引用文献包括尿激酶腹腔注射治疗结核性腹膜炎（张宇）、高海拔地区尿激酶联合利福平腹腔注射（邓文珺/马颖才）、异烟肼联合地塞米松或尿激酶腹腔注射疗效对比（蔡飞）。
+  - 原文位置：`L000460-L000460`、`L000462-L000462`、`L000464-L000464`
+
+## 并发症管理
+
+### 肠梗阻导管
+
+- 引用文献包括经鼻肠梗阻导管治疗难治性肠梗阻（侯郑生）、老年结核性腹膜炎肠梗阻导管应用（于金海）、肠梗阻导管治疗结核性腹膜炎并发肠梗阻临床观察（李强）。
+  - 原文位置：`L000466-L000466`、`L000468-L000468`、`L000470-L000470`
+
+## 治疗
+
+### 中医药/中西医结合
+
+- 引用文献包括结核病中西医治疗学专著（王玉）、中西医结合治疗84例疗效（徐红艳）、葶苓白泽汤内服合红藤汤灌肠（罗培培）、中医治疗T细胞亚群变化（何军兰/张海英）、四五合剂联合中药封包（张燕/仵倩红）、结核性腹膜炎并发不完全肠梗阻中西医结合治疗与护理（周日花）。
+  - 原文位置：`L000472-L000472`、`L000474-L000474`、`L000476-L000476`、`L000478-L000478`、`L000480-L000480`、`L000482-L000482`
+
+### 外科/胃肠道结核
+
+- 引用文献包括腹腔内及胃肠道结核（Rasheed）、结核性腹膜炎外科困境（Khan）、胃肠道结核诊治进展（郑见宝）。
+  - 原文位置：`L000484-L000484`、`L000486-L000486`、`L000488-L000488`
+
+### 外科手术经验
+
+- 引用文献包括127例腹腔结核救治（何永欣）、腹腔结核合并肠梗阻外科治疗112例（曹志宇）、发展中国家结核性腹部外科急症（Wani）、儿童腹部结核手术转诊临床病理影像及GeneXpert特征（Puri）、外科治疗腹腔结核107例（徐慧海）。
+  - 原文位置：`L000490-L000490`、`L000492-L000492`、`L000494-L000494`、`L000496-L000496`、`L000498-L000498`
+
+### 外科肠梗阻指南与争议
+
+- 引用文献包括Bologna粘连性小肠梗阻诊疗指南2017更新（Ten Broek）、腹部结核：外科灾难的延续（Channa）、腹部结核是否为外科问题（Pattanayak）。
+  - 原文位置：`L000500-L000500`、`L000502-L000502`、`L000504-L000504`
+
+### 外科手术疗效与并发症
+
+- 引用文献包括不同类型腹腔结核Ⅰ期手术疗效（刘鑫）、腹腔结核术后肠外瘘诊治（徐慧海）、腹部结核术后功能康复（Lalwani）、81例腹腔结核手术治疗体会（陈帆秋/沈兴华）。
+  - 原文位置：`L000506-L000506`、`L000508-L000508`、`L000510-L000510`、`L000512-L000512`、`L000514-L000514`
+
+## 营养支持
+
+- 引用文献包括WHO结核病患者营养照护指南（2013）、结核病患者营养治疗重要性（张胜康）、NRS2002与GLIM营养不良诊断比较（Trollebø）、结核病重症患者营养评估及支持专家共识（解放军总医院第八医学中心等）。
+  - 原文位置：`L000516-L000516`、`L000518-L000518`、`L000520-L000520`、`L000522-L000522`
+
+## 并发症管理
+
+### 乳糜性腹水
+
+- 引用文献：Al-Busafi等综述乳糜性腹水的评估与管理。
+  - 原文位置：`L000524-L000524`
+
+## 心理社会支持
+
+- 引用文献包括心理社会支持干预改善结核病治疗结局（Maynard）、心理治疗提高结核病治疗依从性（Janmeja）、心理困扰与结核治疗不依从关系（Theron）。
+  - 原文位置：`L000526-L000526`、`L000528-L000528`、`L000530-L000530`

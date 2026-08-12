@@ -1,4 +1,4 @@
 interface:
-  display_name: "结肠憩室炎诊疗指南"
-  short_description: "查询结肠憩室炎的治疗建议"
-  default_prompt: "请使用结肠憩室炎指南回答临床问题"
+  display_name: "结肠憩室炎内外科治疗进展综述"
+  short_description: "查询结肠憩室炎诊疗策略与治疗建议"
+  default_prompt: "请根据结肠憩室炎诊疗综述回答临床问题"

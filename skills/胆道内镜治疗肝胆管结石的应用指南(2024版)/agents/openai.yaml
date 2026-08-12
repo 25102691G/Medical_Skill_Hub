@@ -1,4 +1,4 @@
 interface:
-  display_name: "胆道内镜治疗指南"
+  display_name: "胆道内镜治疗肝胆管结石指南"
   short_description: "查询胆道内镜治疗肝胆管结石的临床建议"
-  default_prompt: "请使用胆道内镜治疗肝胆管结石指南回答临床问题"
+  default_prompt: "请使用胆道内镜治疗肝胆管结石的应用指南回答临床问题"
