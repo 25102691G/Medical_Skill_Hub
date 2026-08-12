@@ -17,6 +17,7 @@ from agents import (
     OpenAIResponsesModel,
     RunConfig,
     Runner,
+    function_tool,
 )
 from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
@@ -32,9 +33,9 @@ from config import (
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
 from diagnosis.agents.guideline_searcher_agent import (
-    SKILLS_DIR,
-    GuidelineToolState,
-    build_guideline_searcher_agent,
+    build_guideline_orchestrator_agent,
+    build_guideline_skill_executor_agent,
+    guideline_skill_catalog,
 )
 from diagnosis.agents.knowledge_searcher_agent import (
     build_knowledge_searcher_agent,
@@ -53,7 +54,10 @@ from schemas import (
     DiagnosticJudgementResult,
     ExcludedPlanningCandidate,
     FinalDiagnosisContent,
+    GuidelineDirectSkillMatch,
+    GuidelineExpandedSkillMatch,
     GuidelineSearchResult,
+    GuidelineSkillResult,
     HypothesisItem,
     KnowledgeSearchResult,
     KnowledgeSearchSelectionResult,
@@ -144,6 +148,82 @@ def _parse_structured_result(
 
 def _stage_failure_reason(stage_name: str, exc: Exception) -> str:
     return f"{stage_name} failed: {type(exc).__name__}: {exc}"
+
+
+def _max_turns_failure_reason(stage_name: str, exc: MaxTurnsExceeded) -> str:
+    run_data = exc.run_data
+    if run_data is None:
+        return f"{stage_name} exceeded its maximum number of model turns."
+
+    tool_calls = [
+        item
+        for item in run_data.new_items
+        if getattr(item, "type", None) == "tool_call_item"
+    ]
+    tool_names = [item.tool_name or "unknown_tool" for item in tool_calls]
+    tool_counts = {
+        tool_name: tool_names.count(tool_name)
+        for tool_name in dict.fromkeys(tool_names)
+    }
+    tool_call_signatures: list[tuple[str, str]] = []
+    tool_call_summaries: list[str] = []
+    for item in tool_calls:
+        tool_name = item.tool_name or "unknown_tool"
+        raw_item = item.raw_item
+        arguments = (
+            raw_item.get("arguments", "")
+            if isinstance(raw_item, dict)
+            else getattr(raw_item, "arguments", "")
+        )
+        argument_text = str(arguments)
+        tool_call_signatures.append((tool_name, argument_text))
+        try:
+            parsed_arguments = json.loads(argument_text)
+        except (TypeError, json.JSONDecodeError):
+            parsed_arguments = argument_text
+        if isinstance(parsed_arguments, dict):
+            detail = parsed_arguments.get("cmd") or parsed_arguments.get(
+                "skill_name"
+            ) or json.dumps(parsed_arguments, ensure_ascii=False, sort_keys=True)
+        else:
+            detail = parsed_arguments
+        normalized_detail = " ".join(str(detail).split())
+        if len(normalized_detail) > 160:
+            normalized_detail = f"{normalized_detail[:157]}..."
+        tool_call_summaries.append(f"{tool_name}({normalized_detail})")
+
+    signature_counts = {
+        signature: tool_call_signatures.count(signature)
+        for signature in dict.fromkeys(tool_call_signatures)
+    }
+    exact_duplicate_calls = sum(
+        max(count - 1, 0) for count in signature_counts.values()
+    )
+    last_tool_summaries: list[str] = []
+    if run_data.raw_responses:
+        for item in run_data.raw_responses[-1].output:
+            item_type = getattr(item, "type", "")
+            if "call" not in item_type:
+                continue
+            tool_name = getattr(item, "name", None) or getattr(
+                item, "tool_name", None
+            )
+            if tool_name:
+                arguments = getattr(item, "arguments", "")
+                normalized_arguments = " ".join(str(arguments).split())
+                if len(normalized_arguments) > 160:
+                    normalized_arguments = f"{normalized_arguments[:157]}..."
+                last_tool_summaries.append(
+                    f"{tool_name}({normalized_arguments})"
+                )
+
+    return (
+        f"{stage_name} exceeded its maximum number of model turns. "
+        f"Model calls: {len(run_data.raw_responses)}; tool calls: {len(tool_names)}; "
+        f"tool call counts: {tool_counts or {}}; exact duplicate calls: "
+        f"{exact_duplicate_calls}; tool call sequence: {tool_call_summaries}; "
+        f"last response tool calls: {last_tool_summaries or []}."
+    )
 
 
 def _validate_final_diagnosis_content(
@@ -662,206 +742,241 @@ async def _run_guideline_search_async(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> GuidelineSearchResult:
     native_structured_output = _uses_native_structured_output(model)
-    guideline_agent = build_guideline_searcher_agent(
+    catalog = guideline_skill_catalog()
+    available_skill_names = {item["name"] for item in catalog}
+    batch_result: GuidelineSearchResult | None = None
+    batch_lock = asyncio.Lock()
+
+    async def run_one_skill(skill_name: str) -> GuidelineSkillResult:
+        skill_agent = build_guideline_skill_executor_agent(
+            GuidelineSkillResult,
+            model,
+            native_structured_output=native_structured_output,
+        )
+        skill_prompt = _prepare_structured_prompt(
+            (
+                "<SELECTED_SKILL_NAME>\n"
+                f"{skill_name}\n"
+                "</SELECTED_SKILL_NAME>\n\n"
+                "<POSITIVE_FEATURES>\n"
+                f"{_as_json(positive_features)}\n"
+                "</POSITIVE_FEATURES>\n\n"
+                "Load exactly the selected native skill, completely read its SKILL.md, and "
+                "follow the workflow defined there. Return one result for this skill only."
+            ),
+            GuidelineSkillResult,
+            native_structured_output=native_structured_output,
+        )
+        skill_run = await Runner.run(
+            skill_agent,
+            skill_prompt,
+            max_turns=12,
+            run_config=RunConfig(
+                model_settings=_diagnosis_model_settings(model),
+                sandbox=SandboxRunConfig(
+                    client=UnixLocalSandboxClient(),
+                ),
+            ),
+        )
+        loaded_skill = any(
+            getattr(item, "type", None) == "tool_call_item"
+            and getattr(item, "tool_name", None) == "load_skill"
+            for item in skill_run.new_items
+        )
+        if not loaded_skill:
+            raise ValueError(
+                f"Skill executor did not call load_skill for {skill_name!r}."
+            )
+        raw_result = skill_run.final_output
+        try:
+            skill_result = _parse_structured_result(raw_result, GuidelineSkillResult)
+        except ValueError as first_exc:
+            if native_structured_output or not str(raw_result).strip():
+                raise
+            repair_agent = Agent(
+                name="Guideline Skill Result Repair Agent",
+                model=model,
+                instructions=(
+                    "Repair one invalid GuidelineSkillResult JSON object without calling tools. "
+                    "Preserve the selected skill name and every supported evidence statement. "
+                    "Only correct JSON syntax and fields required by the schema. Return exactly "
+                    "one JSON object and no other text."
+                ),
+            )
+            repair_prompt = _prepare_structured_prompt(
+                (
+                    "<SELECTED_SKILL_NAME>\n"
+                    f"{skill_name}\n"
+                    "</SELECTED_SKILL_NAME>\n\n"
+                    "<INVALID_OUTPUT>\n"
+                    f"{raw_result}\n"
+                    "</INVALID_OUTPUT>\n\n"
+                    "<VALIDATION_ERROR>\n"
+                    f"{type(first_exc).__name__}: {first_exc}\n"
+                    "</VALIDATION_ERROR>"
+                ),
+                GuidelineSkillResult,
+                native_structured_output=False,
+            )
+            repaired_result = (
+                await Runner.run(
+                    repair_agent,
+                    repair_prompt,
+                    max_turns=1,
+                    run_config=RunConfig(
+                        model_settings=_diagnosis_model_settings(model)
+                    ),
+                )
+            ).final_output
+            skill_result = _parse_structured_result(
+                repaired_result,
+                GuidelineSkillResult,
+            )
+
+        if skill_result.skill_name != skill_name:
+            raise ValueError(
+                f"Skill executor returned {skill_result.skill_name!r} instead of "
+                f"the selected skill {skill_name!r}."
+            )
+        return skill_result
+
+    @function_tool
+    async def run_selected_guideline_skills(
+        direct_matches: list[GuidelineDirectSkillMatch],
+        expanded_matches: list[GuidelineExpandedSkillMatch],
+        unused_reason: str | None = None,
+    ) -> dict[str, object]:
+        """Run each selected native guideline skill in an isolated child agent.
+
+        Args:
+            direct_matches: Skills whose primary disease directly matches a hypothesis.
+            expanded_matches: One-hop forward differential expansions from direct matches.
+            unused_reason: Specific reason no skill matched; null when skills were selected.
+        """
+        nonlocal batch_result
+        async with batch_lock:
+            if batch_result is not None:
+                return batch_result.model_dump(exclude={"skill_names"})
+
+            valid_direct_matches = [
+                match
+                for match in direct_matches
+                if match.skill_name in available_skill_names
+            ]
+            direct_skill_names = {
+                match.skill_name for match in valid_direct_matches
+            }
+            valid_expanded_matches = [
+                match
+                for match in expanded_matches
+                if match.skill_name in available_skill_names
+                and match.source_skill_name in direct_skill_names
+                and match.skill_name not in direct_skill_names
+            ]
+            selected_names = list(
+                dict.fromkeys(
+                    [
+                        *(match.skill_name for match in valid_direct_matches),
+                        *(match.skill_name for match in valid_expanded_matches),
+                    ]
+                )
+            )
+            skill_results: list[GuidelineSkillResult] = []
+            failures = [
+                f"{match.skill_name}: unknown direct skill name"
+                for match in direct_matches
+                if match.skill_name not in available_skill_names
+            ]
+            failures.extend(
+                f"{match.skill_name}: invalid expanded skill or source skill"
+                for match in expanded_matches
+                if match not in valid_expanded_matches
+                and match.skill_name not in direct_skill_names
+            )
+            for skill_name in selected_names:
+                try:
+                    skill_results.append(await run_one_skill(skill_name))
+                except MaxTurnsExceeded as exc:
+                    failures.append(
+                        f"{skill_name}: "
+                        f"{_max_turns_failure_reason('Guideline skill executor', exc)}"
+                    )
+                except Exception as exc:
+                    failures.append(f"{skill_name}: {type(exc).__name__}: {exc}")
+
+            batch_result = GuidelineSearchResult(
+                used_skill=bool(skill_results),
+                unused_reason=(
+                    None
+                    if skill_results
+                    else (
+                        "All selected guideline skills failed."
+                        if selected_names
+                        else unused_reason or "No guideline skills were selected."
+                    )
+                ),
+                direct_matches=valid_direct_matches,
+                expanded_matches=valid_expanded_matches,
+                skill_results=skill_results,
+                reason=(
+                    f"Guideline skill failures: {'; '.join(failures)}"
+                    if failures
+                    else None
+                ),
+            )
+            return batch_result.model_dump(exclude={"skill_names"})
+
+    guideline_agent = build_guideline_orchestrator_agent(
         GuidelineSearchResult,
         model,
+        [run_selected_guideline_skills],
         native_structured_output=native_structured_output,
     )
     guideline_prompt = (
         "<DIAGNOSTIC_HYPOTHESES>\n"
         f"{_as_json(hypotheses)}\n"
         "</DIAGNOSTIC_HYPOTHESES>\n\n"
-        "## Skill Selection\n\n"
-        "First select every skill when at least one diagnostic hypothesis directly corresponds to "
-        "the skill's primary disease or appears among the skill's explicit differential diseases. "
-        "Then, for each skill whose primary disease was directly matched by a hypothesis, select "
-        "every available skill whose primary disease corresponds to one of that directly matched "
-        "skill's explicit differential diseases. Do not expand from a skill selected only by a "
-        "differential match or by this expansion, and do not recursively expand. Deduplicate the "
-        "final selection and do not impose a target or maximum skill count.\n\n"
-        "<POSITIVE_FEATURES>\n"
-        f"{_as_json(positive_features)}\n"
-        "</POSITIVE_FEATURES>\n\n"
-        "<AVAILABLE_SKILLS_DIRECTORY>\n"
-        f"{SKILLS_DIR}\n"
-        "</AVAILABLE_SKILLS_DIRECTORY>\n\n"
-        "## Guideline Retrieval\n\n"
-        "After selecting the skills, read each complete recommendations index and use only "
-        "positive_features to semantically match its entries. Read the source blocks listed by the "
-        "relevant entries and compare the patient features with information verified against the "
-        "guideline full text. Do not use hypotheses for within-skill matching or as patient evidence. "
-        "Keep each skill's evidence and guideline diagnosis together in one skill_results item.\n\n"
-        "## Result Requirements\n\n"
-        "When no guideline skill is used, set used_skill to false, explain the specific reason in "
-        "unused_reason, and return an empty skill_results array. Set unused_reason to null when at "
-        "least one guideline skill is used."
+        "<AVAILABLE_SKILL_CATALOG>\n"
+        f"{_as_json(catalog)}\n"
+        "</AVAILABLE_SKILL_CATALOG>"
     )
-    if not native_structured_output:
-        guideline_prompt = _prepare_structured_prompt(
-            guideline_prompt,
-            GuidelineSearchResult,
-            native_structured_output=False,
-        )
-        guideline_prompt += (
-            "\n\n## JSON Output Example\n\n"
-            "The following example shows the required JSON structure. Replace every example value "
-            "with the actual result. Use the JSON null value, not the string \"null\".\n\n"
-            "<JSON_OUTPUT_EXAMPLE>\n"
-            '{"used_skill":true,"unused_reason":null,"skill_results":['
-            '{"skill_name":"actual selected skill name","disease_name":"evaluated disease",'
-            '"guideline_evidence":[],"guideline_diagnosis":"actual diagnostic conclusion"}],'
-            '"reason":null}\n'
-            "</JSON_OUTPUT_EXAMPLE>"
-        )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
-    if native_structured_output:
-        raw_result = (
-            await Runner.run(
-                guideline_agent,
-                guideline_prompt,
-                run_config=RunConfig(
-                    model_settings=_diagnosis_model_settings(model),
-                    sandbox=SandboxRunConfig(
-                        client=UnixLocalSandboxClient(),
-                    ),
-                ),
-            )
-        ).final_output
-    else:
-        tool_state = GuidelineToolState()
-        try:
-            raw_result = (
-                await Runner.run(
-                    guideline_agent,
-                    guideline_prompt,
-                    context=tool_state,
-                    max_turns=100,
-                    run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
-                )
-            ).final_output
-        except MaxTurnsExceeded:
-            accessed_skills = sorted(tool_state.accessed_skills)
-            attempted_detail = (
-                f" Attempted skills: {', '.join(accessed_skills)}."
-                if accessed_skills
-                else ""
-            )
-            result = GuidelineSearchResult(
-                used_skill=False,
-                unused_reason="Guideline search did not complete.",
-                skill_results=[],
-                reason=(
-                    "Guideline search exceeded the maximum number of agent turns before producing "
-                    f"a final result.{attempted_detail}"
-                ),
-            )
-            _publish_stage_result(
-                f"Guideline Search Result - Round {round_index}",
-                result,
-                debug=debug,
-                progress_callback=progress_callback,
-            )
-            return result
     try:
-        result = _parse_structured_result(raw_result, GuidelineSearchResult)
-    except ValueError as first_exc:
-        if native_structured_output:
+        await Runner.run(
+            guideline_agent,
+            guideline_prompt,
+            max_turns=1,
+            run_config=RunConfig(
+                model_settings=_diagnosis_model_settings(model).resolve(
+                    ModelSettings(tool_choice="required")
+                )
+            ),
+        )
+        if batch_result is None:
+            raise ValueError(
+                "Guideline orchestrator did not call run_selected_guideline_skills."
+            )
+        result = batch_result
+    except MaxTurnsExceeded as exc:
+        if batch_result is not None:
+            result = batch_result
+        else:
             result = GuidelineSearchResult(
                 used_skill=False,
-                unused_reason="Guideline search failed.",
+                unused_reason="Guideline skill matching did not complete.",
                 skill_results=[],
-                reason=(
-                    "Guideline search result could not be parsed as valid structured output: "
-                    f"{type(first_exc).__name__}: {first_exc}"
-                ),
+                reason=_max_turns_failure_reason("Guideline orchestrator", exc),
             )
+    except Exception as exc:
+        if batch_result is not None:
+            result = batch_result
         else:
-            retry_accessed_skills: list[str] = []
-            retry_tool_state: GuidelineToolState | None = None
-            try:
-                if str(raw_result).strip():
-                    repair_agent = Agent(
-                        name="Guideline Result Repair Agent",
-                        model=model,
-                        instructions=(
-                            "Repair one invalid GuidelineSearchResult JSON object without calling "
-                            "tools. Preserve every supported skill name, disease name, and guideline "
-                            "evidence item. Add or correct only fields required by the schema. For each "
-                            "skill result, write a concise guideline_diagnosis using only the supplied "
-                            "positive features and existing guideline evidence. Return exactly one JSON "
-                            "object and no other text."
-                        ),
-                    )
-                    repair_prompt = _prepare_structured_prompt(
-                        (
-                            "<POSITIVE_FEATURES>\n"
-                            f"{_as_json(positive_features)}\n"
-                            "</POSITIVE_FEATURES>\n\n"
-                            "<INVALID_OUTPUT>\n"
-                            f"{raw_result}\n"
-                            "</INVALID_OUTPUT>\n\n"
-                            "<VALIDATION_ERROR>\n"
-                            f"{type(first_exc).__name__}: {first_exc}\n"
-                            "</VALIDATION_ERROR>"
-                        ),
-                        GuidelineSearchResult,
-                        native_structured_output=False,
-                    )
-                    retry_raw_result = (
-                        await Runner.run(
-                            repair_agent,
-                            repair_prompt,
-                            max_turns=1,
-                            run_config=RunConfig(
-                                model_settings=_diagnosis_model_settings(model)
-                            ),
-                        )
-                    ).final_output
-                else:
-                    retry_tool_state = GuidelineToolState()
-                    retry_raw_result = (
-                        await Runner.run(
-                            guideline_agent,
-                            (
-                                f"{guideline_prompt}\n\n"
-                                "## Retry Requirement\n\n"
-                                "The previous attempt returned an empty response. Repeat the bounded "
-                                "guideline search once. After the permitted tool calls, stop calling "
-                                "tools and return the complete final JSON object immediately."
-                            ),
-                            context=retry_tool_state,
-                            max_turns=100,
-                            run_config=RunConfig(
-                                model_settings=_diagnosis_model_settings(model)
-                            ),
-                        )
-                    ).final_output
-                    retry_accessed_skills = sorted(retry_tool_state.accessed_skills)
-                result = _parse_structured_result(
-                    retry_raw_result,
-                    GuidelineSearchResult,
-                )
-            except (MaxTurnsExceeded, ValueError) as retry_exc:
-                if retry_tool_state is not None:
-                    retry_accessed_skills = sorted(
-                        retry_tool_state.accessed_skills
-                    )
-                attempted_detail = (
-                    f" Attempted skills during retry: {', '.join(retry_accessed_skills)}."
-                    if retry_accessed_skills
-                    else ""
-                )
-                result = GuidelineSearchResult(
-                    used_skill=False,
-                    unused_reason="Guideline search failed after one retry.",
-                    skill_results=[],
-                    reason=(
-                        "Initial guideline result error: "
-                        f"{type(first_exc).__name__}: {first_exc}. "
-                        "Retry error: "
-                        f"{type(retry_exc).__name__}: {retry_exc}.{attempted_detail}"
-                    ),
-                )
+            result = GuidelineSearchResult(
+                used_skill=False,
+                unused_reason="Guideline skill matching failed.",
+                skill_results=[],
+                reason=f"Guideline orchestrator failed: {type(exc).__name__}: {exc}",
+            )
     source_locator_pattern = re.compile(
         r"\s*[（(]\s*原文\s*L\d{6}(?:\s*-\s*L\d{6})?"
         r"(?:\s*[、,，]\s*L\d{6}(?:\s*-\s*L\d{6})?)*\s*[）)]"

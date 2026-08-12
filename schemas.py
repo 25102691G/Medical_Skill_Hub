@@ -208,7 +208,7 @@ class GuidelineSkillResult(BaseModel):
     disease_name: str = Field(description="Disease evaluated by this guideline skill")
     guideline_evidence: list[str] = Field(
         description=(
-            "Relevant evidence extracted from this skill and verified against its guideline full text"
+            "Relevant evidence retrieved and verified according to this skill's SKILL.md workflow"
         )
     )
     guideline_diagnosis: str = Field(
@@ -219,10 +219,35 @@ class GuidelineSkillResult(BaseModel):
     )
 
 
+class GuidelineDirectSkillMatch(BaseModel):
+    skill_name: str = Field(description="Exact directly matched local guideline skill name")
+    matched_hypothesis: str = Field(
+        description="Diagnostic hypothesis whose primary disease directly matched this skill"
+    )
+
+
+class GuidelineExpandedSkillMatch(BaseModel):
+    skill_name: str = Field(description="Exact skill name selected by forward expansion")
+    source_skill_name: str = Field(
+        description="Directly matched skill whose differential disease caused this expansion"
+    )
+    differential_disease: str = Field(
+        description="Explicit differential disease linking the source skill to this skill"
+    )
+
+
 class GuidelineSearchResult(BaseModel):
     used_skill: bool = Field(description="Whether any guideline skill was loaded and searched")
     unused_reason: str | None = Field(
         description="Reason no guideline skill was used; null when used_skill is true",
+    )
+    direct_matches: list[GuidelineDirectSkillMatch] = Field(
+        default_factory=list,
+        description="Skills whose primary disease directly matched a diagnostic hypothesis",
+    )
+    expanded_matches: list[GuidelineExpandedSkillMatch] = Field(
+        default_factory=list,
+        description="One-hop forward differential expansions from directly matched skills",
     )
     skill_results: list[GuidelineSkillResult] = Field(
         description="Guideline evidence and diagnostic conclusion grouped by used skill"
