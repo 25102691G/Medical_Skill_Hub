@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence, Type
+from typing import Type
 
-from agents import Agent, Model, Tool
+from agents import Agent, Model
 from agents.sandbox import Manifest, SandboxAgent, SandboxPathGrant
 from agents.sandbox.capabilities import (
     Capabilities,
@@ -28,18 +28,32 @@ specific disease must match, and every narrower condition required by the skill,
 stage, hereditary status, metastatic site, complication, procedure, or pregnancy, must be explicit in
 the hypothesis. A broad shared disease category is insufficient.
 
-Then perform exactly one forward differential expansion step. For every directly matched skill, read
-the explicit differential diseases in its description and select every available skill whose primary
-disease directly corresponds to one of those differential diseases. Do not select a skill merely
-because a hypothesis appears in that skill's differential-disease list. Do not expand from an expanded
-skill and do not recurse. Deduplicate the selected skill names.
+Return only direct matches. Return each directly matched skill at most once in direct_matches. Do not
+perform differential expansion and do not select a skill merely because a hypothesis appears in its
+differential-disease list. Use exact skill names from the catalog. When at least one skill is selected,
+set unused_reason to null. When no skill is selected, return an empty direct_matches list plus a
+specific unused_reason.
+""".strip()
 
-Always call run_selected_guideline_skills exactly once. Put each direct match in direct_matches with
-the exact matching hypothesis. Put each forward expansion in expanded_matches with its directly
-matched source skill and the explicit differential disease that links them. Use exact skill names from
-the catalog. When no skill is selected, pass empty direct_matches and expanded_matches plus a specific
-unused_reason. The tool result is the final guideline search result; never construct that result
-yourself.
+
+GUIDELINE_EXPANSION_INSTRUCTIONS = """
+## GUIDELINE EXPANSION INSTRUCTIONS
+
+You perform exactly one forward differential expansion for the supplied directly matched guideline
+skills.
+
+For every explicit differential disease supplied under each source skill, select every available target
+skill whose primary disease directly corresponds to that differential disease. The target catalog
+contains only each target skill's primary disease scope. The specific disease must match, and every
+narrower condition required by the target skill, such as subtype, stage, hereditary status, metastatic
+site, complication, procedure, or pregnancy, must be explicit in the differential disease. A broad
+shared disease category or symptom similarity is insufficient.
+
+Return results first grouped by source skill and then by differential disease. Copy every returned
+source skill and differential disease exactly from the supplied input and use exact target skill names
+from the supplied catalog. Return each target skill at most once across the complete response. Do not
+select a source skill, do not perform reverse matching, and do not expand from a target skill. Omit
+differential diseases and source skills that have no directly corresponding target skill.
 """.strip()
 
 
@@ -67,18 +81,11 @@ diagnosis task.
 
 
 def guideline_skill_catalog() -> list[dict[str, str]]:
-    catalog: list[dict[str, str]] = []
-    for path in sorted(SKILLS_DIR.iterdir(), key=lambda item: item.name):
-        skill_md = path / "SKILL.md"
-        if not path.is_dir() or not skill_md.is_file():
-            continue
-        description = ""
-        for line in skill_md.read_text(encoding="utf-8").splitlines():
-            if line.startswith("description:"):
-                description = line.split(":", 1)[1].strip().strip("\"'")
-                break
-        catalog.append({"name": path.name, "description": description})
-    return catalog
+    skill_source = LocalDirLazySkillSource(source=LocalDir(src=SKILLS_DIR))
+    return [
+        {"name": skill.name, "description": skill.description}
+        for skill in skill_source.list_skill_metadata(skills_path=".agents")
+    ]
 
 
 def _build_guideline_skill_capability() -> Skills:
@@ -104,7 +111,6 @@ def _build_guideline_skill_manifest() -> Manifest:
 def build_guideline_orchestrator_agent(
     output_type: Type[BaseModel],
     model: str | Model,
-    tools: Sequence[Tool],
     *,
     native_structured_output: bool = True,
 ) -> Agent:
@@ -113,8 +119,20 @@ def build_guideline_orchestrator_agent(
         model=model,
         instructions=GUIDELINE_ORCHESTRATOR_INSTRUCTIONS,
         output_type=output_type if native_structured_output else None,
-        tools=list(tools),
-        tool_use_behavior="stop_on_first_tool",
+    )
+
+
+def build_guideline_expansion_agent(
+    output_type: Type[BaseModel],
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
+    return Agent(
+        name="Guideline Differential Expansion Agent",
+        model=model,
+        instructions=GUIDELINE_EXPANSION_INSTRUCTIONS,
+        output_type=output_type if native_structured_output else None,
     )
 
 

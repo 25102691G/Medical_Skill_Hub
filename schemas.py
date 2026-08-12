@@ -221,9 +221,6 @@ class GuidelineSkillResult(BaseModel):
 
 class GuidelineDirectSkillMatch(BaseModel):
     skill_name: str = Field(description="Exact directly matched local guideline skill name")
-    matched_hypothesis: str = Field(
-        description="Diagnostic hypothesis whose primary disease directly matched this skill"
-    )
 
 
 class GuidelineExpandedSkillMatch(BaseModel):
@@ -233,6 +230,43 @@ class GuidelineExpandedSkillMatch(BaseModel):
     )
     differential_disease: str = Field(
         description="Explicit differential disease linking the source skill to this skill"
+    )
+
+
+class GuidelineDirectSkillSelection(BaseModel):
+    direct_matches: list[GuidelineDirectSkillMatch] = Field(
+        default_factory=list,
+        description="Skills whose primary disease directly matched a diagnostic hypothesis",
+    )
+    unused_reason: str | None = Field(
+        description="Specific reason no skill matched; null when at least one skill was selected",
+    )
+
+
+class GuidelineDifferentialSkillTargets(BaseModel):
+    differential_disease: str = Field(
+        description="Exact differential disease copied from the source skill description"
+    )
+    skill_names: list[str] = Field(
+        default_factory=list,
+        description="Exact available skill names whose primary disease directly matches it",
+    )
+
+
+class GuidelineSourceSkillExpansion(BaseModel):
+    source_skill_name: str = Field(
+        description="Exact directly matched source skill name"
+    )
+    differential_matches: list[GuidelineDifferentialSkillTargets] = Field(
+        default_factory=list,
+        description="Target skills grouped by an explicit source-skill differential disease",
+    )
+
+
+class GuidelineSkillExpansionSelection(BaseModel):
+    source_matches: list[GuidelineSourceSkillExpansion] = Field(
+        default_factory=list,
+        description="One-hop differential expansion results grouped by direct source skill",
     )
 
 

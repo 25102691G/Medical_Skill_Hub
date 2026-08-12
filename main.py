@@ -17,7 +17,6 @@ from agents import (
     OpenAIResponsesModel,
     RunConfig,
     Runner,
-    function_tool,
 )
 from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
@@ -33,6 +32,7 @@ from config import (
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
 from diagnosis.agents.guideline_searcher_agent import (
+    build_guideline_expansion_agent,
     build_guideline_orchestrator_agent,
     build_guideline_skill_executor_agent,
     guideline_skill_catalog,
@@ -54,9 +54,11 @@ from schemas import (
     DiagnosticJudgementResult,
     ExcludedPlanningCandidate,
     FinalDiagnosisContent,
+    GuidelineDirectSkillSelection,
     GuidelineDirectSkillMatch,
     GuidelineExpandedSkillMatch,
     GuidelineSearchResult,
+    GuidelineSkillExpansionSelection,
     GuidelineSkillResult,
     HypothesisItem,
     KnowledgeSearchResult,
@@ -743,9 +745,8 @@ async def _run_guideline_search_async(
 ) -> GuidelineSearchResult:
     native_structured_output = _uses_native_structured_output(model)
     catalog = guideline_skill_catalog()
+    catalog_by_name = {item["name"]: item for item in catalog}
     available_skill_names = {item["name"] for item in catalog}
-    batch_result: GuidelineSearchResult | None = None
-    batch_lock = asyncio.Lock()
 
     async def run_one_skill(skill_name: str) -> GuidelineSkillResult:
         skill_agent = build_guideline_skill_executor_agent(
@@ -770,7 +771,7 @@ async def _run_guideline_search_async(
         skill_run = await Runner.run(
             skill_agent,
             skill_prompt,
-            max_turns=12,
+            max_turns=15,
             run_config=RunConfig(
                 model_settings=_diagnosis_model_settings(model),
                 sandbox=SandboxRunConfig(
@@ -840,143 +841,253 @@ async def _run_guideline_search_async(
             )
         return skill_result
 
-    @function_tool
     async def run_selected_guideline_skills(
         direct_matches: list[GuidelineDirectSkillMatch],
         expanded_matches: list[GuidelineExpandedSkillMatch],
         unused_reason: str | None = None,
-    ) -> dict[str, object]:
+        matching_failures: list[str] | None = None,
+    ) -> GuidelineSearchResult:
         """Run each selected native guideline skill in an isolated child agent.
 
         Args:
             direct_matches: Skills whose primary disease directly matches a hypothesis.
             expanded_matches: One-hop forward differential expansions from direct matches.
             unused_reason: Specific reason no skill matched; null when skills were selected.
+            matching_failures: Invalid direct or expanded matches rejected before execution.
         """
-        nonlocal batch_result
-        async with batch_lock:
-            if batch_result is not None:
-                return batch_result.model_dump(exclude={"skill_names"})
+        failures = list(matching_failures or [])
+        selected_names = list(
+            dict.fromkeys(
+                [
+                    *(match.skill_name for match in direct_matches),
+                    *(match.skill_name for match in expanded_matches),
+                ]
+            )
+        )
+        skill_semaphore = asyncio.Semaphore(10)
 
-            valid_direct_matches = [
-                match
-                for match in direct_matches
-                if match.skill_name in available_skill_names
-            ]
-            direct_skill_names = {
-                match.skill_name for match in valid_direct_matches
-            }
-            valid_expanded_matches = [
-                match
-                for match in expanded_matches
-                if match.skill_name in available_skill_names
-                and match.source_skill_name in direct_skill_names
-                and match.skill_name not in direct_skill_names
-            ]
-            selected_names = list(
-                dict.fromkeys(
-                    [
-                        *(match.skill_name for match in valid_direct_matches),
-                        *(match.skill_name for match in valid_expanded_matches),
-                    ]
+        async def run_limited_skill(skill_name: str) -> GuidelineSkillResult:
+            async with skill_semaphore:
+                return await run_one_skill(skill_name)
+
+        skill_outcomes = await asyncio.gather(
+            *(run_limited_skill(skill_name) for skill_name in selected_names),
+            return_exceptions=True,
+        )
+        skill_results: list[GuidelineSkillResult] = []
+        for skill_name, outcome in zip(selected_names, skill_outcomes):
+            if isinstance(outcome, MaxTurnsExceeded):
+                failures.append(
+                    f"{skill_name}: "
+                    f"{_max_turns_failure_reason('Guideline skill executor', outcome)}"
                 )
-            )
-            skill_results: list[GuidelineSkillResult] = []
-            failures = [
-                f"{match.skill_name}: unknown direct skill name"
-                for match in direct_matches
-                if match.skill_name not in available_skill_names
-            ]
-            failures.extend(
-                f"{match.skill_name}: invalid expanded skill or source skill"
-                for match in expanded_matches
-                if match not in valid_expanded_matches
-                and match.skill_name not in direct_skill_names
-            )
-            for skill_name in selected_names:
-                try:
-                    skill_results.append(await run_one_skill(skill_name))
-                except MaxTurnsExceeded as exc:
-                    failures.append(
-                        f"{skill_name}: "
-                        f"{_max_turns_failure_reason('Guideline skill executor', exc)}"
-                    )
-                except Exception as exc:
-                    failures.append(f"{skill_name}: {type(exc).__name__}: {exc}")
+            elif isinstance(outcome, Exception):
+                failures.append(
+                    f"{skill_name}: {type(outcome).__name__}: {outcome}"
+                )
+            else:
+                skill_results.append(outcome)
 
-            batch_result = GuidelineSearchResult(
-                used_skill=bool(skill_results),
-                unused_reason=(
-                    None
-                    if skill_results
-                    else (
-                        "All selected guideline skills failed."
-                        if selected_names
-                        else unused_reason or "No guideline skills were selected."
-                    )
-                ),
-                direct_matches=valid_direct_matches,
-                expanded_matches=valid_expanded_matches,
-                skill_results=skill_results,
-                reason=(
-                    f"Guideline skill failures: {'; '.join(failures)}"
-                    if failures
-                    else None
-                ),
-            )
-            return batch_result.model_dump(exclude={"skill_names"})
+        return GuidelineSearchResult(
+            used_skill=bool(skill_results),
+            unused_reason=(
+                None
+                if skill_results
+                else (
+                    "All selected guideline skills failed."
+                    if selected_names
+                    else unused_reason or "No guideline skills were selected."
+                )
+            ),
+            direct_matches=direct_matches,
+            expanded_matches=expanded_matches,
+            skill_results=skill_results,
+            reason=(
+                f"Guideline skill failures: {'; '.join(failures)}"
+                if failures
+                else None
+            ),
+        )
 
     guideline_agent = build_guideline_orchestrator_agent(
-        GuidelineSearchResult,
+        GuidelineDirectSkillSelection,
         model,
-        [run_selected_guideline_skills],
         native_structured_output=native_structured_output,
     )
-    guideline_prompt = (
-        "<DIAGNOSTIC_HYPOTHESES>\n"
-        f"{_as_json(hypotheses)}\n"
-        "</DIAGNOSTIC_HYPOTHESES>\n\n"
-        "<AVAILABLE_SKILL_CATALOG>\n"
-        f"{_as_json(catalog)}\n"
-        "</AVAILABLE_SKILL_CATALOG>"
+    guideline_prompt = _prepare_structured_prompt(
+        (
+            "<DIAGNOSTIC_HYPOTHESES>\n"
+            f"{_as_json(hypotheses)}\n"
+            "</DIAGNOSTIC_HYPOTHESES>\n\n"
+            "<AVAILABLE_SKILL_CATALOG>\n"
+            f"{_as_json(catalog)}\n"
+            "</AVAILABLE_SKILL_CATALOG>"
+        ),
+        GuidelineDirectSkillSelection,
+        native_structured_output=native_structured_output,
     )
     _notify_agent_started(progress_callback, "Guideline Searcher Agent", round_index)
     try:
-        await Runner.run(
-            guideline_agent,
-            guideline_prompt,
-            max_turns=1,
-            run_config=RunConfig(
-                model_settings=_diagnosis_model_settings(model).resolve(
-                    ModelSettings(tool_choice="required")
-                )
-            ),
+        raw_selection = (
+            await Runner.run(
+                guideline_agent,
+                guideline_prompt,
+                max_turns=1,
+                run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+            )
+        ).final_output
+        selection = _parse_structured_result(
+            raw_selection,
+            GuidelineDirectSkillSelection,
         )
-        if batch_result is None:
-            raise ValueError(
-                "Guideline orchestrator did not call run_selected_guideline_skills."
+        direct_matches: list[GuidelineDirectSkillMatch] = []
+        seen_direct_skill_names: set[str] = set()
+        matching_failures: list[str] = []
+        for match in selection.direct_matches:
+            if match.skill_name not in available_skill_names:
+                matching_failures.append(
+                    f"{match.skill_name}: unknown direct skill name"
+                )
+                continue
+            if match.skill_name in seen_direct_skill_names:
+                continue
+            seen_direct_skill_names.add(match.skill_name)
+            direct_matches.append(match)
+
+        expanded_matches: list[GuidelineExpandedSkillMatch] = []
+        seen_expanded_skill_names: set[str] = set()
+        source_skills: list[dict[str, object]] = []
+        differential_diseases_by_source: dict[str, list[str]] = {}
+        for direct_match in direct_matches:
+            source_description = catalog_by_name[direct_match.skill_name]["description"]
+            _, separator, differential_text = source_description.partition(
+                "明确鉴别疾病："
             )
-        result = batch_result
+            differential_diseases = (
+                []
+                if not separator or differential_text.rstrip("。") == "无"
+                else differential_text.rstrip("。").split("、")
+            )
+            if not differential_diseases:
+                continue
+            differential_diseases_by_source[direct_match.skill_name] = (
+                differential_diseases
+            )
+            source_skills.append(
+                {
+                    "skill_name": direct_match.skill_name,
+                    "explicit_differential_diseases": differential_diseases,
+                }
+            )
+
+        if source_skills:
+            expansion_agent = build_guideline_expansion_agent(
+                GuidelineSkillExpansionSelection,
+                model,
+                native_structured_output=native_structured_output,
+            )
+            target_catalog = []
+            for item in catalog:
+                if item["name"] in seen_direct_skill_names:
+                    continue
+                primary_scope, _, _ = item["description"].partition(
+                    "。明确鉴别疾病："
+                )
+                target_catalog.append(
+                    {
+                        "name": item["name"],
+                        "primary_disease_scope": primary_scope.removeprefix(
+                            "主要疾病及适用范围："
+                        ),
+                    }
+                )
+            expansion_prompt = _prepare_structured_prompt(
+                (
+                    "<SOURCE_DIRECT_SKILLS>\n"
+                    f"{_as_json(source_skills)}\n"
+                    "</SOURCE_DIRECT_SKILLS>\n\n"
+                    "<AVAILABLE_TARGET_SKILL_CATALOG>\n"
+                    f"{_as_json(target_catalog)}\n"
+                    "</AVAILABLE_TARGET_SKILL_CATALOG>"
+                ),
+                GuidelineSkillExpansionSelection,
+                native_structured_output=native_structured_output,
+            )
+            try:
+                raw_expansion = (
+                    await Runner.run(
+                        expansion_agent,
+                        expansion_prompt,
+                        max_turns=1,
+                        run_config=RunConfig(
+                            model_settings=_diagnosis_model_settings(model)
+                        ),
+                    )
+                ).final_output
+                expansion_selection = _parse_structured_result(
+                    raw_expansion,
+                    GuidelineSkillExpansionSelection,
+                )
+            except Exception as exc:
+                matching_failures.append(
+                    f"Differential expansion failed: {type(exc).__name__}: {exc}"
+                )
+            else:
+                for source_match in expansion_selection.source_matches:
+                    differential_diseases = differential_diseases_by_source.get(
+                        source_match.source_skill_name
+                    )
+                    if differential_diseases is None:
+                        matching_failures.append(
+                            f"{source_match.source_skill_name}: unknown differential "
+                            "expansion source"
+                        )
+                        continue
+                    for differential_match in source_match.differential_matches:
+                        for skill_name in differential_match.skill_names:
+                            if skill_name not in available_skill_names:
+                                matching_failures.append(
+                                    f"{skill_name}: invalid differential target from "
+                                    f"{source_match.source_skill_name}"
+                                )
+                                continue
+                            if skill_name in seen_direct_skill_names:
+                                continue
+                            if skill_name in seen_expanded_skill_names:
+                                continue
+                            seen_expanded_skill_names.add(skill_name)
+                            expanded_matches.append(
+                                GuidelineExpandedSkillMatch(
+                                    skill_name=skill_name,
+                                    source_skill_name=(
+                                        source_match.source_skill_name
+                                    ),
+                                    differential_disease=(
+                                        differential_match.differential_disease
+                                    ),
+                                )
+                            )
+
+        result = await run_selected_guideline_skills(
+            direct_matches,
+            expanded_matches,
+            selection.unused_reason,
+            matching_failures,
+        )
     except MaxTurnsExceeded as exc:
-        if batch_result is not None:
-            result = batch_result
-        else:
-            result = GuidelineSearchResult(
-                used_skill=False,
-                unused_reason="Guideline skill matching did not complete.",
-                skill_results=[],
-                reason=_max_turns_failure_reason("Guideline orchestrator", exc),
-            )
+        result = GuidelineSearchResult(
+            used_skill=False,
+            unused_reason="Guideline skill matching did not complete.",
+            skill_results=[],
+            reason=_max_turns_failure_reason("Guideline orchestrator", exc),
+        )
     except Exception as exc:
-        if batch_result is not None:
-            result = batch_result
-        else:
-            result = GuidelineSearchResult(
-                used_skill=False,
-                unused_reason="Guideline skill matching failed.",
-                skill_results=[],
-                reason=f"Guideline orchestrator failed: {type(exc).__name__}: {exc}",
-            )
+        result = GuidelineSearchResult(
+            used_skill=False,
+            unused_reason="Guideline skill matching failed.",
+            skill_results=[],
+            reason=f"Guideline orchestrator failed: {type(exc).__name__}: {exc}",
+        )
     source_locator_pattern = re.compile(
         r"\s*[（(]\s*原文\s*L\d{6}(?:\s*-\s*L\d{6})?"
         r"(?:\s*[、,，]\s*L\d{6}(?:\s*-\s*L\d{6})?)*\s*[）)]"

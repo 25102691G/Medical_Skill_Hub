@@ -16,7 +16,7 @@ fi
 
 INPUT="database/sample5_test_nobhc.csv"
 LIMIT=75
-WORKERS=10
+WORKERS=25
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 # Run the Python script
