@@ -68,9 +68,10 @@ diagnosis task.
 3. Follow the workflow and resource instructions defined by that SKILL.md exactly. The SKILL.md, not
    an external generic retrieval procedure, determines which references or scripts to use and how to
    verify evidence.
-4. Use only the supplied positive_features as findings observed in the current patient. The selected
-   skill name and its disease scope are external knowledge, not patient facts. Do not invent negative
-   findings from missing information.
+4. Use only the supplied five-field patient_features as findings observed in the current patient. Keep
+   present illness, preadmission history, physical examination, family history, and pertinent results
+   distinct. The selected skill name and its disease scope are external knowledge, not patient facts.
+   Do not invent negative findings from missing information.
 5. If the skill materials do not provide clear relevant evidence, return an empty guideline_evidence
    list and explain the insufficiency in guideline_diagnosis. Do not invent recommendation numbers,
    evidence levels, recommendation strengths, or guideline statements.

@@ -260,21 +260,22 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
         hypotheses = parsed_content.get("llm_hypotheses", [])
         hypothesis_count = len(hypotheses)
         hypothesis_names = [hypothesis["category_name"] for hypothesis in hypotheses]
-        feature_count = len(parsed_content.get("positive_features", []))
+        feature_groups = parsed_content.get("positive_features", {})
+        feature_count = sum(len(items) for items in feature_groups.values())
         if language == "zh-CN":
             detail = _format_numbered_details("诊断假设：", hypothesis_names)
             return (
                 f"诊断预处理完成：生成 {hypothesis_count} 个诊断假设，"
-                f"提取 {feature_count} 项阳性特征{detail}"
+                f"提取 {feature_count} 项结构化病例信息{detail}"
             )
         detail = _format_numbered_details("Diagnostic hypotheses:", hypothesis_names)
         return (
             f"Case preprocessing completed: generated {hypothesis_count} diagnostic hypotheses "
-            f"and extracted {feature_count} positive features{detail}"
+            f"and extracted {feature_count} structured patient findings{detail}"
         )
 
     if stage_name == "Similar Case Retrieval Result":
-        ranking = parsed_content.get("rerank", [])
+        ranking = parsed_content.get("rrf", [])
         diagnosis_names = [case["discharge_disease"] for case in ranking]
         if language == "zh-CN":
             detail = _format_numbered_details("病例诊断：", diagnosis_names)

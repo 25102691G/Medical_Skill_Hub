@@ -46,8 +46,8 @@ Patient information is the only source of facts about the current patient.
 Use only information explicitly contained in the case record as patient evidence. Do not invent or
 import patient facts from external knowledge.
 
-The supplied positive features and similar-case diagnoses are planning inputs, but they must not be
-treated as additional facts beyond the original patient case.
+The supplied structured patient features and similar-case diagnoses are planning inputs, but they must
+not be treated as additional facts beyond the original patient case.
 
 #### Previous-round information
 
@@ -62,8 +62,8 @@ The hypotheses have already been created by merging direct LLM hypotheses with r
 diagnoses and deduplicating them by ICD-10-CM code. Preserve the supplied icd_code and category_name
 values exactly.
 
-Use the hypotheses, original patient case, positive features, and similar-case diagnoses only to design
-focused medical literature queries.
+Use the hypotheses, original patient case, structured patient features, and similar-case diagnoses only
+to design focused medical literature queries.
 
 ### 4. Search Query Requirements
 

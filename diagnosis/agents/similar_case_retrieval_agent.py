@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-import logging
 import pickle
 import sys
 from dataclasses import dataclass
@@ -20,43 +19,43 @@ from config import (
     SIMILAR_CASE_EMBEDDING_CACHE_PATH,
     SIMILAR_CASE_EMBEDDING_DEVICE,
     SIMILAR_CASE_EMBEDDING_MODEL,
-    SIMILAR_CASE_RERANKER_BATCH_SIZE,
-    SIMILAR_CASE_RERANKER_DEVICE,
-    SIMILAR_CASE_RERANKER_MODEL,
     SIMILAR_CASE_RRF_CANDIDATE_K,
     SIMILAR_CASE_TOP_K,
 )
-from schemas import SimilarCaseRetrievalResult
+from schemas import PositiveFeaturesResult, SimilarCaseRetrievalResult
 
 
 SECTION_COLUMNS = (
-    "chief_complaint",
-    "major_surgical_or_invasive_procedure",
-    "history_of_present_illness",
+    "present_illness_history",
     "past_medical_history",
-    "family_history",
     "physical_exam",
+    "family_history",
     "pertinent_results",
-    "brief_hospital_course",
-    "medications_on_admission",
 )
+SECTION_WEIGHTS = {
+    "present_illness_history": 3.0,
+    "past_medical_history": 2.0,
+    "physical_exam": 2.0,
+    "family_history": 1.0,
+    "pertinent_results": 3.0,
+}
+BM25_FUSION_WEIGHT = 0.3
+DENSE_FUSION_WEIGHT = 0.7
 REQUIRED_COLUMNS = {"hadm_id", "icd_code", "long_title", *SECTION_COLUMNS}
 RRF_K = 60
 SECTION_CHUNK_TOKEN_COUNT = 510
-logger = logging.getLogger(__name__)
+DENSE_MAX_LENGTH = 1024
 BM25_CACHE_PATH = MIMIC_IV_CASE_PATH.with_name(
     f"{MIMIC_IV_CASE_PATH.stem}_bm25.pkl"
 )
 RankingDetails = dict[str, object]
 RankingCallback = Callable[[RankingDetails], None]
-_bm25_index: tuple[Any, list[int]] | None = None
+_bm25_index: dict[str, tuple[Any, list[int]]] | None = None
 _bm25_index_lock = Lock()
 _dense_dependencies: tuple[Any, Any, Any, Any] | None = None
 _dense_dependencies_lock = Lock()
 _dense_model: tuple[Any, Any, str] | None = None
 _dense_model_lock = Lock()
-_reranker_model: tuple[Any, Any, str] | None = None
-_reranker_model_lock = Lock()
 _corpus_embeddings: Any | None = None
 _corpus_embeddings_lock = Lock()
 _similar_case_retrieval_lock = Lock()
@@ -198,6 +197,17 @@ def _join_query(items: list[str]) -> str:
     return " ".join(item.strip() for item in items if item.strip())
 
 
+def _feature_queries(
+    positive_features: PositiveFeaturesResult,
+) -> dict[str, str]:
+    queries = {}
+    for field_name in SECTION_COLUMNS:
+        query = _join_query(getattr(positive_features, field_name))
+        if query:
+            queries[field_name] = query
+    return queries
+
+
 @lru_cache(maxsize=1)
 def _load_scispacy_nlp() -> Any:
     try:
@@ -234,12 +244,12 @@ def _top_five_retrieval_results(
     hits: dict[int, list[tuple[int, float]]],
 ) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
-    seen_diseases: set[str] = set()
+    seen_icd_codes: set[str] = set()
     for case_index, score in ranking:
         case = cases[case_index]
-        if case.discharge_disease in seen_diseases:
+        if case.icd_code in seen_icd_codes:
             continue
-        seen_diseases.add(case.discharge_disease)
+        seen_icd_codes.add(case.icd_code)
         results.append(
             {
                 "discharge_disease": case.discharge_disease,
@@ -265,15 +275,15 @@ def _top_five_rrf_results(
     dense_ranks: dict[int, int],
     bm25_hits: dict[int, list[tuple[int, float]]],
     dense_hits: dict[int, list[tuple[int, float]]],
-    reranker_hits: dict[int, list[tuple[int, float]]],
+    fused_hits: dict[int, list[tuple[int, float]]],
 ) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
-    seen_diseases: set[str] = set()
+    seen_icd_codes: set[str] = set()
     for case_index, score in ranking:
         case = cases[case_index]
-        if case.discharge_disease in seen_diseases:
+        if case.icd_code in seen_icd_codes:
             continue
-        seen_diseases.add(case.discharge_disease)
+        seen_icd_codes.add(case.icd_code)
         results.append(
             {
                 "discharge_disease": case.discharge_disease,
@@ -291,7 +301,7 @@ def _top_five_rrf_results(
                     sections,
                 ),
                 "sections": _section_hit_details(
-                    reranker_hits.get(case_index, []),
+                    fused_hits.get(case_index, []),
                     sections,
                 ),
             }
@@ -301,7 +311,7 @@ def _top_five_rrf_results(
     return results
 
 
-def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
+def _load_or_build_bm25_index() -> dict[str, tuple[Any, list[int]]]:
     global _bm25_index
     if _bm25_index is not None:
         return _bm25_index
@@ -320,22 +330,29 @@ def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
                 and cache.get("case_count") == len(cases)
                 and cache.get("section_count") == len(sections)
                 and cache.get("content_schema")
-                == "section_chunk_510_scispacy_v1"
+                == "five_field_chunk_510_scispacy_v1"
                 and cache.get("chunk_tokenizer_model")
                 == SIMILAR_CASE_EMBEDDING_MODEL
             ):
-                _bm25_index = (cache["bm25"], cache["eligible_indices"])
+                _bm25_index = cache["field_indexes"]
                 return _bm25_index
 
-        eligible_indices = [
-            index for index, section in enumerate(sections) if section.content
-        ]
-        tokenized_corpus = [
-            _tokenize(sections[index].content)
-            for index in eligible_indices
-        ]
         BM25Okapi = _require_rank_bm25()
-        bm25 = BM25Okapi(tokenized_corpus)
+        field_indexes = {}
+        for field_name in SECTION_COLUMNS:
+            eligible_indices = [
+                index
+                for index, section in enumerate(sections)
+                if section.name == field_name
+            ]
+            tokenized_corpus = [
+                _tokenize(sections[index].content)
+                for index in eligible_indices
+            ]
+            field_indexes[field_name] = (
+                BM25Okapi(tokenized_corpus),
+                eligible_indices,
+            )
         BM25_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         with BM25_CACHE_PATH.open("wb") as cache_file:
             pickle.dump(
@@ -343,21 +360,20 @@ def _load_or_build_bm25_index() -> tuple[Any, list[int]]:
                     "database_fingerprint": fingerprint,
                     "case_count": len(cases),
                     "section_count": len(sections),
-                    "content_schema": "section_chunk_510_scispacy_v1",
+                    "content_schema": "five_field_chunk_510_scispacy_v1",
                     "chunk_tokenizer_model": SIMILAR_CASE_EMBEDDING_MODEL,
-                    "eligible_indices": eligible_indices,
-                    "bm25": bm25,
+                    "field_indexes": field_indexes,
                 },
                 cache_file,
                 protocol=pickle.HIGHEST_PROTOCOL,
             )
-        _bm25_index = (bm25, eligible_indices)
+        _bm25_index = field_indexes
         return _bm25_index
 
 
-def _bm25_ranking(query: str) -> list[tuple[int, float]]:
+def _bm25_ranking(query: str, field_name: str) -> list[tuple[int, float]]:
     query_tokens = _tokenize(query)
-    bm25, eligible_indices = _load_or_build_bm25_index()
+    bm25, eligible_indices = _load_or_build_bm25_index()[field_name]
     if not query_tokens or not eligible_indices:
         return []
     if set(bm25.idf).isdisjoint(query_tokens):
@@ -416,39 +432,6 @@ def _load_dense_model() -> tuple[Any, Any, str]:
         return _dense_model
 
 
-def _load_reranker_model() -> tuple[Any, Any, str]:
-    global _reranker_model
-    if _reranker_model is not None:
-        return _reranker_model
-
-    with _reranker_model_lock:
-        if _reranker_model is not None:
-            return _reranker_model
-        torch, _, _, AutoTokenizer = _require_dense_dependencies()
-        from transformers import AutoModelForSequenceClassification
-
-        if SIMILAR_CASE_RERANKER_DEVICE not in {"auto", "cpu", "cuda"}:
-            raise ValueError(
-                "SIMILAR_CASE_RERANKER_DEVICE must be one of: auto, cpu, cuda."
-            )
-        if SIMILAR_CASE_RERANKER_DEVICE == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            device = SIMILAR_CASE_RERANKER_DEVICE
-        if device == "cuda" and not torch.cuda.is_available():
-            raise RuntimeError(
-                "SIMILAR_CASE_RERANKER_DEVICE is set to cuda, but CUDA is unavailable."
-            )
-        tokenizer = AutoTokenizer.from_pretrained(SIMILAR_CASE_RERANKER_MODEL)
-        model = AutoModelForSequenceClassification.from_pretrained(
-            SIMILAR_CASE_RERANKER_MODEL
-        )
-        model.to(device)
-        model.eval()
-        _reranker_model = (tokenizer, model, device)
-        return _reranker_model
-
-
 def _encode_texts(texts: list[str]) -> Any:
     torch, F, _, _ = _require_dense_dependencies()
     tokenizer, model, device = _load_dense_model()
@@ -459,7 +442,7 @@ def _encode_texts(texts: list[str]) -> Any:
             batch,
             padding=True,
             truncation=True,
-            max_length=512,
+            max_length=DENSE_MAX_LENGTH,
             return_tensors="pt",
         )
         inputs = {name: value.to(device) for name, value in inputs.items()}
@@ -493,7 +476,7 @@ def _load_or_build_corpus_embeddings(
                 and cache.get("model_name") == SIMILAR_CASE_EMBEDDING_MODEL
                 and cache.get("case_count") == len(cases)
                 and cache.get("section_count") == len(sections)
-                and cache.get("content_schema") == "section_chunk_510_v1"
+                and cache.get("content_schema") == "five_field_chunk_510_v1"
             ):
                 _corpus_embeddings = cache["section_embeddings"]
                 return _corpus_embeddings
@@ -508,7 +491,7 @@ def _load_or_build_corpus_embeddings(
                 "model_name": SIMILAR_CASE_EMBEDDING_MODEL,
                 "case_count": len(cases),
                 "section_count": len(sections),
-                "content_schema": "section_chunk_510_v1",
+                "content_schema": "five_field_chunk_510_v1",
                 "section_embeddings": section_embeddings.cpu(),
             },
             cache_path,
@@ -571,95 +554,50 @@ def _section_hit_details(
     ]
 
 
-def _select_reranker_sections(
+def _select_fused_sections(
     candidate_ranking: list[tuple[int, float]],
-    bm25_section_ranking: list[tuple[int, float]],
-    dense_section_ranking: list[tuple[int, float]],
+    bm25_section_rankings: dict[str, list[tuple[int, float]]],
+    dense_section_rankings: dict[str, list[tuple[int, float]]],
     sections: tuple[_SectionRecord, ...],
 ) -> dict[int, list[tuple[int, float]]]:
     candidate_indices = {case_index for case_index, _ in candidate_ranking}
+    total_weight = sum(
+        SECTION_WEIGHTS[field_name]
+        for field_name in bm25_section_rankings
+        if SECTION_WEIGHTS[field_name] > 0
+    )
+    if total_weight == 0:
+        return {}
     section_scores: dict[int, float] = {}
-    best_ranks: dict[int, int] = {}
-    for section_ranking in (bm25_section_ranking, dense_section_ranking):
-        for rank, (section_index, _) in enumerate(section_ranking, start=1):
-            if sections[section_index].case_index not in candidate_indices:
+    for field_name in bm25_section_rankings:
+        if SECTION_WEIGHTS[field_name] == 0:
+            continue
+        field_weight = SECTION_WEIGHTS[field_name] / total_weight
+        for section_ranking, retrieval_weight in (
+            (bm25_section_rankings[field_name], BM25_FUSION_WEIGHT),
+            (dense_section_rankings[field_name], DENSE_FUSION_WEIGHT),
+        ):
+            if retrieval_weight == 0:
                 continue
-            section_scores[section_index] = section_scores.get(
-                section_index,
-                0.0,
-            ) + 1.0 / (RRF_K + rank)
-            best_ranks[section_index] = min(
-                best_ranks.get(section_index, rank),
-                rank,
-            )
+            for rank, (section_index, _) in enumerate(section_ranking, start=1):
+                case_index = sections[section_index].case_index
+                if case_index not in candidate_indices:
+                    continue
+                section_scores[section_index] = section_scores.get(
+                    section_index,
+                    0.0,
+                ) + field_weight * retrieval_weight / (RRF_K + rank)
 
-    selected: dict[int, list[tuple[int, float]]] = {}
+    fused_hits: dict[int, list[tuple[int, float]]] = {}
     for case_index, _ in candidate_ranking:
-        case_section_indices = [
-            section_index
-            for section_index in section_scores
+        hits = [
+            (section_index, score)
+            for section_index, score in section_scores.items()
             if sections[section_index].case_index == case_index
         ]
-        case_section_indices.sort(
-            key=lambda section_index: (
-                -section_scores[section_index],
-                best_ranks[section_index],
-                section_index,
-            )
-        )
-        selected[case_index] = [
-            (section_index, section_scores[section_index])
-            for section_index in case_section_indices[:2]
-        ]
-    return selected
-
-
-def _rerank_candidates(
-    query: str,
-    candidate_ranking: list[tuple[int, float]],
-    reranker_hits: dict[int, list[tuple[int, float]]],
-    sections: tuple[_SectionRecord, ...],
-) -> list[tuple[int, float]]:
-    torch, _, _, _ = _require_dense_dependencies()
-    tokenizer, model, device = _load_reranker_model()
-    documents = [
-        "\n\n".join(
-            (
-                f"Section: {sections[section_index].name}\n"
-                f"{sections[section_index].content}"
-            )
-            for section_index, _ in reranker_hits[case_index]
-        )
-        for case_index, _ in candidate_ranking
-    ]
-    scores: list[float] = []
-    for start in range(0, len(documents), SIMILAR_CASE_RERANKER_BATCH_SIZE):
-        batch_documents = documents[
-            start : start + SIMILAR_CASE_RERANKER_BATCH_SIZE
-        ]
-        pairs = [[query, document] for document in batch_documents]
-        inputs = tokenizer(
-            pairs,
-            padding=True,
-            truncation=True,
-            max_length=512,
-            return_tensors="pt",
-        )
-        inputs = {name: value.to(device) for name, value in inputs.items()}
-        with torch.inference_mode():
-            batch_scores = model(**inputs).logits.squeeze(dim=1)
-        scores.extend(float(score) for score in batch_scores)
-
-    rrf_ranks = {
-        case_index: rank
-        for rank, (case_index, _) in enumerate(candidate_ranking, start=1)
-    }
-    reranked = [
-        (case_index, score)
-        for (case_index, _), score in zip(candidate_ranking, scores)
-    ]
-    reranked.sort(key=lambda item: (-item[1], rrf_ranks[item[0]]))
-    return reranked
+        hits.sort(key=lambda item: (-item[1], item[0]))
+        fused_hits[case_index] = hits[:2]
+    return fused_hits
 
 
 def _build_ranking_details(
@@ -674,7 +612,6 @@ def _build_ranking_details(
     dense_ranks: dict[int, int] | None = None,
     bm25_hits: dict[int, list[tuple[int, float]]] | None = None,
     dense_hits: dict[int, list[tuple[int, float]]] | None = None,
-    reranker_hits: dict[int, list[tuple[int, float]]] | None = None,
     skipped_reason: str | None = None,
 ) -> RankingDetails:
     ranking_items = []
@@ -704,20 +641,6 @@ def _build_ranking_details(
                     ),
                     "dense_top_sections": _section_hit_details(
                         dense_hits.get(record_index, []) if dense_hits else [],
-                        sections,
-                    ),
-                }
-            )
-        elif method == "Reranker":
-            item.update(
-                {
-                    "reranker_score": score,
-                    "reranker_sections": _section_hit_details(
-                        (
-                            reranker_hits.get(record_index, [])
-                            if reranker_hits
-                            else []
-                        ),
                         sections,
                     ),
                 }
@@ -768,7 +691,6 @@ def _report_ranking(
     dense_ranks: dict[int, int] | None = None,
     bm25_hits: dict[int, list[tuple[int, float]]] | None = None,
     dense_hits: dict[int, list[tuple[int, float]]] | None = None,
-    reranker_hits: dict[int, list[tuple[int, float]]] | None = None,
     skipped_reason: str | None = None,
 ) -> None:
     details = _build_ranking_details(
@@ -782,7 +704,6 @@ def _report_ranking(
         dense_ranks=dense_ranks,
         bm25_hits=bm25_hits,
         dense_hits=dense_hits,
-        reranker_hits=reranker_hits,
         skipped_reason=skipped_reason,
     )
     if debug:
@@ -801,7 +722,7 @@ def _report_skipped_rankings(
     debug: bool,
     ranking_callback: RankingCallback | None,
 ) -> None:
-    for method in ("BM25", "Dense", "RRF", "Reranker"):
+    for method in ("BM25", "Dense", "RRF"):
         _report_ranking(
             query_field,
             method,
@@ -815,64 +736,102 @@ def _report_skipped_rankings(
         )
 
 
-def _rrf_rank(
-    bm25_ranking: list[tuple[int, float]],
-    dense_ranking: list[tuple[int, float]],
-    result_count: int,
-) -> tuple[list[tuple[int, float]], dict[int, int], dict[int, int]]:
-    bm25_ranks = {
-        record_index: rank
-        for rank, (record_index, _) in enumerate(bm25_ranking, start=1)
-    }
-    dense_ranks = {
-        record_index: rank
-        for rank, (record_index, _) in enumerate(dense_ranking, start=1)
-    }
-    scores = {
-        record_index: 1.0 / (RRF_K + rank)
-        for record_index, rank in bm25_ranks.items()
-    }
-    for record_index, rank in dense_ranks.items():
-        scores[record_index] = scores.get(record_index, 0.0) + 1.0 / (
-            RRF_K + rank
-        )
-    ranked_indices = sorted(
-        scores,
-        key=lambda record_index: (
-            -scores[record_index],
-            min(
-                rank
-                for rank in (
-                    bm25_ranks.get(record_index),
-                    dense_ranks.get(record_index),
-                )
-                if rank is not None
-            ),
-            record_index,
-        ),
-    )[:result_count]
-    return (
-        [(record_index, scores[record_index]) for record_index in ranked_indices],
-        bm25_ranks,
-        dense_ranks,
+def _weighted_field_rrf(
+    rankings: dict[str, list[tuple[int, float]]],
+) -> list[tuple[int, float]]:
+    total_weight = sum(
+        SECTION_WEIGHTS[field_name]
+        for field_name in rankings
+        if SECTION_WEIGHTS[field_name] > 0
+    )
+    if total_weight == 0:
+        return []
+    scores: dict[int, float] = {}
+    best_ranks: dict[int, int] = {}
+    for field_name, ranking in rankings.items():
+        if SECTION_WEIGHTS[field_name] == 0:
+            continue
+        field_weight = SECTION_WEIGHTS[field_name] / total_weight
+        for rank, (case_index, _) in enumerate(ranking, start=1):
+            scores[case_index] = scores.get(case_index, 0.0) + (
+                field_weight / (RRF_K + rank)
+            )
+            best_ranks[case_index] = min(best_ranks.get(case_index, rank), rank)
+    return sorted(
+        scores.items(),
+        key=lambda item: (-item[1], best_ranks[item[0]], item[0]),
     )
 
 
+def _weighted_hybrid_rrf(
+    bm25_rankings: dict[str, list[tuple[int, float]]],
+    dense_rankings: dict[str, list[tuple[int, float]]],
+) -> list[tuple[int, float]]:
+    total_weight = sum(
+        SECTION_WEIGHTS[field_name]
+        for field_name in bm25_rankings
+        if SECTION_WEIGHTS[field_name] > 0
+    )
+    if total_weight == 0:
+        return []
+    scores: dict[int, float] = {}
+    best_ranks: dict[int, int] = {}
+    for field_name in bm25_rankings:
+        if SECTION_WEIGHTS[field_name] == 0:
+            continue
+        field_weight = SECTION_WEIGHTS[field_name] / total_weight
+        for ranking, retrieval_weight in (
+            (bm25_rankings[field_name], BM25_FUSION_WEIGHT),
+            (dense_rankings[field_name], DENSE_FUSION_WEIGHT),
+        ):
+            if retrieval_weight == 0:
+                continue
+            for rank, (case_index, _) in enumerate(ranking, start=1):
+                scores[case_index] = scores.get(case_index, 0.0) + (
+                    field_weight * retrieval_weight / (RRF_K + rank)
+                )
+                best_ranks[case_index] = min(
+                    best_ranks.get(case_index, rank),
+                    rank,
+                )
+    return sorted(
+        scores.items(),
+        key=lambda item: (-item[1], best_ranks[item[0]], item[0]),
+    )
+
+
+def _diversify_by_icd(
+    ranking: list[tuple[int, float]],
+    cases: tuple[_CaseRecord, ...],
+) -> list[tuple[int, float]]:
+    diversified = []
+    seen_icd_codes: set[str] = set()
+    for case_index, score in ranking:
+        icd_code = cases[case_index].icd_code
+        if icd_code in seen_icd_codes:
+            continue
+        seen_icd_codes.add(icd_code)
+        diversified.append((case_index, score))
+        if len(diversified) == SIMILAR_CASE_RRF_CANDIDATE_K:
+            break
+    return diversified
+
+
 def _retrieve_similar_cases(
-    positive_features: list[str],
+    positive_features: PositiveFeaturesResult,
     *,
     debug: bool = False,
     ranking_callback: RankingCallback | None = None,
 ) -> SimilarCaseRetrievalResult:
-
-    query = _join_query(positive_features)
-    if not query:
+    queries = _feature_queries(positive_features)
+    combined_query = json.dumps(queries, ensure_ascii=False)
+    if not queries:
         _report_skipped_rankings(
-            "positive_features",
-            query,
+            "all_fields",
+            combined_query,
             (),
             (),
-            "The similar-case query is empty.",
+            "All five similar-case query fields are empty.",
             debug=debug,
             ranking_callback=ranking_callback,
         )
@@ -881,8 +840,8 @@ def _retrieve_similar_cases(
     cases, sections = _load_case_records()
     if not sections:
         _report_skipped_rankings(
-            "positive_features",
-            query,
+            "all_fields",
+            combined_query,
             cases,
             sections,
             "The similar-case corpus has no usable records.",
@@ -892,61 +851,102 @@ def _retrieve_similar_cases(
         return _empty_retrieval_result()
 
     corpus_embeddings = _load_or_build_corpus_embeddings(cases, sections)
+    bm25_section_rankings: dict[str, list[tuple[int, float]]] = {}
+    dense_section_rankings: dict[str, list[tuple[int, float]]] = {}
+    bm25_field_rankings: dict[str, list[tuple[int, float]]] = {}
+    dense_field_rankings: dict[str, list[tuple[int, float]]] = {}
+    bm25_field_hits: dict[str, dict[int, list[tuple[int, float]]]] = {}
+    dense_field_hits: dict[str, dict[int, list[tuple[int, float]]]] = {}
 
-    eligible_indices = [
-        index for index, section in enumerate(sections) if section.content
-    ]
-    bm25_section_ranking = _bm25_ranking(query)
-    bm25_ranking, bm25_hits = _aggregate_section_ranking(
-        bm25_section_ranking,
-        sections,
+    for field_name, query in queries.items():
+        eligible_indices = [
+            index
+            for index, section in enumerate(sections)
+            if section.name == field_name
+        ]
+        bm25_section_rankings[field_name] = _bm25_ranking(query, field_name)
+        (
+            bm25_field_rankings[field_name],
+            bm25_field_hits[field_name],
+        ) = _aggregate_section_ranking(
+            bm25_section_rankings[field_name],
+            sections,
+        )
+        _report_ranking(
+            field_name,
+            "BM25",
+            query,
+            bm25_field_rankings[field_name],
+            cases,
+            sections,
+            debug=debug,
+            ranking_callback=ranking_callback,
+            bm25_hits=bm25_field_hits[field_name],
+            skipped_reason=(
+                None
+                if bm25_field_rankings[field_name]
+                else "BM25 produced no positive-scoring candidates for this field."
+            ),
+        )
+
+        dense_section_rankings[field_name] = _dense_ranking(
+            query,
+            corpus_embeddings,
+            eligible_indices,
+        )
+        (
+            dense_field_rankings[field_name],
+            dense_field_hits[field_name],
+        ) = _aggregate_section_ranking(
+            dense_section_rankings[field_name],
+            sections,
+        )
+        _report_ranking(
+            field_name,
+            "Dense",
+            query,
+            dense_field_rankings[field_name],
+            cases,
+            sections,
+            debug=debug,
+            ranking_callback=ranking_callback,
+            dense_hits=dense_field_hits[field_name],
+        )
+
+    bm25_ranking = _weighted_field_rrf(bm25_field_rankings)
+    dense_ranking = _weighted_field_rrf(dense_field_rankings)
+    rrf_ranking = _weighted_hybrid_rrf(
+        bm25_field_rankings,
+        dense_field_rankings,
     )
+    bm25_ranks = {
+        case_index: rank
+        for rank, (case_index, _) in enumerate(bm25_ranking, start=1)
+    }
+    dense_ranks = {
+        case_index: rank
+        for rank, (case_index, _) in enumerate(dense_ranking, start=1)
+    }
+
+    bm25_hits: dict[int, list[tuple[int, float]]] = {}
+    dense_hits: dict[int, list[tuple[int, float]]] = {}
+    for field_name in queries:
+        for case_index, hits in bm25_field_hits[field_name].items():
+            if hits:
+                bm25_hits.setdefault(case_index, []).append(hits[0])
+        for case_index, hits in dense_field_hits[field_name].items():
+            if hits:
+                dense_hits.setdefault(case_index, []).append(hits[0])
+    for hits in (*bm25_hits.values(), *dense_hits.values()):
+        hits.sort(key=lambda item: -SECTION_WEIGHTS[sections[item[0]].name])
+        del hits[2:]
+
+    candidate_ranking = _diversify_by_icd(rrf_ranking, cases)
     _report_ranking(
-        "positive_features",
-        "BM25",
-        query,
-        bm25_ranking,
-        cases,
-        sections,
-        debug=debug,
-        ranking_callback=ranking_callback,
-        bm25_hits=bm25_hits,
-        skipped_reason=(
-            None
-            if bm25_ranking
-            else "BM25 produced no positive-scoring candidates."
-        ),
-    )
-    dense_section_ranking = _dense_ranking(
-        query,
-        corpus_embeddings,
-        eligible_indices,
-    )
-    dense_ranking, dense_hits = _aggregate_section_ranking(
-        dense_section_ranking,
-        sections,
-    )
-    _report_ranking(
-        "positive_features",
-        "Dense",
-        query,
-        dense_ranking,
-        cases,
-        sections,
-        debug=debug,
-        ranking_callback=ranking_callback,
-        dense_hits=dense_hits,
-    )
-    rrf_ranking, bm25_ranks, dense_ranks = _rrf_rank(
-        bm25_ranking,
-        dense_ranking,
-        min(SIMILAR_CASE_RRF_CANDIDATE_K, len(cases)),
-    )
-    _report_ranking(
-        "positive_features",
+        "all_fields",
         "RRF",
-        query,
-        rrf_ranking,
+        combined_query,
+        candidate_ranking,
         cases,
         sections,
         debug=debug,
@@ -957,104 +957,19 @@ def _retrieve_similar_cases(
         dense_hits=dense_hits,
         skipped_reason=(
             None
-            if rrf_ranking
+            if candidate_ranking
             else "Neither retrieval branch produced candidates."
         ),
     )
-    if not rrf_ranking:
-        _report_ranking(
-            "positive_features",
-            "Reranker",
-            query,
-            [],
-            cases,
-            sections,
-            debug=debug,
-            ranking_callback=ranking_callback,
-            skipped_reason="RRF produced no candidate cases.",
-        )
+    if not candidate_ranking:
         return _empty_retrieval_result()
 
-    reranker_hits = _select_reranker_sections(
-        rrf_ranking,
-        bm25_section_ranking,
-        dense_section_ranking,
+    fused_hits = _select_fused_sections(
+        candidate_ranking,
+        bm25_section_rankings,
+        dense_section_rankings,
         sections,
     )
-    reranker_completed = True
-    try:
-        ranked_cases = _rerank_candidates(
-            query,
-            rrf_ranking,
-            reranker_hits,
-            sections,
-        )
-    except Exception as exc:
-        logger.exception(
-            "MedCPT reranker is unavailable; falling back to the RRF ranking: %s",
-            exc,
-        )
-        _report_ranking(
-            "positive_features",
-            "Reranker",
-            query,
-            [],
-            cases,
-            sections,
-            debug=debug,
-            ranking_callback=ranking_callback,
-            reranker_hits=reranker_hits,
-            skipped_reason=(
-                "MedCPT reranker is unavailable; using the RRF ranking: "
-                f"{exc}"
-            ),
-        )
-        ranked_cases = rrf_ranking
-        reranker_completed = False
-
-    disease_representatives: dict[str, tuple[int, float, int]] = {}
-    for case_rank, (case_index, score) in enumerate(ranked_cases, start=1):
-        discharge_disease = cases[case_index].discharge_disease
-        representative = disease_representatives.get(discharge_disease)
-        if representative is None or score > representative[1]:
-            disease_representatives[discharge_disease] = (
-                case_index,
-                score,
-                case_rank,
-            )
-    final_ranking = [
-        (case_index, score)
-        for case_index, score, _ in sorted(
-            disease_representatives.values(),
-            key=lambda item: (-item[1], item[2]),
-        )[:5]
-    ]
-
-    if reranker_completed:
-        _report_ranking(
-            "positive_features",
-            "Reranker",
-            query,
-            final_ranking,
-            cases,
-            sections,
-            debug=debug,
-            ranking_callback=ranking_callback,
-            reranker_hits=reranker_hits,
-        )
-
-    top_indices = [record_index for record_index, _ in final_ranking]
-    result_sections: list[list[dict[str, str]]] = []
-    for case_index in top_indices:
-        result_sections.append(
-            [
-                {
-                    "section": sections[section_index].name,
-                    "content": sections[section_index].content,
-                }
-                for section_index, _ in reranker_hits[case_index]
-            ]
-        )
     return SimilarCaseRetrievalResult(
         bm25=_top_five_retrieval_results(
             bm25_ranking,
@@ -1069,28 +984,20 @@ def _retrieve_similar_cases(
             dense_hits,
         ),
         rrf=_top_five_rrf_results(
-            rrf_ranking,
+            candidate_ranking,
             cases,
             sections,
             bm25_ranks,
             dense_ranks,
             bm25_hits,
             dense_hits,
-            reranker_hits,
+            fused_hits,
         ),
-        rerank=[
-            {
-                "discharge_disease": cases[case_index].discharge_disease,
-                "icd_code": cases[case_index].icd_code,
-                "sections": sections,
-            }
-            for case_index, sections in zip(top_indices, result_sections)
-        ],
     )
 
 
 def retrieve_similar_cases(
-    positive_features: list[str],
+    positive_features: PositiveFeaturesResult,
     *,
     debug: bool = False,
     ranking_callback: RankingCallback | None = None,

@@ -379,9 +379,9 @@ async def _run_preprocessing_async(
             f"{positive_feature_prompt}\n\n"
             "## Correction Required\n\n"
             f"The previous response failed validation: {type(first_exc).__name__}: {first_exc}\n"
-            "Generate the complete JSON object again. Return concise, non-duplicated positive "
-            "features without copying long passages from the case, and ensure the JSON is complete "
-            "and valid."
+            "Generate the complete five-field JSON object again. Return concise, non-duplicated "
+            "patient findings without copying long passages from the case, and ensure the JSON is "
+            "complete and valid."
         )
         retry_output = (
             await Runner.run(
@@ -402,7 +402,7 @@ async def _run_preprocessing_async(
             ) from retry_exc
     result = PreprocessingResult(
         llm_hypotheses=llm_hypotheses_result.llm_hypotheses,
-        positive_features=positive_features_result.positive_features,
+        positive_features=positive_features_result,
     )
     _publish_stage_result(
         "Preprocessing Result",
@@ -425,7 +425,7 @@ def _merge_planning_hypotheses(
         seen_codes.add(hypothesis.icd_code)
         merged_hypotheses.append(hypothesis)
 
-    for similar_case in similar_case_retrieval_result.rerank:
+    for similar_case in similar_case_retrieval_result.rrf:
         hypothesis = HypothesisItem(
             icd_code=similar_case.icd_code,
             category_name=similar_case.discharge_disease,
@@ -476,7 +476,7 @@ async def _run_search_planning_async(
             "discharge_disease": similar_case.discharge_disease,
             "icd_code": similar_case.icd_code,
         }
-        for similar_case in similar_case_retrieval_result.rerank
+        for similar_case in similar_case_retrieval_result.rrf
     ]
     search_planning_prompt = (
         "<PATIENT_INFORMATION>\n"
@@ -702,7 +702,7 @@ def _format_pubmed_results(
 
 
 def _run_similar_case_retrieval(
-    positive_features: list[str],
+    positive_features: PositiveFeaturesResult,
     *,
     debug: bool = False,
     round_index: int | None = None,
@@ -736,7 +736,7 @@ def _run_similar_case_retrieval(
 
 async def _run_guideline_search_async(
     hypotheses: list[HypothesisItem],
-    positive_features: list[str],
+    positive_features: PositiveFeaturesResult,
     *,
     model: str | Model,
     debug: bool = False,
@@ -759,9 +759,9 @@ async def _run_guideline_search_async(
                 "<SELECTED_SKILL_NAME>\n"
                 f"{skill_name}\n"
                 "</SELECTED_SKILL_NAME>\n\n"
-                "<POSITIVE_FEATURES>\n"
+                "<PATIENT_FEATURES>\n"
                 f"{_as_json(positive_features)}\n"
-                "</POSITIVE_FEATURES>\n\n"
+                "</PATIENT_FEATURES>\n\n"
                 "Load exactly the selected native skill, completely read its SKILL.md, and "
                 "follow the workflow defined there. Return one result for this skill only."
             ),
@@ -1135,7 +1135,7 @@ async def _run_final_diagnosis_async(
             "matched_sections": similar_case.sections,
         }
         for rank, similar_case in enumerate(
-            similar_case_retrieval_result.rerank,
+            similar_case_retrieval_result.rrf,
             start=1,
         )
     ]
@@ -1436,13 +1436,11 @@ async def make_diagnosis_pipeline_async(
     llm_hypotheses_result = LlmHypothesesResult(
         llm_hypotheses=preprocessing_result.llm_hypotheses
     )
-    positive_features_result = PositiveFeaturesResult(
-        positive_features=preprocessing_result.positive_features
-    )
+    positive_features_result = preprocessing_result.positive_features
     try:
         similar_case_retrieval_result = await asyncio.to_thread(
             _run_similar_case_retrieval,
-            positive_features_result.positive_features,
+            positive_features_result,
             debug=debug,
             round_index=1,
             progress_callback=progress_callback,
@@ -1486,7 +1484,7 @@ async def make_diagnosis_pipeline_async(
             ),
             _run_guideline_search_async(
                 search_planning_result.hypotheses,
-                positive_features_result.positive_features,
+                positive_features_result,
                 model=diagnosis_model,
                 debug=debug,
                 round_index=round_index,

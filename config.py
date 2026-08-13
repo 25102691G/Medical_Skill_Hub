@@ -34,7 +34,7 @@ NCBI_TIMEOUT_SECONDS = float(os.getenv("NCBI_TIMEOUT_SECONDS", "30"))
 MIMIC_IV_CASE_PATH = Path(
     os.getenv(
         "MIMIC_IV_CASE_PATH",
-        str(PROJECT_ROOT / "database" / "mimic_similar_case.csv"),
+        str(PROJECT_ROOT / "database" / "mimic_similar.csv"),
     )
 ).expanduser()
 SIMILAR_CASE_TOP_K = int(os.getenv("SIMILAR_CASE_TOP_K", "5"))
@@ -58,23 +58,11 @@ SIMILAR_CASE_EMBEDDING_DEVICE = os.getenv(
 SIMILAR_CASE_EMBEDDING_CACHE_PATH = Path(
     os.getenv(
         "SIMILAR_CASE_EMBEDDING_CACHE_PATH",
-        str(PROJECT_ROOT / "database" / "mimic_similar_case_embeddings.pt"),
+        str(PROJECT_ROOT / "database" / "mimic_similar_embeddings.pt"),
     )
 ).expanduser()
 SIMILAR_CASE_EMBEDDING_BATCH_SIZE = int(
     os.getenv("SIMILAR_CASE_EMBEDDING_BATCH_SIZE", "16")
 )
-SIMILAR_CASE_RERANKER_MODEL = os.getenv(
-    "SIMILAR_CASE_RERANKER_MODEL",
-    "ncbi/MedCPT-Cross-Encoder",
-)
-SIMILAR_CASE_RERANKER_BATCH_SIZE = int(
-    os.getenv("SIMILAR_CASE_RERANKER_BATCH_SIZE", "16")
-)
-SIMILAR_CASE_RERANKER_DEVICE = os.getenv(
-    "SIMILAR_CASE_RERANKER_DEVICE",
-    "cuda",
-).strip().lower()
-
 SKILL_COMPILER_PROVIDER = os.getenv("SKILL_COMPILER_PROVIDER", "openai").lower()
 SKILL_COMPILER_MODEL = os.getenv("SKILL_COMPILER_MODEL", OPENAI_MODEL)

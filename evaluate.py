@@ -10,7 +10,6 @@ METHODS = (
     "similar_case_bm25",
     "similar_case_embedding",
     "similar_case_rrf",
-    "similar_case_rerank",
     "search_planning_result",
     "final_diagnosis",
 )
@@ -23,7 +22,6 @@ METHOD_LABELS = {
     "similar_case_bm25": "Similar BM25",
     "similar_case_embedding": "Similar embedding",
     "similar_case_rrf": "Similar RRF",
-    "similar_case_rerank": "Similar rerank",
     "search_planning_result": "Search planning result",
     "final_diagnosis": "Final diagnosis",
 }
@@ -31,7 +29,6 @@ SIMILAR_CASE_METHODS = {
     "bm25": "similar_case_bm25",
     "embedding": "similar_case_embedding",
     "rrf": "similar_case_rrf",
-    "rerank": "similar_case_rerank",
 }
 METRIC_PREFIX_LENGTHS = {
     "disease": 3,
@@ -42,7 +39,7 @@ METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate principal-diagnosis ICD predictions from seven stages."
+        description="Evaluate principal-diagnosis ICD predictions from six stages."
     )
     parser.add_argument(
         "--input",
@@ -177,10 +174,6 @@ def evaluate_file(input_path: Path) -> Path:
                     "similar_case_rrf": [
                         item["icd_code"].strip()
                         for item in similar_case_result["rrf"][:5]
-                    ],
-                    "similar_case_rerank": [
-                        item["icd_code"].strip()
-                        for item in similar_case_result["rerank"][:5]
                     ],
                     "search_planning_result": [
                         hypothesis["icd_code"].strip()

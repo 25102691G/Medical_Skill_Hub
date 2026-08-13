@@ -213,7 +213,7 @@ class GuidelineSkillResult(BaseModel):
     )
     guideline_diagnosis: str = Field(
         description=(
-            "Concise natural-language conclusion comparing the patient's positive features with the "
+            "Concise natural-language conclusion comparing the patient's structured findings with the "
             "verified guideline information and stating whether the patient may have this disease"
         )
     )
@@ -342,10 +342,34 @@ class LlmHypothesesResult(BaseModel):
 
 
 class PositiveFeaturesResult(BaseModel):
-    positive_features: list[str] = Field(
+    present_illness_history: list[str] = Field(
         description=(
-            "Explicitly documented positive clinical manifestations and examination results "
-            "extracted directly from the original case text"
+            "Chief complaint and positive current history-of-present-illness findings extracted "
+            "directly from the original case text, excluding denied or absent symptoms"
+        )
+    )
+    past_medical_history: list[str] = Field(
+        description=(
+            "Preadmission medications, procedures completed before the current admission, and "
+            "past medical conditions extracted directly from the original case text"
+        )
+    )
+    physical_exam: list[str] = Field(
+        description=(
+            "Positive physical-examination findings and abnormal vital signs from the original "
+            "case text, excluding negative or normal findings"
+        )
+    )
+    family_history: list[str] = Field(
+        description=(
+            "Explicitly documented relevant diseases in affected relatives, excluding negative "
+            "family history"
+        )
+    )
+    pertinent_results: list[str] = Field(
+        description=(
+            "Positive or abnormal laboratory, imaging, endoscopic, pathology, and microbiology "
+            "results from the original case text, excluding negative or normal results"
         )
     )
 
@@ -357,11 +381,8 @@ class PreprocessingResult(BaseModel):
             "Up to 5 principal-diagnosis hypotheses generated directly from the original case text"
         ),
     )
-    positive_features: list[str] = Field(
-        description=(
-            "Explicitly documented positive clinical manifestations and examination results "
-            "extracted directly from the original case text"
-        )
+    positive_features: PositiveFeaturesResult = Field(
+        description="Patient findings structured into the five similar-case matching fields"
     )
 
 
@@ -423,13 +444,7 @@ class FusedSimilarCase(SimilarCaseCandidate):
         description="Top sections matched by dense embedding retrieval"
     )
     sections: list[ScoredSimilarCaseSection] = Field(
-        description="Top fused sections selected for the reranker"
-    )
-
-
-class RerankedSimilarCase(SimilarCaseCandidate):
-    sections: list[SimilarCaseSection] = Field(
-        description="Matched discharge summary sections used by the reranker"
+        description="Top matched sections after weighted rank fusion"
     )
 
 
@@ -450,11 +465,6 @@ class SimilarCaseRetrievalResult(BaseModel):
         default_factory=list,
         max_length=5,
         description="Top five diseases and retrieval details after rank fusion",
-    )
-    rerank: list[RerankedSimilarCase] = Field(
-        default_factory=list,
-        max_length=5,
-        description="Top five diseases and matched sections after reranking",
     )
     reason: str | None = Field(
         default=None,
