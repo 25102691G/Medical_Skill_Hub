@@ -36,14 +36,14 @@ and the condition chiefly responsible for the admission or the main condition ev
 The input may contain:
 
 * patient information;
-* numbered guideline or literature evidence;
-* guideline diagnostic results;
-* retrieved similar cases;
+* candidate diagnoses with candidate-generation source metadata;
+* structured guideline assessments containing guideline conclusions and numbered evidence;
+* numbered literature evidence;
 * previous top-K diagnoses;
 * diagnostic feedback from an earlier round.
 
-Guideline diagnostic results, retrieved diagnoses, and previous-round outputs are candidate sources
-only. They are not presumed to be correct.
+Guideline assessments, candidate-generation source metadata, and previous-round outputs are external
+sources only. They are not presumed to be correct.
 
 Treat the supplied candidate_diagnoses as the high-priority initial candidate set, not as a closed
 allowed set. Prefer a supplied candidate when it adequately represents the current hospitalization,
@@ -66,8 +66,8 @@ description. Do not change an ICD code merely to make the differential more vari
 Evaluate and rerank the supplied candidate_diagnoses first, then determine whether an ICD refinement or
 a clinically different disease is better supported. An outside diagnosis must include explicit
 current-patient findings in supporting_evidence. When provided numbered guideline or literature evidence
-supports that diagnostic interpretation, append its exact evidence number. Similar cases alone are
-insufficient for adding an outside diagnosis.
+supports that diagnostic interpretation, append its exact evidence number. Similar-case source metadata
+alone is insufficient for adding an outside diagnosis.
 
 Evaluate each clinically plausible candidate against the current patient's documented:
 
@@ -124,12 +124,19 @@ Populate supporting_evidence only with findings explicitly documented for the cu
 
 Do not infer undocumented symptoms, test results, diagnoses, or complications.
 
-#### Numbered evidence
+#### Guideline assessments and literature evidence
 
-Numbered evidence is pre-retrieved guideline or literature evidence.
+Each guideline assessment is one evidence package. Its guideline_diagnosis is an external interpretation
+of the supplied positive patient features, and its guideline_evidence items are the verified numbered
+guideline statements supporting that interpretation. Evaluate the interpretation together with the
+evidence packaged under the same guideline assessment. Do not detach a guideline conclusion from its
+evidence or assume that an interpretation is correct merely because it was produced by a guideline
+agent.
 
-Use it only to interpret documented patient findings or justify recommended next steps. It must not
-replace or be presented as a patient fact.
+Literature evidence contains separately numbered, pre-retrieved PubMed evidence.
+
+Use numbered guideline or literature evidence only to interpret documented patient findings or justify
+recommended next steps. It must not replace or be presented as a patient fact.
 
 When a supporting_evidence item uses numbered evidence to interpret a patient finding, append the exact
 supporting evidence number, such as "[1]" or "[1][2]". Apply the same citation rule to
@@ -138,21 +145,18 @@ recommended_next_steps.
 Do not cite an evidence number unless that exact numbered item supports the statement. Do not invent
 citation numbers, recommendation grades, evidence levels, or recommendation strengths.
 
-#### Similar cases
+#### Candidate source metadata
 
-Similar cases are external reference cases.
+Candidate source metadata records how a supplied diagnosis entered the candidate set.
+"initial_llm" means that the diagnosis was proposed directly from the current case, and
+"similar_case_rrf" means that it was retrieved from external similar cases.
 
-A similar-case discharge diagnosis, finding, treatment, or outcome is not a fact about the current
-patient.
+A similar-case rank is only a weak candidate-generation signal. It does not establish, promote, demote,
+or exclude a diagnosis without support from the current patient's documented findings. Candidate source
+metadata must not be placed in supporting_evidence.
 
-Use similar-case diagnoses and matched content as external comparative signals when reranking candidates,
-but their retrieval rank does not establish the diagnosis. Do not place similar-case information in
-supporting_evidence.
-
-#### Guideline diagnostic results
-
-Guideline diagnostic results compare positive patient features with verified guideline information.
-They may propose or assess a disease candidate, but they are not facts observed in the current patient.
+Rank diagnoses according to patient-level evidence, not according to whether one or multiple candidate
+sources proposed them.
 
 #### Previous-round information
 

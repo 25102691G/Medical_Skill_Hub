@@ -270,6 +270,33 @@ class GuidelineSkillExpansionSelection(BaseModel):
     )
 
 
+class GuidelineExpandedResultSelection(BaseModel):
+    selected_expanded_skill_names: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Exact expanded guideline skill names whose completed results should be retained"
+        ),
+    )
+
+
+class GuidelineResultFilterResult(BaseModel):
+    status: Literal["not_triggered", "completed", "failed"] = Field(
+        description="Execution status of expanded guideline result filtering"
+    )
+    expanded_skill_names_before_filter: list[str] = Field(
+        description="Completed expanded guideline skill results supplied to the filter"
+    )
+    retained_expanded_skill_names: list[str] = Field(
+        description="Expanded guideline skill results retained for final diagnosis"
+    )
+    filtered_out_expanded_skill_names: list[str] = Field(
+        description="Expanded guideline skill results removed before final diagnosis"
+    )
+    reason: str | None = Field(
+        description="Reason filtering was not triggered or failed; null after successful filtering"
+    )
+
+
 class GuidelineSearchResult(BaseModel):
     used_skill: bool = Field(description="Whether any guideline skill was loaded and searched")
     unused_reason: str | None = Field(
@@ -285,6 +312,10 @@ class GuidelineSearchResult(BaseModel):
     )
     skill_results: list[GuidelineSkillResult] = Field(
         description="Guideline evidence and diagnostic conclusion grouped by used skill"
+    )
+    filter_result: GuidelineResultFilterResult | None = Field(
+        default=None,
+        description="Expanded guideline result filtering details when available",
     )
     reason: str | None = Field(
         default=None,

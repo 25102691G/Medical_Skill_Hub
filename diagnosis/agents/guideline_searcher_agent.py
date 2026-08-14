@@ -57,6 +57,37 @@ differential diseases and source skills that have no directly corresponding targ
 """.strip()
 
 
+GUIDELINE_RESULT_FILTER_INSTRUCTIONS = """
+## GUIDELINE RESULT FILTER INSTRUCTIONS
+
+You filter completed expanded guideline-skill results before they are supplied to a gastroenterology
+final-diagnosis model. This is a recall-oriented filter. Directly matched guideline results are retained
+outside this task and are not supplied for selection.
+
+Use patient_information as the only source of facts about the current patient. Guideline conclusions
+and evidence are external information. Do not treat an unreported patient finding as absent, and do not
+invent patient findings.
+
+Retain an expanded guideline result when it has any plausible diagnostic value for the current
+hospitalization, including when its verified evidence:
+
+* interprets an explicitly documented patient finding;
+* helps distinguish a supplied diagnostic hypothesis;
+* supports a plausible principal diagnosis suggested by the patient information;
+* provides relevant criteria for documented imaging, endoscopy, pathology, laboratory findings, or
+  disease course;
+* supports exclusion using an explicitly documented negative patient finding.
+
+Exclude an expanded guideline result only when it is clearly irrelevant or unusable, including when its
+evidence is empty, contains only generic background or treatment information, relates only through a
+general risk factor or nonspecific symptom, or its diagnostic conclusion depends on treating missing
+information as a negative finding. If the diagnostic value is uncertain, retain the result.
+
+Return only the exact skill names from expanded_guideline_results that should be retained. Do not add,
+rename, summarize, or modify any guideline result.
+""".strip()
+
+
 GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS = """
 ## GUIDELINE SKILL EXECUTOR INSTRUCTIONS
 
@@ -133,6 +164,20 @@ def build_guideline_expansion_agent(
         name="Guideline Differential Expansion Agent",
         model=model,
         instructions=GUIDELINE_EXPANSION_INSTRUCTIONS,
+        output_type=output_type if native_structured_output else None,
+    )
+
+
+def build_guideline_result_filter_agent(
+    output_type: Type[BaseModel],
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
+    return Agent(
+        name="Guideline Result Filter Agent",
+        model=model,
+        instructions=GUIDELINE_RESULT_FILTER_INSTRUCTIONS,
         output_type=output_type if native_structured_output else None,
     )
 

@@ -34,6 +34,7 @@ from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgeme
 from diagnosis.agents.guideline_searcher_agent import (
     build_guideline_expansion_agent,
     build_guideline_orchestrator_agent,
+    build_guideline_result_filter_agent,
     build_guideline_skill_executor_agent,
     guideline_skill_catalog,
 )
@@ -56,7 +57,9 @@ from schemas import (
     FinalDiagnosisContent,
     GuidelineDirectSkillSelection,
     GuidelineDirectSkillMatch,
+    GuidelineExpandedResultSelection,
     GuidelineExpandedSkillMatch,
+    GuidelineResultFilterResult,
     GuidelineSearchResult,
     GuidelineSkillExpansionSelection,
     GuidelineSkillResult,
@@ -735,6 +738,7 @@ def _run_similar_case_retrieval(
 
 
 async def _run_guideline_search_async(
+    case_text: str,
     hypotheses: list[HypothesisItem],
     positive_features: PositiveFeaturesResult,
     *,
@@ -1097,6 +1101,167 @@ async def _run_guideline_search_async(
             source_locator_pattern.sub("", evidence).strip()
             for evidence in skill_result.guideline_evidence
         ]
+
+    expanded_matches_by_name = {
+        match.skill_name: match for match in result.expanded_matches
+    }
+    expanded_guideline_results = [
+        {
+            "skill_name": skill_result.skill_name,
+            "source_skill_name": expanded_matches_by_name[
+                skill_result.skill_name
+            ].source_skill_name,
+            "differential_disease": expanded_matches_by_name[
+                skill_result.skill_name
+            ].differential_disease,
+            "disease_name": skill_result.disease_name,
+            "guideline_diagnosis": skill_result.guideline_diagnosis,
+            "guideline_evidence": skill_result.guideline_evidence,
+        }
+        for skill_result in result.skill_results
+        if skill_result.skill_name in expanded_matches_by_name
+    ]
+    expanded_skill_names_before_filter = [
+        str(item["skill_name"])
+        for item in expanded_guideline_results
+    ]
+    if expanded_guideline_results:
+        filter_agent = build_guideline_result_filter_agent(
+            GuidelineExpandedResultSelection,
+            model,
+            native_structured_output=native_structured_output,
+        )
+        filter_prompt = _prepare_structured_prompt(
+            (
+                "<PATIENT_INFORMATION>\n"
+                f"{case_text}\n"
+                "</PATIENT_INFORMATION>\n\n"
+                "<DIAGNOSTIC_HYPOTHESES>\n"
+                f"{_as_json(hypotheses)}\n"
+                "</DIAGNOSTIC_HYPOTHESES>\n\n"
+                "<EXPANDED_GUIDELINE_RESULTS>\n"
+                f"{_as_json(expanded_guideline_results)}\n"
+                "</EXPANDED_GUIDELINE_RESULTS>\n\n"
+                "## Task\n\n"
+                "Return the exact skill names of the expanded guideline results that should be "
+                "retained for final diagnosis."
+            ),
+            GuidelineExpandedResultSelection,
+            native_structured_output=native_structured_output,
+        )
+        _notify_agent_started(
+            progress_callback,
+            "Guideline Result Filter Agent",
+            round_index,
+        )
+        try:
+            raw_filter_selection = (
+                await Runner.run(
+                    filter_agent,
+                    filter_prompt,
+                    max_turns=1,
+                    run_config=RunConfig(
+                        model_settings=_diagnosis_model_settings(model)
+                    ),
+                )
+            ).final_output
+            filter_selection = _parse_structured_result(
+                raw_filter_selection,
+                GuidelineExpandedResultSelection,
+            )
+            available_expanded_names = {
+                item["skill_name"] for item in expanded_guideline_results
+            }
+            selected_expanded_names = (
+                filter_selection.selected_expanded_skill_names
+            )
+            if len(selected_expanded_names) != len(set(selected_expanded_names)):
+                raise ValueError(
+                    "Guideline result filter returned duplicate expanded skill names."
+                )
+            unknown_skill_names = (
+                set(selected_expanded_names) - available_expanded_names
+            )
+            if unknown_skill_names:
+                raise ValueError(
+                    "Guideline result filter returned unknown expanded skill names: "
+                    f"{sorted(unknown_skill_names)}."
+                )
+        except Exception as exc:
+            filter_error = f"{type(exc).__name__}: {exc}"
+            filter_failure = (
+                f"Guideline result filtering failed; all completed expanded skill results "
+                f"were retained: {filter_error}"
+            )
+            result.filter_result = GuidelineResultFilterResult(
+                status="failed",
+                expanded_skill_names_before_filter=(
+                    expanded_skill_names_before_filter
+                ),
+                retained_expanded_skill_names=(
+                    expanded_skill_names_before_filter
+                ),
+                filtered_out_expanded_skill_names=[],
+                reason=filter_error,
+            )
+            result.reason = (
+                f"{result.reason}; {filter_failure}"
+                if result.reason
+                else filter_failure
+            )
+        else:
+            selected_expanded_name_set = set(selected_expanded_names)
+            retained_expanded_skill_names = [
+                skill_name
+                for skill_name in expanded_skill_names_before_filter
+                if skill_name in selected_expanded_name_set
+            ]
+            filtered_out_expanded_skill_names = [
+                skill_name
+                for skill_name in expanded_skill_names_before_filter
+                if skill_name not in selected_expanded_name_set
+            ]
+            result.filter_result = GuidelineResultFilterResult(
+                status="completed",
+                expanded_skill_names_before_filter=(
+                    expanded_skill_names_before_filter
+                ),
+                retained_expanded_skill_names=(
+                    retained_expanded_skill_names
+                ),
+                filtered_out_expanded_skill_names=(
+                    filtered_out_expanded_skill_names
+                ),
+                reason=None,
+            )
+            result.expanded_matches = [
+                match
+                for match in result.expanded_matches
+                if match.skill_name in selected_expanded_name_set
+            ]
+            result.skill_results = [
+                skill_result
+                for skill_result in result.skill_results
+                if (
+                    skill_result.skill_name not in available_expanded_names
+                    or skill_result.skill_name in selected_expanded_name_set
+                )
+            ]
+            result.used_skill = bool(result.skill_results)
+            if not result.used_skill:
+                result.unused_reason = (
+                    "No completed guideline results passed final relevance filtering."
+                )
+    else:
+        result.filter_result = GuidelineResultFilterResult(
+            status="not_triggered",
+            expanded_skill_names_before_filter=[],
+            retained_expanded_skill_names=[],
+            filtered_out_expanded_skill_names=[],
+            reason=(
+                "No completed expanded guideline results were available for filtering."
+            ),
+        )
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -1108,6 +1273,7 @@ async def _run_guideline_search_async(
 
 async def _run_final_diagnosis_async(
     case_text: str,
+    llm_hypotheses_result: LlmHypothesesResult,
     search_planning_result: SearchPlanningResult,
     knowledge_search_result: KnowledgeSearchResult,
     guideline_search_result: GuidelineSearchResult,
@@ -1127,53 +1293,82 @@ async def _run_final_diagnosis_async(
         model=model,
         native_structured_output=native_structured_output,
     )
-    similar_case_summary = [
-        {
-            "rank": rank,
-            "icd_code": similar_case.icd_code.strip().upper().replace(".", ""),
-            "discharge_disease": similar_case.discharge_disease,
-            "matched_sections": similar_case.sections,
-        }
+    llm_hypothesis_codes = {
+        hypothesis.icd_code
+        for hypothesis in llm_hypotheses_result.llm_hypotheses
+    }
+    similar_case_ranks = {
+        similar_case.icd_code.strip().upper().replace(".", ""): rank
         for rank, similar_case in enumerate(
             similar_case_retrieval_result.rrf,
             start=1,
         )
-    ]
+    }
     candidate_diagnoses = []
     candidate_names: dict[str, str] = {}
     for hypothesis in search_planning_result.hypotheses:
         if hypothesis.icd_code in candidate_names:
             continue
         candidate_names[hypothesis.icd_code] = hypothesis.category_name
-        candidate_diagnoses.append(
-            {
-                "source": "search_planning",
-                "icd_code": hypothesis.icd_code,
-                "category_name": hypothesis.category_name,
-            }
-        )
+        sources: list[str] = []
+        if hypothesis.icd_code in llm_hypothesis_codes:
+            sources.append("initial_llm")
+        if hypothesis.icd_code in similar_case_ranks:
+            sources.append("similar_case_rrf")
+        candidate: dict[str, object] = {
+            "icd_code": hypothesis.icd_code,
+            "category_name": hypothesis.category_name,
+            "sources": sources,
+        }
+        if hypothesis.icd_code in similar_case_ranks:
+            candidate["similar_case_rank"] = similar_case_ranks[hypothesis.icd_code]
+        candidate_diagnoses.append(candidate)
     planning_candidates = {
         hypothesis.icd_code: hypothesis.category_name
         for hypothesis in search_planning_result.hypotheses
     }
-    pubmed_results = _format_pubmed_results(knowledge_search_result)
-    guideline_evidence = [
-        f"{skill_result.skill_name}：{evidence}"
-        for skill_result in guideline_search_result.skill_results
-        for evidence in skill_result.guideline_evidence
-    ]
-    combined_evidence = [
-        *guideline_evidence,
-        *pubmed_results,
-    ]
-    numbered_evidence = [
-        f"[{index}] {evidence}"
-        for index, evidence in enumerate(combined_evidence, start=1)
-    ]
-    guideline_diagnoses = [
-        skill_result.guideline_diagnosis
-        for skill_result in guideline_search_result.skill_results
-    ]
+    direct_skill_names = {
+        match.skill_name for match in guideline_search_result.direct_matches
+    }
+    expanded_matches = {
+        match.skill_name: match
+        for match in guideline_search_result.expanded_matches
+    }
+    numbered_evidence: list[str] = []
+    guideline_assessments: list[dict[str, object]] = []
+    for skill_result in guideline_search_result.skill_results:
+        skill_evidence: list[str] = []
+        for evidence in skill_result.guideline_evidence:
+            numbered_item = (
+                f"[{len(numbered_evidence) + 1}] "
+                f"{skill_result.skill_name}：{evidence}"
+            )
+            numbered_evidence.append(numbered_item)
+            skill_evidence.append(numbered_item)
+        assessment: dict[str, object] = {
+            "skill_name": skill_result.skill_name,
+            "disease_name": skill_result.disease_name,
+            "match_type": (
+                "direct"
+                if skill_result.skill_name in direct_skill_names
+                else "expanded"
+            ),
+            "guideline_diagnosis": skill_result.guideline_diagnosis,
+            "guideline_evidence": skill_evidence,
+        }
+        expanded_match = expanded_matches.get(skill_result.skill_name)
+        if expanded_match is not None:
+            assessment["source_skill_name"] = expanded_match.source_skill_name
+            assessment["differential_disease"] = (
+                expanded_match.differential_disease
+            )
+        guideline_assessments.append(assessment)
+
+    literature_evidence: list[str] = []
+    for pubmed_result in _format_pubmed_results(knowledge_search_result):
+        numbered_item = f"[{len(numbered_evidence) + 1}] {pubmed_result}"
+        numbered_evidence.append(numbered_item)
+        literature_evidence.append(numbered_item)
     revision_context = ""
     if (
         previous_diagnosis_result is not None
@@ -1197,15 +1392,12 @@ async def _run_final_diagnosis_async(
         "<CANDIDATE_DIAGNOSES>\n"
         f"{_as_json(candidate_diagnoses)}\n"
         "</CANDIDATE_DIAGNOSES>\n\n"
-        "<NUMBERED_EVIDENCE>\n"
-        f"{_as_json(numbered_evidence)}\n"
-        "</NUMBERED_EVIDENCE>\n\n"
-        "<GUIDELINE_RESULTS>\n"
-        f"{_as_json(guideline_diagnoses)}\n"
-        "</GUIDELINE_RESULTS>\n\n"
-        "<SIMILAR_CASES>\n"
-        f"{_as_json(similar_case_summary)}\n"
-        "</SIMILAR_CASES>\n\n"
+        "<GUIDELINE_ASSESSMENTS>\n"
+        f"{_as_json(guideline_assessments)}\n"
+        "</GUIDELINE_ASSESSMENTS>\n\n"
+        "<LITERATURE_EVIDENCE>\n"
+        f"{_as_json(literature_evidence)}\n"
+        "</LITERATURE_EVIDENCE>\n\n"
         f"{revision_context}"
         "## Task\n\n"
         "Please output exactly five ranked principal-diagnosis candidates."
@@ -1483,6 +1675,7 @@ async def make_diagnosis_pipeline_async(
                 progress_callback=progress_callback,
             ),
             _run_guideline_search_async(
+                case_text,
                 search_planning_result.hypotheses,
                 positive_features_result,
                 model=diagnosis_model,
@@ -1531,6 +1724,7 @@ async def make_diagnosis_pipeline_async(
 
         diagnosis_result = await _run_final_diagnosis_async(
             case_text,
+            llm_hypotheses_result,
             search_planning_result,
             knowledge_search_result,
             guideline_search_result,
@@ -1559,6 +1753,7 @@ async def make_diagnosis_pipeline_async(
         ):
             diagnosis_result = await _run_final_diagnosis_async(
                 case_text,
+                llm_hypotheses_result,
                 search_planning_result,
                 knowledge_search_result,
                 guideline_search_result,
