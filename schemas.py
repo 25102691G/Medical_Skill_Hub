@@ -417,12 +417,22 @@ class PreprocessingResult(BaseModel):
     )
 
 
+class PlanningHypothesesRerankResult(BaseModel):
+    ranked_candidate_ids: list[str] = Field(
+        min_length=1,
+        max_length=10,
+        description=(
+            "Candidate IDs ordered from most to least likely to be the principal diagnosis"
+        ),
+    )
+
+
 class SearchPlanningResult(BaseModel):
     hypotheses: list[HypothesisItem] = Field(
         max_length=10,
         description=(
             "Up to 10 unique principal-diagnosis candidates merged from direct LLM hypotheses "
-            "and similar cases"
+            "and similar cases, preliminarily ranked against the current patient information"
         ),
     )
     search_queries: list[str] = Field(

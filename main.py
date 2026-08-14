@@ -46,7 +46,10 @@ from diagnosis.agents.preprocessing_agent import (
     build_hypothesis_preprocessing_agent,
     build_positive_feature_preprocessing_agent,
 )
-from diagnosis.agents.search_planning_agent import build_search_planning_agent
+from diagnosis.agents.search_planning_agent import (
+    build_planning_hypotheses_reranker_agent,
+    build_search_planning_agent,
+)
 from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
 from schemas import (
     DiagnosisPipelineResult,
@@ -68,6 +71,7 @@ from schemas import (
     KnowledgeSearchSelectionResult,
     LlmHypothesesResult,
     MultiRoundDiagnosisResult,
+    PlanningHypothesesRerankResult,
     PositiveFeaturesResult,
     PreprocessingResult,
     PubMedQueryResult,
@@ -416,30 +420,45 @@ async def _run_preprocessing_async(
     return result
 
 
-def _merge_planning_hypotheses(
+async def _merge_planning_hypotheses(
+    case_text: str,
     llm_hypotheses_result: LlmHypothesesResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
+    *,
+    model: str | Model,
+    round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
 ) -> list[HypothesisItem]:
     merged_hypotheses: list[HypothesisItem] = []
     seen_codes: set[str] = set()
-    for hypothesis in llm_hypotheses_result.llm_hypotheses:
+    initial_llm_ranks: dict[str, int] = {}
+    similar_case_ranks: dict[str, int] = {}
+    for rank, hypothesis in enumerate(
+        llm_hypotheses_result.llm_hypotheses,
+        start=1,
+    ):
+        initial_llm_ranks.setdefault(hypothesis.icd_code, rank)
         if hypothesis.icd_code in seen_codes:
             continue
         seen_codes.add(hypothesis.icd_code)
         merged_hypotheses.append(hypothesis)
 
-    for similar_case in similar_case_retrieval_result.rrf:
+    for rank, similar_case in enumerate(
+        similar_case_retrieval_result.rrf,
+        start=1,
+    ):
         hypothesis = HypothesisItem(
             icd_code=similar_case.icd_code,
             category_name=similar_case.discharge_disease,
         )
+        similar_case_ranks.setdefault(hypothesis.icd_code, rank)
         if hypothesis.icd_code in seen_codes:
             continue
         seen_codes.add(hypothesis.icd_code)
         merged_hypotheses.append(hypothesis)
         if len(merged_hypotheses) == 10:
             break
-    return [
+    merged_hypotheses = [
         hypothesis
         for hypothesis in merged_hypotheses
         if not any(
@@ -448,6 +467,82 @@ def _merge_planning_hypotheses(
             for other in merged_hypotheses
         )
     ]
+    if len(merged_hypotheses) < 2:
+        return merged_hypotheses
+
+    candidate_by_id: dict[str, HypothesisItem] = {}
+    rerank_candidates: list[dict[str, object]] = []
+    for index, hypothesis in enumerate(
+        sorted(merged_hypotheses, key=lambda item: item.icd_code),
+        start=1,
+    ):
+        candidate_id = f"C{index:02d}"
+        candidate_by_id[candidate_id] = hypothesis
+        initial_llm_rank = initial_llm_ranks.get(hypothesis.icd_code)
+        similar_case_rank = similar_case_ranks.get(hypothesis.icd_code)
+        rerank_candidates.append(
+            {
+                "candidate_id": candidate_id,
+                "icd_code": hypothesis.icd_code,
+                "category_name": hypothesis.category_name,
+                "initial_llm_rank": initial_llm_rank,
+                "similar_case_rank": similar_case_rank,
+                "cross_source_match": (
+                    initial_llm_rank is not None and similar_case_rank is not None
+                ),
+            }
+        )
+
+    native_structured_output = _uses_native_structured_output(model)
+    reranker_agent = build_planning_hypotheses_reranker_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
+    rerank_prompt = _prepare_structured_prompt(
+        (
+            "<PATIENT_INFORMATION>\n"
+            f"{case_text}\n"
+            "</PATIENT_INFORMATION>\n\n"
+            "<CANDIDATE_DIAGNOSES>\n"
+            f"{_as_json(rerank_candidates)}\n"
+            "</CANDIDATE_DIAGNOSES>\n\n"
+            "## Task\n\n"
+            "Return every supplied candidate_id exactly once in ranked_candidate_ids, ordered "
+            "from most to least likely to be the principal diagnosis."
+        ),
+        PlanningHypothesesRerankResult,
+        native_structured_output=native_structured_output,
+    )
+    _notify_agent_started(
+        progress_callback,
+        "Planning Hypotheses Reranker Agent",
+        round_index,
+    )
+    try:
+        raw_result = (
+            await Runner.run(
+                reranker_agent,
+                rerank_prompt,
+                run_config=RunConfig(
+                    model_settings=_diagnosis_model_settings(model)
+                ),
+            )
+        ).final_output
+        rerank_result = _parse_structured_result(
+            raw_result,
+            PlanningHypothesesRerankResult,
+        )
+    except Exception:
+        return merged_hypotheses
+
+    ranked_candidate_ids = rerank_result.ranked_candidate_ids
+    if (
+        len(ranked_candidate_ids) != len(candidate_by_id)
+        or len(set(ranked_candidate_ids)) != len(ranked_candidate_ids)
+        or set(ranked_candidate_ids) != set(candidate_by_id)
+    ):
+        return merged_hypotheses
+    return [candidate_by_id[candidate_id] for candidate_id in ranked_candidate_ids]
 
 
 async def _run_search_planning_async(
@@ -456,6 +551,7 @@ async def _run_search_planning_async(
     positive_features_result: PositiveFeaturesResult,
     similar_case_retrieval_result: SimilarCaseRetrievalResult,
     *,
+    merged_hypotheses: list[HypothesisItem],
     model: str | Model,
     previous_search_planning_result: SearchPlanningResult | None = None,
     previous_diagnosis_result: DiagnosisResult | None = None,
@@ -469,10 +565,6 @@ async def _run_search_planning_async(
     search_planning_agent = build_search_planning_agent(
         model,
         native_structured_output=native_structured_output,
-    )
-    merged_hypotheses = _merge_planning_hypotheses(
-        llm_hypotheses_result,
-        similar_case_retrieval_result,
     )
     similar_case_diagnoses = [
         {
@@ -568,12 +660,25 @@ async def _run_search_planning_with_fallback(
     round_index: int | None = None,
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> SearchPlanningResult:
+    merged_hypotheses = (
+        previous_search_planning_result.hypotheses
+        if previous_search_planning_result is not None
+        else await _merge_planning_hypotheses(
+            case_text,
+            llm_hypotheses_result,
+            similar_case_retrieval_result,
+            model=model,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
+    )
     try:
         return await _run_search_planning_async(
             case_text,
             llm_hypotheses_result,
             positive_features_result,
             similar_case_retrieval_result,
+            merged_hypotheses=merged_hypotheses,
             model=model,
             previous_search_planning_result=previous_search_planning_result,
             previous_diagnosis_result=previous_diagnosis_result,
@@ -584,10 +689,6 @@ async def _run_search_planning_with_fallback(
             progress_callback=progress_callback,
         )
     except Exception as exc:
-        merged_hypotheses = _merge_planning_hypotheses(
-            llm_hypotheses_result,
-            similar_case_retrieval_result,
-        )
         result = SearchPlanningResult(
             hypotheses=merged_hypotheses,
             search_queries=[],

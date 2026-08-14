@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from agents import Agent, Model
 
-from schemas import SearchPlanningResult
+from schemas import PlanningHypothesesRerankResult, SearchPlanningResult
 
 
 BASE_INSTRUCTIONS = """
@@ -98,6 +98,28 @@ Do not output Markdown, commentary, or fields that are not defined in the schema
 """.strip()
 
 
+PLANNING_HYPOTHESES_RERANK_INSTRUCTIONS = """
+## PLANNING HYPOTHESES RERANK INSTRUCTIONS
+
+Rank the supplied candidate diagnoses from most to least likely to be the principal diagnosis of the
+current hospitalization.
+
+Use patient_information as the only source of facts about the current patient. Evaluate the documented
+symptoms, disease course, anatomical distribution, laboratory findings, imaging, endoscopy, pathology,
+complications, relevant negative findings, and the main condition evaluated or treated during the
+hospitalization.
+
+Candidate source ranks are weak candidate-generation signals only. A candidate matched by both the
+initial LLM and similar-case retrieval has a weak positive consensus signal, especially when clinical
+fit is otherwise similar, but cross-source agreement must not override contradictory patient findings.
+Do not treat similar-case retrieval or candidate source metadata as patient evidence.
+
+Input order has no clinical meaning. Return ranked_candidate_ids as an exact permutation of all supplied
+candidate_id values. Include every candidate_id exactly once. Do not output ICD-10-CM codes, disease
+names, explanations, or additional fields.
+""".strip()
+
+
 def build_search_planning_agent(
     model: str | Model,
     *,
@@ -108,4 +130,21 @@ def build_search_planning_agent(
         model=model,
         instructions="\n\n".join([BASE_INSTRUCTIONS, SEARCH_PLANNING_INSTRUCTIONS]),
         output_type=SearchPlanningResult if native_structured_output else None,
+    )
+
+
+def build_planning_hypotheses_reranker_agent(
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
+    return Agent(
+        name="Planning Hypotheses Reranker Agent",
+        model=model,
+        instructions="\n\n".join(
+            [BASE_INSTRUCTIONS, PLANNING_HYPOTHESES_RERANK_INSTRUCTIONS]
+        ),
+        output_type=(
+            PlanningHypothesesRerankResult if native_structured_output else None
+        ),
     )

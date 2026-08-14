@@ -22,7 +22,7 @@ from schemas import (
 PROJECT_ROOT = Path(__file__).resolve().parent
 BATCH_INPUT_PATH = (
     PROJECT_ROOT
-    / "output/batch/sample5_test_nobhc_75_20260814_131516_988235.jsonl"
+    / "output/batch/sample5_test_nobhc_75_20260814_145123_037575.jsonl"
 )
 CASE_INPUT_PATH = PROJECT_ROOT / "database/sample5_test_nobhc.csv"
 OUTPUT_DIR = PROJECT_ROOT / "output/final_diagnosis_experiments"
