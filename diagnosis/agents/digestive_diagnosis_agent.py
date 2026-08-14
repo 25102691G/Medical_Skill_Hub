@@ -49,6 +49,11 @@ evidence must not replace a patient finding or appear as standalone supporting_e
 evidence number whenever it supports an interpretation or recommendation, and do not cite evidence that
 does not directly support the associated statement.
 
+Before finalizing, review all numbered evidence for each diagnosis, exclusion, and recommended next
+step; do not stop after the first supporting citation. When multiple independent and directly relevant
+evidence items are available, cite the strongest 2 to 4; relevance takes priority over citation count,
+so cite fewer when the remaining evidence is weak, duplicated, or indirect.
+
 Evaluate each guideline_diagnosis together with the guideline_evidence packaged under the same guideline
 assessment. Do not detach the conclusion from its evidence or presume that the guideline agent's
 interpretation is correct. Guideline match metadata is provenance only and does not establish diagnostic

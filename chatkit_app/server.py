@@ -281,8 +281,8 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
         ranking = parsed_content.get("rrf", [])
         diagnosis_names = [case["discharge_disease"] for case in ranking]
         if language == "zh-CN":
-            detail = _format_numbered_details("病例诊断：", diagnosis_names)
-            return f"{round_prefix}相似病例检索完成：找到 {len(ranking)} 例{detail}"
+            detail = _format_numbered_details("Top5相似病例诊断：", diagnosis_names)
+            return f"{round_prefix}相似病例检索完成{detail}"
         detail = _format_numbered_details("Case diagnoses:", diagnosis_names)
         return f"{round_prefix}Similar-case retrieval completed: found {len(ranking)} cases{detail}"
 
@@ -381,23 +381,56 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
     if stage_name in {"Final Diagnosis Result", "Corrective Final Diagnosis Result"}:
         diagnoses = parsed_content.get("topk_diagnoses", [])
         diagnosis_names = [diagnosis["category_name"] for diagnosis in diagnoses]
+        excluded_candidates = parsed_content.get("excluded_planning_candidates", [])
         stage_label = (
             "消化内科诊断修正"
             if stage_name.startswith("Corrective")
             else "消化内科诊断分析"
         )
         if language == "zh-CN":
-            detail = _format_numbered_details("候选诊断：", diagnosis_names)
-            return f"{round_prefix}{stage_label}完成：输出 {len(diagnoses)} 个候选诊断{detail}"
+            detail = _format_numbered_details("Top5候选诊断：", diagnosis_names)
+            excluded_detail = ""
+            if excluded_candidates:
+                excluded_lines = []
+                for index, candidate in enumerate(excluded_candidates, start=1):
+                    excluded_lines.extend(
+                        [
+                            f"{index}. {candidate['category_name']}",
+                            "   排除依据：",
+                            *[
+                                f"   - {evidence}"
+                                for evidence in candidate["patient_contrary_evidence"]
+                            ],
+                        ]
+                    )
+                excluded_detail = "\n\n排除诊断：\n\n" + "\n".join(excluded_lines)
+            return (
+                f"{round_prefix}{stage_label}完成{detail}{excluded_detail}"
+            )
         stage_label = (
             "Gastroenterology diagnosis correction"
             if stage_name.startswith("Corrective")
             else "Gastroenterology diagnosis analysis"
         )
         detail = _format_numbered_details("Candidate diagnoses:", diagnosis_names)
+        excluded_detail = ""
+        if excluded_candidates:
+            excluded_lines = []
+            for index, candidate in enumerate(excluded_candidates, start=1):
+                excluded_lines.extend(
+                    [
+                        f"{index}. {candidate['category_name']}",
+                        "   Exclusion evidence:",
+                        *[
+                            f"   - {evidence}"
+                            for evidence in candidate["patient_contrary_evidence"]
+                        ],
+                    ]
+                )
+            excluded_detail = "\n\nExcluded diagnoses:\n\n" + "\n".join(excluded_lines)
         return (
             f"{round_prefix}{stage_label} completed: produced {len(diagnoses)} "
-            f"candidates{detail}"
+            f"candidates{detail}{excluded_detail}"
         )
 
     if stage_name == "Diagnostic Judgement Result":
@@ -657,6 +690,11 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
 
                 event_type, title, content = progress_event
                 if event_type == "agent_started":
+                    if title in {
+                        "Planning Hypotheses Reranker Agent",
+                        "Guideline Result Filter Agent",
+                    }:
+                        continue
                     agent_name = AGENT_DISPLAY_NAMES[display_language].get(
                         title,
                         "诊断处理" if display_language == "zh-CN" else "diagnostic processing",
