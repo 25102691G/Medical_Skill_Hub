@@ -1,59 +1,184 @@
 {
   "experiments": [
     {
-      "name": "dense_1.0_bm25_0.0",
-      "dense_weight": 1.0,
-      "bm25_weight": 0.0
-    },
-    {
-      "name": "dense_0.9_bm25_0.1",
-      "dense_weight": 0.9,
-      "bm25_weight": 0.1
-    },
-    {
-      "name": "dense_0.8_bm25_0.2",
-      "dense_weight": 0.8,
-      "bm25_weight": 0.2
-    },
-    {
-      "name": "dense_0.7_bm25_0.3",
-      "dense_weight": 0.7,
-      "bm25_weight": 0.3
-    },
-    {
-      "name": "dense_0.6_bm25_0.4",
+      "name": "section_top_1.0_mid_0.5_family_0.2",
       "dense_weight": 0.6,
-      "bm25_weight": 0.4
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.5,
+        "physical_exam": 0.5,
+        "family_history": 0.2,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.5_bm25_0.5",
-      "dense_weight": 0.5,
-      "bm25_weight": 0.5
+      "name": "section_top_1.0_mid_0.5_family_0.33",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.5,
+        "physical_exam": 0.5,
+        "family_history": 0.33,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.4_bm25_0.6",
-      "dense_weight": 0.4,
-      "bm25_weight": 0.6
+      "name": "section_top_1.0_mid_0.5_family_0.5",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.5,
+        "physical_exam": 0.5,
+        "family_history": 0.5,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.3_bm25_0.7",
-      "dense_weight": 0.3,
-      "bm25_weight": 0.7
+      "name": "section_top_1.0_mid_0.67_family_0.2",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.67,
+        "physical_exam": 0.67,
+        "family_history": 0.2,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.2_bm25_0.8",
-      "dense_weight": 0.2,
-      "bm25_weight": 0.8
+      "name": "section_top_1.0_mid_0.67_family_0.33",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.67,
+        "physical_exam": 0.67,
+        "family_history": 0.33,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.1_bm25_0.9",
-      "dense_weight": 0.1,
-      "bm25_weight": 0.9
+      "name": "section_top_1.0_mid_0.67_family_0.5",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.67,
+        "physical_exam": 0.67,
+        "family_history": 0.5,
+        "pertinent_results": 1.0
+      }
     },
     {
-      "name": "dense_0.0_bm25_1.0",
-      "dense_weight": 0.0,
-      "bm25_weight": 1.0
+      "name": "section_top_1.0_mid_0.67_family_0.67",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.67,
+        "physical_exam": 0.67,
+        "family_history": 0.67,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_0.8_family_0.2",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.8,
+        "physical_exam": 0.8,
+        "family_history": 0.2,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_0.8_family_0.33",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.8,
+        "physical_exam": 0.8,
+        "family_history": 0.33,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_0.8_family_0.5",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.8,
+        "physical_exam": 0.8,
+        "family_history": 0.5,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_0.8_family_0.67",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 0.8,
+        "physical_exam": 0.8,
+        "family_history": 0.67,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_1.0_family_0.2",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 1.0,
+        "physical_exam": 1.0,
+        "family_history": 0.2,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_1.0_family_0.33",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 1.0,
+        "physical_exam": 1.0,
+        "family_history": 0.33,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_1.0_family_0.5",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 1.0,
+        "physical_exam": 1.0,
+        "family_history": 0.5,
+        "pertinent_results": 1.0
+      }
+    },
+    {
+      "name": "section_top_1.0_mid_1.0_family_0.67",
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "section_weights": {
+        "present_illness_history": 1.0,
+        "past_medical_history": 1.0,
+        "physical_exam": 1.0,
+        "family_history": 0.67,
+        "pertinent_results": 1.0
+      }
     }
   ]
 }

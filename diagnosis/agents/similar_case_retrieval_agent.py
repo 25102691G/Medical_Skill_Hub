@@ -33,14 +33,14 @@ SECTION_COLUMNS = (
     "pertinent_results",
 )
 SECTION_WEIGHTS = {
-    "present_illness_history": 3.0,
-    "past_medical_history": 2.0,
-    "physical_exam": 2.0,
-    "family_history": 1.0,
-    "pertinent_results": 3.0,
+    "present_illness_history": 1.0,
+    "past_medical_history": 0.5,
+    "physical_exam": 0.5,
+    "family_history": 0.2,
+    "pertinent_results": 1.0,
 }
-BM25_FUSION_WEIGHT = 0.3
-DENSE_FUSION_WEIGHT = 0.7
+BM25_FUSION_WEIGHT = 0.4
+DENSE_FUSION_WEIGHT = 0.6
 REQUIRED_COLUMNS = {"hadm_id", "icd_code", "long_title", *SECTION_COLUMNS}
 RRF_K = 60
 SECTION_CHUNK_TOKEN_COUNT = 510

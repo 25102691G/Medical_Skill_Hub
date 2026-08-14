@@ -5,6 +5,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from agents import Model
@@ -38,11 +39,13 @@ from chatkit_app.translation import (
     DisplayTranslator,
     get_context_display_language,
 )
-from main import make_diagnosis_async
-from schemas import DiagnosisResult
+from main import make_diagnosis_pipeline_async
+from schemas import DiagnosisPipelineResult, DiagnosisResult
 
 
 logger = logging.getLogger(__name__)
+
+CHATKIT_OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output" / "chatkit"
 
 DIAGNOSE_COMMANDS = {
     "开始诊断",
@@ -558,21 +561,64 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
         workflow_done = False
         elapsed_item_visible = True
 
+        diagnosis_started_at = datetime.now()
+        diagnosis_run_id = diagnosis_started_at.strftime("%Y%m%d_%H%M%S_%f")
+        output_path = CHATKIT_OUTPUT_DIR / f"diagnosis_{diagnosis_run_id}.json"
+        progress_events: list[dict[str, str | None]] = []
+
         def report_progress(event_type: str, title: str, content: str | None) -> None:
+            progress_events.append(
+                {
+                    "recorded_at": datetime.now().isoformat(),
+                    "event_type": event_type,
+                    "title": title,
+                    "content": content,
+                }
+            )
             loop.call_soon_threadsafe(
                 progress_queue.put_nowait,
                 (event_type, title, content),
             )
 
-        async def run_diagnosis() -> DiagnosisResult:
+        async def run_diagnosis() -> DiagnosisPipelineResult:
+            output_record: dict[str, Any] = {
+                "diagnosis_run_id": diagnosis_run_id,
+                "thread_id": thread.id,
+                "started_at": diagnosis_started_at.isoformat(),
+                "case_text": case_text,
+            }
             try:
-                return await make_diagnosis_async(
+                pipeline_result = await make_diagnosis_pipeline_async(
                     case_text,
                     model=self.diagnosis_model,
                     debug=False,
                     progress_callback=report_progress,
                 )
+                output_record["status"] = "completed"
+                output_record["pipeline_result"] = pipeline_result.model_dump(
+                    mode="json"
+                )
+                return pipeline_result
+            except Exception as exc:
+                output_record["status"] = "failed"
+                output_record["error"] = {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                    "stage": getattr(exc, "stage", None),
+                }
+                raise
             finally:
+                completed_at = datetime.now()
+                output_record["completed_at"] = completed_at.isoformat()
+                output_record["duration_seconds"] = (
+                    completed_at - diagnosis_started_at
+                ).total_seconds()
+                output_record["progress_events"] = progress_events
+                CHATKIT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(
+                    json.dumps(output_record, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
                 loop.call_soon(progress_queue.put_nowait, None)
 
         diagnosis_task = asyncio.create_task(run_diagnosis())
@@ -726,7 +772,8 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
                                     task=completed_task,
                                 ),
                             )
-            result = await diagnosis_task
+            pipeline_result = await diagnosis_task
+            result = pipeline_result.multi_round_diagnosis.rounds[-1].diagnosis_result
             report_task_index = len(workflow_item.workflow.tasks)
             report_task = CustomTask(
                 title=AGENT_PHASE_NAMES[display_language]["Report Generation"],

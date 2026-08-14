@@ -1577,8 +1577,10 @@ async def make_diagnosis_pipeline_async(
                 round=round_index,
                 search_planning_result=search_planning_result,
                 similar_case_retrieval_result=similar_case_retrieval_result,
+                knowledge_search_result=knowledge_search_result,
                 guideline_search_result=guideline_search_result,
                 diagnosis_result=diagnosis_result,
+                diagnostic_judgement_result=diagnostic_judgement_result,
             )
         )
 

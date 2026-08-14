@@ -16,7 +16,7 @@ DEFAULT_INPUT = (
     PROJECT_ROOT
     / "output"
     / "batch"
-    / "sample5_test_nobhc_75_20260813_111639_669877.jsonl"
+    / "sample5_test_nobhc_75_20260814_091548_937218.jsonl"
 )
 OUTPUT_DIR = PROJECT_ROOT / "output" / "similar_case"
 METHODS = ("bm25", "embedding", "rrf")

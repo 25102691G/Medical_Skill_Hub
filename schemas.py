@@ -472,12 +472,21 @@ class SimilarCaseRetrievalResult(BaseModel):
     )
 
 
+class DiagnosticJudgementResult(BaseModel):
+    closer_result: Literal["final_diagnoses", "search_planning_diagnoses"] = Field(
+        description="Which candidate diagnosis set is closer to the patient information"
+    )
+    reason: str = Field(description="Reasoning for the diagnostic judgement")
+
+
 class DiagnosisRoundResult(BaseModel):
     round: int
     search_planning_result: SearchPlanningResult
     similar_case_retrieval_result: SimilarCaseRetrievalResult
+    knowledge_search_result: KnowledgeSearchResult
     guideline_search_result: GuidelineSearchResult
     diagnosis_result: DiagnosisResult
+    diagnostic_judgement_result: DiagnosticJudgementResult
 
 
 class MultiRoundDiagnosisResult(BaseModel):
@@ -489,10 +498,3 @@ class DiagnosisPipelineResult(BaseModel):
     llm_hypotheses_result: LlmHypothesesResult
     positive_features_result: PositiveFeaturesResult
     multi_round_diagnosis: MultiRoundDiagnosisResult
-
-
-class DiagnosticJudgementResult(BaseModel):
-    closer_result: Literal["final_diagnoses", "search_planning_diagnoses"] = Field(
-        description="Which candidate diagnosis set is closer to the patient information"
-    )
-    reason: str = Field(description="Reasoning for the diagnostic judgement")
