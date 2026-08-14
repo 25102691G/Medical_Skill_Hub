@@ -25,180 +25,110 @@ All output must be written in English.
 FINAL_DIAGNOSIS_INSTRUCTIONS = """
 ## FINAL DIAGNOSIS INSTRUCTIONS
 
-### 1. Objective
+### 1. Task and Ranking Target
 
-This is the final diagnosis stage.
+This is the final diagnosis stage. Generate exactly five unique ICD-10-CM candidates for the principal
+diagnosis of the current hospitalization.
 
-Generate exactly five unique ICD-10-CM candidates for the principal diagnosis of the current
-hospitalization, ranked by their consistency with the current patient's documented clinical information
-and the condition chiefly responsible for the admission or the main condition evaluated and treated.
+Rank 1 as the single diagnosis that best represents the condition established from the current
+information as chiefly responsible for the admission. Use the main condition evaluated and treated to
+resolve cases in which the admission target is otherwise unclear. Ranks 2 through 5 are alternative
+principal-diagnosis candidates ordered by their relative consistency with the current patient
+information; inclusion does not imply that all five are strongly supported.
 
-The input may contain:
+### 2. Evidence Hierarchy
 
-* patient information;
-* candidate diagnoses with candidate-generation source metadata;
-* structured guideline assessments containing guideline conclusions and numbered evidence;
-* numbered literature evidence;
-* previous top-K diagnoses;
-* diagnostic feedback from an earlier round.
+Patient information is the only source of facts about the current patient. Every supporting_evidence
+item must state at least one explicitly documented current-patient finding. It may also explain the
+diagnostic relevance of that finding. Do not infer undocumented findings or treat an unreported finding
+as negative.
 
-Guideline assessments, candidate-generation source metadata, and previous-round outputs are external
-sources only. They are not presumed to be correct.
+Guideline assessments and literature evidence are external medical knowledge. Use them only to interpret
+documented patient findings or support an exclusion, ICD correction, or recommended next step. External
+evidence must not replace a patient finding or appear as standalone supporting_evidence. Append the exact
+evidence number whenever it supports an interpretation or recommendation, and do not cite evidence that
+does not directly support the associated statement.
 
-Treat the supplied candidate_diagnoses as the high-priority initial candidate set, not as a closed
-allowed set. Prefer a supplied candidate when it adequately represents the current hospitalization,
-but consider a diagnosis outside that list when the current patient's documented findings support it
-better.
+Evaluate each guideline_diagnosis together with the guideline_evidence packaged under the same guideline
+assessment. Do not detach the conclusion from its evidence or presume that the guideline agent's
+interpretation is correct. Guideline match metadata is provenance only and does not establish diagnostic
+support.
 
-There are two permitted types of diagnoses outside candidate_diagnoses:
+Candidate source metadata, including initial_llm, similar_case_rrf, and similar-case rank, records how a
+candidate entered the set. It is not patient evidence and must not establish a diagnosis or determine its
+rank. Previous top-K diagnoses are reference candidates only. When diagnostic feedback is provided,
+correct the identified omissions, unsupported refinements, or ranking errors while reassessing every
+candidate against the current patient information.
 
-* an ICD-10-CM refinement or correction that preserves the first three characters of a supplied
-  candidate but changes the fourth or later characters to represent a better-supported etiology,
-  anatomical site, complication, subtype, or other coded detail;
-* a clinically different disease whose first three ICD-10-CM characters differ from every supplied
-  candidate.
+### 3. Candidate Evaluation and Reranking
 
-For a diagnosis outside candidate_diagnoses, provide its complete ICD-10-CM code and canonical English
-description. Do not change an ICD code merely to make the differential more varied or more specific.
+Treat candidate_diagnoses as the high-priority initial set, not as a closed allowed set. Evaluate and
+rerank the supplied candidates before considering an ICD correction or a clinically different disease.
+The supplied order is not the required final order.
 
-### 2. Candidate Evaluation
+Retain, promote, demote, or exclude candidates according to their consistency with the documented
+symptoms, signs, disease course, anatomical distribution, laboratory findings, imaging, endoscopy,
+pathology, complications, relevant documented negative findings, and likelihood of representing the
+principal diagnosis.
 
-Evaluate and rerank the supplied candidate_diagnoses first, then determine whether an ICD refinement or
-a clinically different disease is better supported. An outside diagnosis must include explicit
-current-patient findings in supporting_evidence. When provided numbered guideline or literature evidence
-supports that diagnostic interpretation, append its exact evidence number. Similar-case source metadata
-alone is insufficient for adding an outside diagnosis.
+Do not include an unrelated chronic comorbidity, incidental finding, or secondary condition merely to
+fill the list. Such a condition may be included only when it could plausibly account for the admission or
+represent the hospitalization's principal diagnostic target. Do not automatically replace that target
+with a suspected deeper etiology.
 
-Evaluate each clinically plausible candidate against the current patient's documented:
+If fewer than five candidates are strongly supported, complete the top five with the best-supported or
+least-contradicted diagnoses from the supplied set. Give weak alternatives appropriately lower
+confidence, explain the overall uncertainty in the summary, and do not invent supporting evidence or add
+an unsupported outside diagnosis merely to fill the list.
 
-* symptoms and signs;
-* disease course;
-* anatomical distribution;
-* laboratory findings;
-* imaging;
-* endoscopy;
-* pathology;
-* complications;
-* relevant negative findings.
+### 4. Outside Diagnoses and ICD-10-CM Corrections
 
-Retain, promote, demote, or exclude supplied candidates according to their consistency with the current
-patient and their likelihood of being the principal diagnosis.
+A diagnosis outside candidate_diagnoses is permitted only when it is:
 
-Do not rank chronic comorbidities, incidental findings, or secondary conditions merely because they are
-documented. Include them only when they are plausible principal diagnoses for the current
-hospitalization.
+* a better-supported ICD-10-CM correction that preserves the first three characters of a supplied
+  candidate while extending or changing later characters; or
+* a clinically different disease whose first three characters differ from every supplied candidate.
 
-Do not automatically replace the main condition evaluated or treated during the hospitalization with a
-suspected deeper etiology. Rank the diagnosis that best represents the hospitalization's principal
-diagnostic target.
+An outside diagnosis must contain at least one supporting_evidence item anchored in an explicit
+current-patient finding. Guideline or literature evidence may support the interpretation of that finding
+but is insufficient by itself. Similar-case metadata is also insufficient. Do not change or add an ICD
+code merely for greater variety, unsupported specificity, or completion of the five positions.
 
-Every supplied candidate diagnosis omitted from the final top five must appear once in
-excluded_planning_candidates. Copy its icd_code and category_name exactly and explain why it was
-excluded or corrected, using explicit current-patient findings. When a clinically different disease
-replaces a supplied candidate, explain why the patient findings support that replacement. If numbered
-guideline or literature evidence supports an exclusion or code correction, append its exact evidence
-number to the reason.
+Use the most appropriate complete ICD-10-CM code without a decimal point and its canonical English
+description. When a supplied candidate is selected unchanged, copy its icd_code and category_name
+exactly. Include only coded details supported by the current patient; do not add an unsupported etiology,
+anatomical site, complication, subtype, severity, or disease behavior. Do not output duplicate codes.
 
-Do not use missing information, the need to make room for another candidate, or external evidence alone
-as a reason. Do not put newly introduced diagnoses in excluded_planning_candidates; this field records
-only supplied candidates that were not selected unchanged.
+### 5. Excluded Planning Candidates
 
-Always return excluded_planning_candidates. After selecting the final top five, compare their ICD codes
-with candidate_diagnoses. If every supplied candidate diagnosis is selected unchanged, return an empty
-array. Otherwise, return exactly the set difference candidate_diagnoses minus unchanged supplied
-candidates in topk_diagnoses. Never include a supplied candidate whose exact ICD code appears in
-topk_diagnoses.
+Every supplied candidate not selected unchanged must appear once in excluded_planning_candidates with
+its icd_code and category_name copied exactly. Despite the field name, patient_contrary_evidence records
+patient-grounded exclusion or correction reasons and does not always require a directly contradictory
+finding.
 
-Rank diagnoses according to patient-level evidence, not according to which source proposed them.
+A valid reason may be an explicit contradiction, documented findings favoring another diagnosis or ICD
+code, a documented historical/incidental/secondary role that does not represent the principal target, or
+materially weaker patient support than the selected diagnoses. For a comparative reason, identify the
+documented findings that favor the selected interpretation; do not merely cite missing information or
+the need to make room. External evidence may support a patient-grounded reason but must not be its sole
+basis. Do not describe missing or unreported information as a negative patient finding.
 
-Do not treat an unreported finding as a negative finding. Lower confidence when important
-discriminating information is missing or contradictory.
+Return exactly the set difference between candidate_diagnoses and supplied candidates selected unchanged
+in topk_diagnoses. Return an empty array when that set difference is empty. Do not include newly
+introduced diagnoses or a supplied candidate whose exact ICD code appears in topk_diagnoses.
 
-### 3. Source Boundaries
-
-#### Patient information
-
-Patient information is the only source of facts about the current patient.
-
-Populate supporting_evidence only with findings explicitly documented for the current patient.
-
-Do not infer undocumented symptoms, test results, diagnoses, or complications.
-
-#### Guideline assessments and literature evidence
-
-Each guideline assessment is one evidence package. Its guideline_diagnosis is an external interpretation
-of the supplied positive patient features, and its guideline_evidence items are the verified numbered
-guideline statements supporting that interpretation. Evaluate the interpretation together with the
-evidence packaged under the same guideline assessment. Do not detach a guideline conclusion from its
-evidence or assume that an interpretation is correct merely because it was produced by a guideline
-agent.
-
-Literature evidence contains separately numbered, pre-retrieved PubMed evidence.
-
-Use numbered guideline or literature evidence only to interpret documented patient findings or justify
-recommended next steps. It must not replace or be presented as a patient fact.
-
-When a supporting_evidence item uses numbered evidence to interpret a patient finding, append the exact
-supporting evidence number, such as "[1]" or "[1][2]". Apply the same citation rule to
-recommended_next_steps.
-
-Do not cite an evidence number unless that exact numbered item supports the statement. Do not invent
-citation numbers, recommendation grades, evidence levels, or recommendation strengths.
-
-#### Candidate source metadata
-
-Candidate source metadata records how a supplied diagnosis entered the candidate set.
-"initial_llm" means that the diagnosis was proposed directly from the current case, and
-"similar_case_rrf" means that it was retrieved from external similar cases.
-
-A similar-case rank is only a weak candidate-generation signal. It does not establish, promote, demote,
-or exclude a diagnosis without support from the current patient's documented findings. Candidate source
-metadata must not be placed in supporting_evidence.
-
-Rank diagnoses according to patient-level evidence, not according to whether one or multiple candidate
-sources proposed them.
-
-#### Previous-round information
-
-Previous top-K diagnoses are reference candidates only.
-
-When diagnostic feedback is provided, correct the identified omissions, unsupported refinements, or
-ranking errors while reassessing all candidates against the current patient information.
-
-### 4. Diagnostic Granularity
-
-For each diagnosis:
-
-* use the complete ICD-10-CM code without a decimal point;
-* set category_name to the canonical English description corresponding to that complete code;
-* when using a supplied candidate unchanged, copy its icd_code and category_name exactly.
-
-Include only diagnostic details represented by the selected complete ICD-10-CM code. Do not add
-unsupported details, including:
-
-* additional anatomical refinement or subtype;
-* additional complication details;
-* severity;
-* disease behavior;
-* other details not documented for the current patient.
-
-Clinical location and complications may be used for diagnostic reasoning and may appear in
-category_name only when they are part of the canonical description of the selected code.
-
-An outside diagnosis may use an icd_code and category_name not present in candidate_diagnoses only under
-the evidence requirements above.
-
-Do not output duplicate icd_code values.
-
-### 5. Output Requirements
+### 6. Output Requirements
 
 Return valid JSON only and strictly follow the provided output schema.
 
-Use an integer from 0 to 100 for confidence.
+Use an integer from 0 to 100 for confidence. Confidence values are independent estimates and do not need
+to sum to 100, but they must be consistent with the ranking and strength of patient support. Lower
+confidence when important discriminating information is missing or contradictory.
 
 Keep the summary concise and evidence-focused. Do not provide a detailed step-by-step reasoning trace.
 
-Do not output Markdown, commentary, or fields that are not defined in the schema.
+Do not invent citation numbers, recommendation grades, evidence levels, or recommendation strengths. Do
+not output Markdown, commentary, or fields that are not defined in the schema.
 """.strip()
 
 
