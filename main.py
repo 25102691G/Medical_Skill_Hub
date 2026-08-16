@@ -1501,7 +1501,9 @@ async def _run_final_diagnosis_async(
         "</LITERATURE_EVIDENCE>\n\n"
         f"{revision_context}"
         "## Task\n\n"
-        "Please output exactly five ranked principal-diagnosis candidates."
+        "Rank all supplied candidates, then output exactly five principal-diagnosis candidates. "
+        "Optimize rank 1 for precision, ranks 1-3 for the strongest alternatives, and ranks 1-5 "
+        "for clinically plausible three- and four-character ICD-10-CM coverage."
     )
     diagnosis_prompt = _prepare_structured_prompt(
         diagnosis_prompt,
