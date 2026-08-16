@@ -7,7 +7,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from agents import Model
+
+from config import DIAGNOSIS_PROVIDER
 from diagnosis.agents import similar_case_retrieval_agent as retrieval
+from main import _run_similar_case_retrieval, build_diagnosis_model
 from schemas import PositiveFeaturesResult
 
 
@@ -19,13 +23,17 @@ DEFAULT_INPUT = (
     / "sample5_test_nobhc_75_20260814_091548_937218.jsonl"
 )
 OUTPUT_DIR = PROJECT_ROOT / "output" / "similar_case"
-METHODS = ("bm25", "embedding", "rrf")
+METHODS = ("bm25", "embedding", "rrf", "rerank")
 METRIC_PREFIX_LENGTHS = {
     "icd3": 3,
     "icd4": 4,
     "exact": None,
 }
-CUTOFFS = (1, 3, 5)
+DISPLAY_CUTOFFS = (1, 3, 5, 20)
+RECALL_CUTOFFS = {
+    method: DISPLAY_CUTOFFS if method == "rrf" else (1, 3, 5)
+    for method in METHODS
+}
 
 
 def _positive_int(value: str) -> int:
@@ -267,7 +275,7 @@ def _load_records(
 def _empty_recall_hits() -> dict[str, dict[str, dict[int, int]]]:
     return {
         method: {
-            metric: {cutoff: 0 for cutoff in CUTOFFS}
+            metric: {cutoff: 0 for cutoff in RECALL_CUTOFFS[method]}
             for metric in METRIC_PREFIX_LENGTHS
         }
         for method in METHODS
@@ -282,7 +290,7 @@ def _recall_summary(
         method: {
             metric: {
                 f"recall{cutoff}": recall_hits[method][metric][cutoff] / total
-                for cutoff in CUTOFFS
+                for cutoff in RECALL_CUTOFFS[method]
             }
             for metric in METRIC_PREFIX_LENGTHS
         }
@@ -298,25 +306,33 @@ def _print_summary(
     print(f"{title} (n={total})")
     print(
         f"{'Method':<12}  "
-        f"{'3-digit Recall':^23}  "
-        f"{'4-digit Recall':^23}  "
-        f"{'Exact ICD Recall':^23}"
+        f"{'3-digit Recall':^31}  "
+        f"{'4-digit Recall':^31}  "
+        f"{'Exact ICD Recall':^31}"
     )
     print(
         f"{'':<12}  "
-        + "  ".join(f"{'R@1':>7} {'R@3':>7} {'R@5':>7}" for _ in range(3))
+        + "  ".join(
+            " ".join(f"{f'R@{cutoff}':>7}" for cutoff in DISPLAY_CUTOFFS)
+            for _ in range(3)
+        )
     )
     for method in METHODS:
-        values = [
-            summary[method][metric][f"recall{cutoff}"]
-            for metric in METRIC_PREFIX_LENGTHS
-            for cutoff in CUTOFFS
-        ]
         print(
             f"{method:<12}  "
             + "  ".join(
-                " ".join(f"{value:>7.1%}" for value in values[start : start + 3])
-                for start in range(0, len(values), 3)
+                " ".join(
+                    (
+                        f"{value:>7.1%}"
+                        if value is not None
+                        else f"{'-':>7}"
+                    )
+                    for cutoff in DISPLAY_CUTOFFS
+                    for value in [
+                        summary[method][metric].get(f"recall{cutoff}")
+                    ]
+                )
+                for metric in METRIC_PREFIX_LENGTHS
             )
         )
 
@@ -326,6 +342,7 @@ def _run_experiment(
     records: list[tuple[dict[str, Any], PositiveFeaturesResult]],
     parameters: dict[str, Any],
     output_path: Path,
+    diagnosis_model: Model,
 ) -> dict[str, Any]:
     _apply_parameters(parameters)
     print(
@@ -344,8 +361,9 @@ def _run_experiment(
                 f"hadm_id={record.get('hadm_id')} ...",
                 file=sys.stderr,
             )
-            result_data = retrieval.retrieve_similar_cases(
-                positive_features_result
+            result_data = _run_similar_case_retrieval(
+                positive_features_result,
+                model=diagnosis_model,
             ).model_dump(mode="json")
             evaluation = {}
             for method in METHODS:
@@ -362,7 +380,7 @@ def _run_experiment(
                 }
                 for metric, rank in evaluated_ranks.items():
                     if rank is not None:
-                        for cutoff in CUTOFFS:
+                        for cutoff in RECALL_CUTOFFS[method]:
                             recall_hits[method][metric][cutoff] += rank <= cutoff
 
             output_file.write(
@@ -405,42 +423,61 @@ def _print_experiment_comparison(
         len("Experiment"),
         *(len(experiment["name"]) for experiment in experiment_summaries),
     )
-    print(f"RRF experiment comparison (n={total})")
+    print(f"RRF and reranker experiment comparison (n={total})")
     print(
         f"{'Experiment':<{name_width}}  "
-        f"{'3-digit Recall':^23}  "
-        f"{'4-digit Recall':^23}  "
-        f"{'Exact ICD Recall':^23}"
+        f"{'Method':<8}  "
+        f"{'3-digit Recall':^31}  "
+        f"{'4-digit Recall':^31}  "
+        f"{'Exact ICD Recall':^31}"
     )
     print(
         f"{'':<{name_width}}  "
-        + "  ".join(f"{'R@1':>7} {'R@3':>7} {'R@5':>7}" for _ in range(3))
+        f"{'':<8}  "
+        + "  ".join(
+            " ".join(f"{f'R@{cutoff}':>7}" for cutoff in DISPLAY_CUTOFFS)
+            for _ in range(3)
+        )
     )
     for experiment in experiment_summaries:
-        rrf_summary = experiment["metrics"]["rrf"]
-        values = [
-            rrf_summary[metric][f"recall{cutoff}"]
-            for metric in METRIC_PREFIX_LENGTHS
-            for cutoff in CUTOFFS
-        ]
-        print(
-            f"{experiment['name']:<{name_width}}  "
-            + "  ".join(
-                " ".join(f"{value:>7.1%}" for value in values[start : start + 3])
-                for start in range(0, len(values), 3)
+        for method in ("rrf", "rerank"):
+            method_summary = experiment["metrics"][method]
+            print(
+                f"{experiment['name']:<{name_width}}  "
+                f"{method:<8}  "
+                + "  ".join(
+                    " ".join(
+                        (
+                            f"{value:>7.1%}"
+                            if value is not None
+                            else f"{'-':>7}"
+                        )
+                        for cutoff in DISPLAY_CUTOFFS
+                        for value in [
+                            method_summary[metric].get(f"recall{cutoff}")
+                        ]
+                    )
+                    for metric in METRIC_PREFIX_LENGTHS
+                )
             )
-        )
 
 
 def run(args: argparse.Namespace) -> Path:
     resolved_input_path, records = _load_records(args.input)
     base_parameters = _merge_parameters(_base_parameters(args), {})
+    diagnosis_model = build_diagnosis_model(DIAGNOSIS_PROVIDER)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
     if args.experiments is None:
         output_path = OUTPUT_DIR / f"{resolved_input_path.stem}_{timestamp}.jsonl"
-        _run_experiment("single", records, base_parameters, output_path)
+        _run_experiment(
+            "single",
+            records,
+            base_parameters,
+            output_path,
+            diagnosis_model,
+        )
         print(f"Output: {output_path}")
         return output_path
 
@@ -473,6 +510,7 @@ def run(args: argparse.Namespace) -> Path:
                 records,
                 parameters,
                 run_directory / f"{name}.jsonl",
+                diagnosis_model,
             )
         )
 

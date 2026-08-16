@@ -69,6 +69,7 @@ AGENT_DISPLAY_NAMES = {
         "Search Planning Agent": "检索规划",
         "Knowledge Searcher Agent": "医学知识检索",
         "Similar Case Retrieval Agent": "相似病例检索",
+        "Similar Case Reranker Agent": "相似病例重排",
         "Guideline Searcher Agent": "本地指南检索",
         "Digestive Diagnosis Agent": "消化内科诊断分析",
         "Corrective Digestive Diagnosis Agent": "消化内科诊断修正",
@@ -79,6 +80,7 @@ AGENT_DISPLAY_NAMES = {
         "Search Planning Agent": "search planning",
         "Knowledge Searcher Agent": "medical knowledge retrieval",
         "Similar Case Retrieval Agent": "similar-case retrieval",
+        "Similar Case Reranker Agent": "similar-case reranking",
         "Guideline Searcher Agent": "local guideline retrieval",
         "Digestive Diagnosis Agent": "gastroenterology diagnosis analysis",
         "Corrective Digestive Diagnosis Agent": "gastroenterology diagnosis correction",
@@ -91,6 +93,7 @@ AGENT_PHASE_NAMES = {
         "Search Planning Agent": "检索阶段",
         "Knowledge Searcher Agent": "检索阶段",
         "Similar Case Retrieval Agent": "检索阶段",
+        "Similar Case Reranker Agent": "检索阶段",
         "Guideline Searcher Agent": "检索阶段",
         "Digestive Diagnosis Agent": "诊断阶段",
         "Corrective Digestive Diagnosis Agent": "诊断阶段",
@@ -102,6 +105,7 @@ AGENT_PHASE_NAMES = {
         "Search Planning Agent": "Retrieval stage",
         "Knowledge Searcher Agent": "Retrieval stage",
         "Similar Case Retrieval Agent": "Retrieval stage",
+        "Similar Case Reranker Agent": "Retrieval stage",
         "Guideline Searcher Agent": "Retrieval stage",
         "Digestive Diagnosis Agent": "Diagnosis stage",
         "Corrective Digestive Diagnosis Agent": "Diagnosis stage",
@@ -278,7 +282,7 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
         )
 
     if stage_name == "Similar Case Retrieval Result":
-        ranking = parsed_content.get("rrf", [])
+        ranking = parsed_content.get("rerank") or parsed_content.get("rrf", [])[:5]
         diagnosis_names = [case["discharge_disease"] for case in ranking]
         if language == "zh-CN":
             detail = _format_numbered_details("Top5相似病例诊断：", diagnosis_names)

@@ -49,22 +49,26 @@ HF_ENDPOINT=https://hf-mirror.com \
 通道，BM25 用于补充关键词和医学术语召回。
 
 当前患者缺少某字段时跳过该字段，并根据实际非空字段归一化权重。加权 RRF 后按 ICD 编码
-保留不同疾病，并直接输出 RRF Top 5。每个RRF候选仅保留实际进入对应字段BM25或Dense
+保留不同疾病，并生成 RRF Top 20 候选；完整诊断流水线再由 LLM 根据当前患者阳性特征和
+候选匹配片段重排并保留 Top 5。每个 RRF 候选仅保留实际进入对应字段 BM25 或 Dense
 候选集的最佳匹配切片，不使用任意切片补位。
 结构化病例信息不包含阴性症状、阴性家族史、正常生命体征以及阴性或正常检查结果。
 Dense 编码的最大输入长度为 1024 token，病例库文本仍按 510 个正文 token 切片。
-最终结果保留 BM25、Embedding 和 RRF 三个相似病例阶段，供批量评估使用。向量缓存默认写入
+最终结果分别保留 BM25 Top 5、Embedding Top 5、原始 RRF Top 20 和 LLM Reranker Top 5，
+供批量评估使用；Search Planning 使用 LLM Reranker Top 5。向量缓存默认写入
 `database/mimic_similar_embeddings.pt`，BM25 缓存根据病例库文件名自动生成。
 
-使用已有批量结果中的固定 `positive_features_result` 单独测试相似病例模块，不会调用 LLM：
+使用已有批量结果中的固定 `positive_features_result` 单独测试相似病例模块。该流程不会重新
+运行病例预处理，但会与完整诊断流水线一致地调用 LLM 对 RRF Top 20 重排并保留 Top 5：
 
 ```bash
 bash run_similar_case.sh
 ```
 
 脚本默认读取 `output/batch/sample5_test_nobhc_75_20260813_111639_669877.jsonl`，结果写入
-`output/similar_case/`，并汇总 BM25、Embedding 和 RRF 的 ICD 3 位、4 位及精确编码
-Recall@1/3/5。可通过命令行调整融合权重、字段权重、候选数量和 Dense 最大输入长度：
+`output/similar_case/`，并汇总 BM25、Embedding、原始 RRF 和 LLM Reranker 的 ICD 3 位、
+4 位及精确编码 Recall；原始 RRF 额外统计 Recall@20。可通过命令行调整融合权重、字段权重、
+候选数量和 Dense 最大输入长度：
 
 ```bash
 bash run_similar_case.sh \

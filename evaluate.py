@@ -10,11 +10,18 @@ METHODS = (
     "similar_case_bm25",
     "similar_case_embedding",
     "similar_case_rrf",
+    "similar_case_rerank",
     "search_planning_result",
     "final_diagnosis",
 )
 RECALL_CUTOFFS = {
-    method: (1, 3, 5, 10) if method == "search_planning_result" else (1, 3, 5)
+    method: (
+        (1, 3, 5, 20)
+        if method == "similar_case_rrf"
+        else (1, 3, 5, 10)
+        if method == "search_planning_result"
+        else (1, 3, 5)
+    )
     for method in METHODS
 }
 METHOD_LABELS = {
@@ -22,6 +29,7 @@ METHOD_LABELS = {
     "similar_case_bm25": "Similar BM25",
     "similar_case_embedding": "Similar embedding",
     "similar_case_rrf": "Similar RRF",
+    "similar_case_rerank": "Similar LLM reranker",
     "search_planning_result": "Search planning result",
     "final_diagnosis": "Final diagnosis",
 }
@@ -29,6 +37,7 @@ SIMILAR_CASE_METHODS = {
     "bm25": "similar_case_bm25",
     "embedding": "similar_case_embedding",
     "rrf": "similar_case_rrf",
+    "rerank": "similar_case_rerank",
 }
 METRIC_PREFIX_LENGTHS = {
     "disease": 3,
@@ -39,7 +48,7 @@ METRICS = tuple(METRIC_PREFIX_LENGTHS)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate principal-diagnosis ICD predictions from six stages."
+        description="Evaluate principal-diagnosis ICD predictions from seven stages."
     )
     parser.add_argument(
         "--input",
@@ -88,22 +97,22 @@ def _print_recall_table(
     print(f"{title} (n={total})")
     print(
         f"{'Method':<{method_width}}  "
-        f"{'3-digit Recall':^33}  "
-        f"{'4-digit Recall':^33}"
+        f"{'3-digit Recall':^41}  "
+        f"{'4-digit Recall':^41}"
     )
     print(
         f"{'':<{method_width}}  "
-        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7}  "
-        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7}"
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7} {'R@20':>7}  "
+        f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7} {'R@20':>7}"
     )
     for method in METHODS:
         three_digit_values = [
             summary[method]["disease"].get(f"recall{cutoff}")
-            for cutoff in (1, 3, 5, 10)
+            for cutoff in (1, 3, 5, 10, 20)
         ]
         four_digit_values = [
             summary[method]["subcategory"].get(f"recall{cutoff}")
-            for cutoff in (1, 3, 5, 10)
+            for cutoff in (1, 3, 5, 10, 20)
         ]
         print(
             f"{method:<{method_width}}  "
@@ -173,7 +182,14 @@ def evaluate_file(input_path: Path) -> Path:
                     ],
                     "similar_case_rrf": [
                         item["icd_code"].strip()
-                        for item in similar_case_result["rrf"][:5]
+                        for item in similar_case_result["rrf"]
+                    ],
+                    "similar_case_rerank": [
+                        item["icd_code"].strip()
+                        for item in (
+                            similar_case_result.get("rerank")
+                            or similar_case_result["rrf"][:5]
+                        )
                     ],
                     "search_planning_result": [
                         hypothesis["icd_code"].strip()

@@ -50,7 +50,10 @@ from diagnosis.agents.search_planning_agent import (
     build_planning_hypotheses_reranker_agent,
     build_search_planning_agent,
 )
-from diagnosis.agents.similar_case_retrieval_agent import retrieve_similar_cases
+from diagnosis.agents.similar_case_retrieval_agent import (
+    build_similar_case_reranker_agent,
+    retrieve_similar_cases,
+)
 from schemas import (
     DiagnosisPipelineResult,
     DiagnosisRoundResult,
@@ -77,6 +80,7 @@ from schemas import (
     PubMedQueryResult,
     SearchPlanningResult,
     SimilarCaseRetrievalResult,
+    SimilarCaseRerankResult,
 )
 
 
@@ -444,7 +448,8 @@ async def _merge_planning_hypotheses(
         merged_hypotheses.append(hypothesis)
 
     for rank, similar_case in enumerate(
-        similar_case_retrieval_result.rrf,
+        similar_case_retrieval_result.rerank
+        or similar_case_retrieval_result.rrf[:5],
         start=1,
     ):
         hypothesis = HypothesisItem(
@@ -571,7 +576,10 @@ async def _run_search_planning_async(
             "discharge_disease": similar_case.discharge_disease,
             "icd_code": similar_case.icd_code,
         }
-        for similar_case in similar_case_retrieval_result.rrf
+        for similar_case in (
+            similar_case_retrieval_result.rerank
+            or similar_case_retrieval_result.rrf[:5]
+        )
     ]
     search_planning_prompt = (
         "<PATIENT_INFORMATION>\n"
@@ -829,6 +837,94 @@ def _run_similar_case_retrieval(
             f"Similar Case Retrieval Rankings - Round {round_index}",
             _as_json({"rankings": ranking_details}),
         )
+    return result
+
+
+async def _run_similar_case_rerank_async(
+    positive_features: PositiveFeaturesResult,
+    result: SimilarCaseRetrievalResult,
+    *,
+    model: str | Model,
+    debug: bool = False,
+    round_index: int | None = None,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> SimilarCaseRetrievalResult:
+    if len(result.rrf) > 5:
+        original_rrf_top_five = result.rrf[:5]
+        candidate_by_id = {}
+        rerank_candidates = []
+        for index, candidate in enumerate(result.rrf, start=1):
+            candidate_id = f"C{index:02d}"
+            candidate_by_id[candidate_id] = candidate
+            rerank_candidates.append(
+                {
+                    "candidate_id": candidate_id,
+                    "icd_code": candidate.icd_code,
+                    "category_name": candidate.discharge_disease,
+                    "rrf_rank": index,
+                    "bm25_rank": candidate.bm25_rank,
+                    "embedding_rank": candidate.embedding_rank,
+                    "matched_sections": candidate.sections,
+                }
+            )
+        native_structured_output = _uses_native_structured_output(model)
+        reranker_agent = build_similar_case_reranker_agent(
+            model,
+            native_structured_output=native_structured_output,
+        )
+        rerank_prompt = _prepare_structured_prompt(
+            (
+                "<CURRENT_PATIENT_FEATURES>\n"
+                f"{_as_json(positive_features)}\n"
+                "</CURRENT_PATIENT_FEATURES>\n\n"
+                "<SIMILAR_CASE_CANDIDATES>\n"
+                f"{_as_json(rerank_candidates)}\n"
+                "</SIMILAR_CASE_CANDIDATES>\n\n"
+                "Select and rank exactly five candidate IDs."
+            ),
+            SimilarCaseRerankResult,
+            native_structured_output=native_structured_output,
+        )
+        _notify_agent_started(
+            progress_callback,
+            "Similar Case Reranker Agent",
+            round_index,
+        )
+        try:
+            rerank_run = await asyncio.wait_for(
+                Runner.run(
+                    reranker_agent,
+                    rerank_prompt,
+                    run_config=RunConfig(
+                        model_settings=_diagnosis_model_settings(model)
+                    ),
+                ),
+                timeout=120,
+            )
+            raw_rerank_result = rerank_run.final_output
+            rerank_result = _parse_structured_result(
+                raw_rerank_result,
+                SimilarCaseRerankResult,
+            )
+            ranked_candidate_ids = rerank_result.ranked_candidate_ids
+            if (
+                len(set(ranked_candidate_ids)) != 5
+                or any(
+                    candidate_id not in candidate_by_id
+                    for candidate_id in ranked_candidate_ids
+                )
+            ):
+                raise ValueError(
+                    "Similar-case reranker must select five unique supplied candidate IDs."
+                )
+            result.rerank = [
+                candidate_by_id[candidate_id]
+                for candidate_id in ranked_candidate_ids
+            ]
+        except Exception:
+            result.rerank = original_rrf_top_five
+    else:
+        result.rerank = result.rrf[:5]
     _publish_stage_result(
         f"Similar Case Retrieval Result - Round {round_index}",
         result,
@@ -1401,7 +1497,8 @@ async def _run_final_diagnosis_async(
     similar_case_ranks = {
         similar_case.icd_code.strip().upper().replace(".", ""): rank
         for rank, similar_case in enumerate(
-            similar_case_retrieval_result.rrf,
+            similar_case_retrieval_result.rerank
+            or similar_case_retrieval_result.rrf[:5],
             start=1,
         )
     }
@@ -1415,7 +1512,7 @@ async def _run_final_diagnosis_async(
         if hypothesis.icd_code in llm_hypothesis_codes:
             sources.append("initial_llm")
         if hypothesis.icd_code in similar_case_ranks:
-            sources.append("similar_case_rrf")
+            sources.append("similar_case_rerank")
         candidate: dict[str, object] = {
             "icd_code": hypothesis.icd_code,
             "category_name": hypothesis.category_name,
@@ -1736,6 +1833,14 @@ async def make_diagnosis_pipeline_async(
         similar_case_retrieval_result = await asyncio.to_thread(
             _run_similar_case_retrieval,
             positive_features_result,
+            debug=debug,
+            round_index=1,
+            progress_callback=progress_callback,
+        )
+        similar_case_retrieval_result = await _run_similar_case_rerank_async(
+            positive_features_result,
+            similar_case_retrieval_result,
+            model=diagnosis_model,
             debug=debug,
             round_index=1,
             progress_callback=progress_callback,

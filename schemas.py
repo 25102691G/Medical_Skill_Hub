@@ -427,6 +427,17 @@ class PlanningHypothesesRerankResult(BaseModel):
     )
 
 
+class SimilarCaseRerankResult(BaseModel):
+    ranked_candidate_ids: list[str] = Field(
+        min_length=5,
+        max_length=5,
+        description=(
+            "Exactly five unique candidate IDs selected and ranked from most to least likely "
+            "to share the current patient's principal diagnosis"
+        ),
+    )
+
+
 class SearchPlanningResult(BaseModel):
     hypotheses: list[HypothesisItem] = Field(
         max_length=10,
@@ -504,8 +515,12 @@ class SimilarCaseRetrievalResult(BaseModel):
     )
     rrf: list[FusedSimilarCase] = Field(
         default_factory=list,
+        description="Top rank-fusion candidates before LLM reranking",
+    )
+    rerank: list[FusedSimilarCase] = Field(
+        default_factory=list,
         max_length=5,
-        description="Top five diseases and retrieval details after rank fusion",
+        description="Top five rank-fusion candidates selected and ordered by the LLM reranker",
     )
     reason: str | None = Field(
         default=None,

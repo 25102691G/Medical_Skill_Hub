@@ -11,6 +11,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Callable
 
+from agents import Agent, Model
+
 from config import (
     MIMIC_IV_CASE_PATH,
     SIMILAR_CASE_BM25_CANDIDATE_K,
@@ -22,7 +24,11 @@ from config import (
     SIMILAR_CASE_RRF_CANDIDATE_K,
     SIMILAR_CASE_TOP_K,
 )
-from schemas import PositiveFeaturesResult, SimilarCaseRetrievalResult
+from schemas import (
+    PositiveFeaturesResult,
+    SimilarCaseRerankResult,
+    SimilarCaseRetrievalResult,
+)
 
 
 SECTION_COLUMNS = (
@@ -267,7 +273,35 @@ def _top_five_retrieval_results(
     return results
 
 
-def _top_five_rrf_results(
+SIMILAR_CASE_RERANK_INSTRUCTIONS = """
+Select and rank exactly five unique similar-case candidates most likely to share the principal diagnosis
+of the current patient.
+
+Use current_patient_features as the only source of facts about the current patient. Similar-case sections
+are external case evidence and must not be treated as current-patient facts. Judge clinical fit using the
+disease, anatomical site, course, complications, imaging, endoscopy, pathology, and admission target.
+BM25, embedding, and RRF ranks are weak retrieval signals only.
+
+Optimize rank 1 for precision and ranks 1-5 for clinically plausible three- and four-character ICD-10-CM
+coverage. Avoid redundant lower-ranked ICD variants unless their distinctions are supported. Return only
+five unique candidate_id values from the supplied candidates, ordered from most to least likely.
+""".strip()
+
+
+def build_similar_case_reranker_agent(
+    model: str | Model,
+    *,
+    native_structured_output: bool = True,
+) -> Agent:
+    return Agent(
+        name="Similar Case Reranker Agent",
+        model=model,
+        instructions=SIMILAR_CASE_RERANK_INSTRUCTIONS,
+        output_type=SimilarCaseRerankResult if native_structured_output else None,
+    )
+
+
+def _rrf_results(
     ranking: list[tuple[int, float]],
     cases: tuple[_CaseRecord, ...],
     sections: tuple[_SectionRecord, ...],
@@ -306,7 +340,7 @@ def _top_five_rrf_results(
                 ),
             }
         )
-        if len(results) == 5:
+        if len(results) == SIMILAR_CASE_RRF_CANDIDATE_K:
             break
     return results
 
@@ -983,7 +1017,7 @@ def _retrieve_similar_cases(
             sections,
             dense_hits,
         ),
-        rrf=_top_five_rrf_results(
+        rrf=_rrf_results(
             candidate_ranking,
             cases,
             sections,
