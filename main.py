@@ -28,6 +28,9 @@ from config import (
     DEEPSEEK_MODEL,
     DEEPSEEK_THINKING,
     OPENAI_MODEL,
+    QWEN_BASE_URL,
+    QWEN_MODEL,
+    QWEN_THINKING,
 )
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
 from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgement_agent
@@ -96,6 +99,10 @@ class DiagnosisStageError(ValueError):
         )
 
 
+class QwenChatCompletionsModel(OpenAIChatCompletionsModel):
+    pass
+
+
 def _to_jsonable(value: object) -> object:
     if hasattr(value, "model_dump"):
         return value.model_dump()
@@ -119,6 +126,15 @@ def _uses_native_structured_output(model: str | Model) -> bool:
 def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
     if not isinstance(model, OpenAIChatCompletionsModel):
         return ModelSettings(temperature=0)
+    if isinstance(model, QwenChatCompletionsModel):
+        return ModelSettings(
+            temperature=0,
+            max_tokens=16384,
+            extra_body={
+                "chat_template_kwargs": {"enable_thinking": QWEN_THINKING}
+            },
+            extra_args={"response_format": {"type": "json_object"}},
+        )
     thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
     return ModelSettings(
         temperature=0,
@@ -2065,4 +2081,12 @@ def build_diagnosis_model(
                 base_url=DEEPSEEK_BASE_URL,
             ),
         )
-    raise ValueError("Model provider must be openai or deepseek.")
+    if normalized_provider == "qwen":
+        return QwenChatCompletionsModel(
+            model=QWEN_MODEL,
+            openai_client=AsyncOpenAI(
+                api_key="EMPTY",
+                base_url=QWEN_BASE_URL,
+            ),
+        )
+    raise ValueError("Model provider must be openai, deepseek, or qwen.")

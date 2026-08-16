@@ -10,6 +10,7 @@ from pathlib import Path
 
 from agents import Model
 
+from config import DIAGNOSIS_PROVIDER
 from main import build_diagnosis_model, make_diagnosis_pipeline_async
 
 
@@ -49,9 +50,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        choices=("openai", "deepseek"),
-        default="openai",
-        help="LLM provider. Default: openai.",
+        choices=("openai", "deepseek", "qwen"),
+        default=DIAGNOSIS_PROVIDER,
+        help=f"LLM provider. Default: {DIAGNOSIS_PROVIDER}.",
     )
     parser.add_argument("--openai_apikey")
     parser.add_argument("--openai_model")

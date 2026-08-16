@@ -18,6 +18,69 @@ HF_ENDPOINT=https://hf-mirror.com \
   --max-workers 4
 ```
 
+## 本地 Qwen 诊断模型
+
+诊断流水线支持通过本机 vLLM 调用下载到本地的 `Qwen3.5-9B` 和 `Qwen3.5-27B`。
+模型请求只发送到 `127.0.0.1`，不需要 Qwen 云端 API Key。先下载两套模型权重：
+
+```bash
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/huggingface-cli download Qwen/Qwen3.5-9B \
+  --local-dir models/Qwen3.5-9B \
+  --max-workers 4
+
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/huggingface-cli download Qwen/Qwen3.5-27B \
+  --local-dir models/Qwen3.5-27B \
+  --max-workers 4
+```
+
+vLLM 建议安装在独立环境中，避免与项目 `.venv` 中的 PyTorch 和 Transformers 依赖冲突：
+
+```bash
+python3.10 -m venv .venv-qwen
+source .venv-qwen/bin/activate
+pip install uv
+uv pip install vllm --torch-backend=auto \
+  --extra-index-url https://wheels.vllm.ai/nightly
+```
+
+在项目根目录的 `.env` 中选择诊断模型：
+
+```dotenv
+DIAGNOSIS_PROVIDER=qwen
+QWEN_BASE_URL=http://127.0.0.1:8000/v1
+QWEN_MODEL=models/Qwen3.5-9B
+QWEN_THINKING=false
+```
+
+启动与 `.env` 对应的本地模型服务：
+
+```bash
+source .venv-qwen/bin/activate
+set -a
+source .env
+set +a
+vllm serve "$QWEN_MODEL" \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --max-model-len 32768 \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice \
+  --tool-call-parser qwen3_coder \
+  --language-model-only
+```
+
+测试 27B 模型时，将 `.env` 中的模型改为：
+
+```dotenv
+QWEN_MODEL=models/Qwen3.5-27B
+```
+
+然后重启 vLLM 和诊断程序。多卡运行 27B 时，根据实际 GPU 数量在 `vllm serve` 命令中
+增加 `--tensor-parallel-size <GPU 数量>`。`QWEN_THINKING=false` 默认关闭思考输出，以提高
+诊断流水线结构化 JSON 的稳定性；需要对比思考模式时可改为 `true`。
+
 ## 批量运行
 
 `batch_main.py` 读取通过 `--input` 指定的 CSV，使用

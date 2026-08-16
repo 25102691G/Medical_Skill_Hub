@@ -18,6 +18,13 @@ DEEPSEEK_THINKING = os.getenv("DEEPSEEK_THINKING", "true").strip().lower() == "t
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
+QWEN_BASE_URL = os.getenv("QWEN_BASE_URL", "http://127.0.0.1:8000/v1")
+QWEN_MODEL = os.getenv(
+    "QWEN_MODEL",
+    str(PROJECT_ROOT / "models" / "Qwen3.5-9B"),
+)
+QWEN_THINKING = os.getenv("QWEN_THINKING", "false").strip().lower() == "true"
+
 DIAGNOSIS_PROVIDER = os.getenv("DIAGNOSIS_PROVIDER", "deepseek").strip().lower()
 CHATKIT_TRANSLATION_MODEL = os.getenv("CHATKIT_TRANSLATION_MODEL", DEEPSEEK_MODEL)
 
