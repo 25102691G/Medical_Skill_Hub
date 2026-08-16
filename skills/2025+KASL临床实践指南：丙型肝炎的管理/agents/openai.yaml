@@ -1,0 +1,4 @@
+interface:
+  display_name: "2025 KASL丙型肝炎管理指南"
+  short_description: "查询2025年KASL丙型肝炎管理指南中的临床建议"
+  default_prompt: "请使用2025年KASL丙型肝炎管理指南回答临床问题"

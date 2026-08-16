@@ -1,0 +1,4 @@
+interface:
+  display_name: "戊型肝炎院内筛查管理流程专家共识"
+  short_description: "查询戊型肝炎院内筛查、诊断、治疗及管理建议"
+  default_prompt: "请使用中国戊型病毒性肝炎院内筛查管理流程专家共识回答临床问题"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "病毒性肝炎健康管理专家共识"
+  short_description: "查询病毒性肝炎健康管理专家共识中的筛查与管理建议"
+  default_prompt: "请使用病毒性肝炎健康管理专家共识回答临床问题"
