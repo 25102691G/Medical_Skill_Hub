@@ -446,15 +446,18 @@ def _load_dense_model() -> tuple[Any, Any, str]:
         if _dense_model is not None:
             return _dense_model
         torch, _, AutoModel, AutoTokenizer = _require_dense_dependencies()
-        if SIMILAR_CASE_EMBEDDING_DEVICE not in {"auto", "cpu", "cuda"}:
+        if SIMILAR_CASE_EMBEDDING_DEVICE not in {"auto", "cpu", "cuda"} and not (
+            SIMILAR_CASE_EMBEDDING_DEVICE.startswith("cuda:")
+            and SIMILAR_CASE_EMBEDDING_DEVICE[5:].isdigit()
+        ):
             raise ValueError(
-                "SIMILAR_CASE_EMBEDDING_DEVICE must be one of: auto, cpu, cuda."
+                "SIMILAR_CASE_EMBEDDING_DEVICE must be auto, cpu, cuda, or cuda:<index>."
             )
         if SIMILAR_CASE_EMBEDDING_DEVICE == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             device = SIMILAR_CASE_EMBEDDING_DEVICE
-        if device == "cuda" and not torch.cuda.is_available():
+        if device.startswith("cuda") and not torch.cuda.is_available():
             raise RuntimeError(
                 "SIMILAR_CASE_EMBEDDING_DEVICE is set to cuda, but CUDA is unavailable."
             )
