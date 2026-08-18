@@ -12,10 +12,12 @@ pip install -r requirements.txt
 
 下载模型：
 ```bash
-HF_ENDPOINT=https://hf-mirror.com \
-.venv/bin/huggingface-cli download BAAI/bge-m3 \
+unset HF_ENDPOINT
+export HF_HUB_DISABLE_XET=1
+
+.venv/bin/hf download BAAI/bge-m3 \
   --local-dir models/bge-m3 \
-  --max-workers 4
+  --max-workers 1
 ```
 
 ## 本地 Qwen 诊断模型
@@ -277,3 +279,17 @@ Skill 名并对目标 Skill 全局去重。每个病例最多并发执行 3 个 
 ## 医疗声明
 
 本 demo 仅用于技术演示和辅助分析，不能替代临床医生诊断、治疗建议或线下医疗评估。
+
+# venv
+python3 -m pip install virtualenv
+python3 -m virtualenv --python=/usr/bin/python3.10 .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+
+# venv-qwen
+python3 -m virtualenv --python=/usr/bin/python3.10 .venv-qwen
+source .venv/bin/activate
+python -m pip install uv
+uv pip install vllm \
+  --torch-backend=auto \
+  --extra-index-url https://wheels.vllm.ai/nightly
