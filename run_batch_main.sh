@@ -11,16 +11,17 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
     set -a
     # shellcheck disable=SC1091
     source "$PROJECT_ROOT/.env"
+
     set +a
 fi
 
-INPUT="database/sample5_test_nobhc.csv"
-LIMIT=75
-WORKERS=25
+INPUT="database/mimic_test_final.csv"
+LIMIT=2000
+WORKERS=12
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 # Run the Python script
-python batch_main.py \
+"$PROJECT_ROOT/.venv/bin/python" batch_main.py \
     --model "$MODEL" \
     --openai_apikey "${OPENAI_API_KEY:-}" \
     --openai_model "${OPENAI_MODEL:-}" \

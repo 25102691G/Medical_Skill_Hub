@@ -26,15 +26,17 @@ export HF_HUB_DISABLE_XET=1
 模型请求只发送到 `127.0.0.1`，不需要 Qwen 云端 API Key。先下载两套模型权重：
 
 ```bash
-HF_ENDPOINT=https://hf-mirror.com \
-.venv/bin/huggingface-cli download Qwen/Qwen3.5-9B \
+.venv/bin/modelscope download Qwen/Qwen3.5-9B \
   --local-dir models/Qwen3.5-9B \
   --max-workers 4
 
-HF_ENDPOINT=https://hf-mirror.com \
-.venv/bin/huggingface-cli download Qwen/Qwen3.5-27B \
+.venv/bin/modelscope download Qwen/Qwen3.5-27B \
   --local-dir models/Qwen3.5-27B \
-  --max-workers 4
+  --max-workers 8
+
+.venv/bin/modelscope download Qwen/Qwen3.5-122B-A10B \
+  --local-dir models/Qwen3.5-122B-A10B \
+  --max-workers 20
 ```
 
 vLLM 建议安装在独立环境中，避免与项目 `.venv` 中的 PyTorch 和 Transformers 依赖冲突：
@@ -52,36 +54,36 @@ uv pip install vllm --torch-backend=auto \
 ```dotenv
 DIAGNOSIS_PROVIDER=qwen
 QWEN_BASE_URL=http://127.0.0.1:8000/v1
-QWEN_MODEL=models/Qwen3.5-9B
+QWEN_MODEL=qwen-local
 QWEN_THINKING=false
 ```
 
-启动与 `.env` 对应的本地模型服务：
+9B、27B 和 122B-A10B 启动脚本都将模型服务名固定为 `qwen-local`，切换模型时不需要再次
+修改 `.env`。启动 9B：
 
 ```bash
-source .venv-qwen/bin/activate
-set -a
-source .env
-set +a
-vllm serve "$QWEN_MODEL" \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --max-model-len 32768 \
-  --reasoning-parser qwen3 \
-  --enable-auto-tool-choice \
-  --tool-call-parser qwen3_coder \
-  --language-model-only
+bash run_vllm.sh
 ```
 
-测试 27B 模型时，将 `.env` 中的模型改为：
+启动 27B：
 
-```dotenv
-QWEN_MODEL=models/Qwen3.5-27B
+```bash
+bash run_vllm_27b.sh
 ```
 
-然后重启 vLLM 和诊断程序。多卡运行 27B 时，根据实际 GPU 数量在 `vllm serve` 命令中
-增加 `--tensor-parallel-size <GPU 数量>`。`QWEN_THINKING=false` 默认关闭思考输出，以提高
-诊断流水线结构化 JSON 的稳定性；需要对比思考模式时可改为 `true`。
+启动 122B-A10B：
+
+```bash
+bash run_vllm_122b.sh
+```
+
+4 张 80GB GPU 运行 27B 时，`run_vllm_27b.sh` 使用
+`--tensor-parallel-size 1 --data-parallel-size 4` 启动四个单卡模型副本。运行
+122B-A10B 时，`run_vllm_122b.sh` 使用
+`--tensor-parallel-size 4 --data-parallel-size 1` 将一个模型切分到四张 GPU。三个脚本都将
+上下文长度设为 65536，启用 chunked prefill、prefix caching 和 throughput 模式，并限制
+8192 个批处理 token 及 64 条并发序列。`QWEN_THINKING=false` 默认关闭思考输出，以提高诊断
+流水线结构化 JSON 的稳定性。
 
 ## 批量运行
 

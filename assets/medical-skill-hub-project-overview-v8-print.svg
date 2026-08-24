@@ -1,0 +1,287 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3072" height="2048" viewBox="0 0 3072 2048">
+  <defs>
+    <linearGradient id="footer" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#092f78"/>
+      <stop offset="1" stop-color="#061d52"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#102a56" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#12327f"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#ed4343"/>
+    </marker>
+    <style>
+      text { font-family: Inter, "Noto Sans CJK SC", "Source Han Sans SC", sans-serif; fill: #0b1738; }
+      .en { font-family: Inter, "Noto Sans CJK SC", sans-serif; }
+      .title { font-size: 86px; font-weight: 800; letter-spacing: 1px; }
+      .cn-title { font-size: 64px; font-weight: 800; letter-spacing: 2px; }
+      .subtitle { font-size: 28px; font-weight: 500; letter-spacing: 4px; fill: #25304a; }
+      .section-title { font-size: 35px; font-weight: 750; fill: #12327f; }
+      .card-title { font-size: 32px; font-weight: 700; fill: #075a6b; }
+      .agent-title { font-size: 26px; font-weight: 700; fill: #154cff; }
+      .agent-title-tight { font-size: 24px; font-weight: 700; fill: #154cff; }
+      .body { font-size: 28px; font-weight: 500; fill: #12182a; }
+      .body-sm { font-size: 24px; font-weight: 500; fill: #12182a; }
+      .note { font-size: 25px; font-weight: 600; fill: #38445e; }
+      .badge-text { font-size: 24px; font-weight: 600; fill: #15307e; }
+      .footer-text { font-size: 40px; font-weight: 650; fill: #fff; letter-spacing: 3px; }
+      .num { font-size: 45px; font-weight: 800; fill: white; text-anchor: middle; dominant-baseline: middle; }
+      .step { font-size: 27px; font-weight: 700; fill: #154cff; text-anchor: middle; dominant-baseline: middle; }
+      .panel { fill: #fff; stroke: #6ab5ff; stroke-width: 3; }
+      .card { fill: #fff; stroke: #1f55ff; stroke-width: 3; filter: url(#shadow); }
+      .teal-card { fill: #fff; stroke: #117389; stroke-width: 3; filter: url(#shadow); }
+      .soft-card { fill: #fafdff; stroke: #117389; stroke-width: 2.5; }
+      .badge { fill: #fff; stroke: #315cff; stroke-width: 3; }
+      .line { fill: none; stroke: #12327f; stroke-width: 4; marker-end: url(#arrow); }
+      .line-thin { fill: none; stroke: #12327f; stroke-width: 3; marker-end: url(#arrow); }
+      .line-red { fill: none; stroke: #ed4343; stroke-width: 4; marker-end: url(#arrow-red); }
+      .dash { stroke-dasharray: 12 10; }
+      .icon { font-size: 38px; font-weight: 800; fill: #12327f; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <rect width="3072" height="2048" fill="#ffffff"/>
+
+  <!-- Header -->
+  <text x="1536" y="78" class="title en" text-anchor="middle">Medical Skill Hub</text>
+  <text x="1536" y="157" class="cn-title" text-anchor="middle">医疗临床专科辅助多智能体架构</text>
+  <text x="1536" y="211" class="subtitle" text-anchor="middle">病例解析 · 多源证据检索 · 多轮诊断纠正 · ICD-10-CM 评估</text>
+
+  <!-- Section 1 -->
+  <rect x="30" y="238" width="3012" height="250" rx="18" class="panel"/>
+  <circle cx="88" cy="300" r="36" fill="#12327f"/>
+  <text x="88" y="302" class="num">1</text>
+  <text x="60" y="382" class="section-title">接入与模型层</text>
+
+  <rect x="385" y="267" width="370" height="168" rx="15" class="teal-card"/>
+  <circle cx="440" cy="326" r="34" fill="#0a6679"/>
+  <text x="440" y="329" class="icon" fill="#fff">●</text>
+  <text x="570" y="316" class="card-title en" text-anchor="middle">ChatKit</text>
+  <text x="570" y="356" class="body-sm en" text-anchor="middle">React 19 + FastAPI</text>
+  <text x="570" y="395" class="body-sm" text-anchor="middle">中英双语 · 阶段进度</text>
+
+  <rect x="795" y="267" width="340" height="168" rx="15" class="card"/>
+  <rect x="825" y="294" width="68" height="58" rx="8" fill="#12327f"/>
+  <text x="859" y="326" class="icon" fill="#fff">&gt;_</text>
+  <text x="1000" y="320" class="card-title" text-anchor="middle" fill="#154cff">单病例 CLI</text>
+  <text x="1000" y="371" class="body-sm" text-anchor="middle">交互式单病例诊断</text>
+
+  <rect x="1175" y="267" width="365" height="168" rx="15" class="teal-card"/>
+  <ellipse cx="1230" cy="310" rx="34" ry="14" fill="#0a6679"/>
+  <path d="M1196 310v56c0 18 68 18 68 0v-56 M1196 338c0 18 68 18 68 0" fill="none" stroke="#0a6679" stroke-width="7"/>
+  <text x="1370" y="320" class="card-title" text-anchor="middle">批量诊断</text>
+  <text x="1370" y="371" class="body-sm" text-anchor="middle">CSV · 并发处理</text>
+
+  <rect x="1580" y="255" width="540" height="192" rx="15" class="card"/>
+  <text x="1635" y="338" class="icon" font-size="58">⚙</text>
+  <text x="1860" y="294" class="card-title" text-anchor="middle" fill="#154cff">模型适配</text>
+  <text x="1860" y="332" class="body-sm en" text-anchor="middle">OpenAI Responses API · DeepSeek</text>
+  <text x="1860" y="370" class="body-sm" text-anchor="middle">本地 Qwen 3.5 / vLLM</text>
+  <text x="1860" y="408" class="body-sm" text-anchor="middle">Pydantic 结构化输出</text>
+
+  <path d="M440 435v26h1395 M965 435v26 M1355 435v26" fill="none" stroke="#12327f" stroke-width="3"/>
+  <path d="M1835 461v-14" class="line-thin"/>
+  <path d="M2120 350h105" class="line"/>
+  <rect x="2230" y="294" width="690" height="112" rx="18" fill="#fff" stroke="#12327f" stroke-width="4" filter="url(#shadow)"/>
+  <text x="2575" y="364" class="section-title" text-anchor="middle">统一诊断流水线</text>
+
+  <!-- Section 2 -->
+  <rect x="30" y="502" width="3012" height="820" rx="18" class="panel"/>
+  <circle cx="88" cy="558" r="36" fill="#12327f"/>
+  <text x="88" y="560" class="num">2</text>
+  <text x="150" y="572" class="section-title">多智能体诊断流水线</text>
+
+  <!-- preprocessing -->
+  <rect x="55" y="625" width="350" height="370" rx="16" class="card"/>
+  <circle cx="90" cy="663" r="22" fill="#fff" stroke="#154cff" stroke-width="3"/>
+  <text x="90" y="664" class="step">1</text>
+  <text x="122" y="658" class="agent-title-tight en">Case Preprocessing</text>
+  <text x="122" y="690" class="agent-title-tight en">Agent</text>
+  <rect x="78" y="720" width="304" height="102" rx="13" fill="#fff" stroke="#315cff" stroke-width="2.5"/>
+  <text x="230" y="780" class="body" text-anchor="middle">初始诊断假设 ≤ 5</text>
+  <rect x="78" y="846" width="304" height="118" rx="13" fill="#fff" stroke="#315cff" stroke-width="2.5"/>
+  <text x="230" y="896" class="body" text-anchor="middle">阳性症状 / 体征 /</text>
+  <text x="230" y="936" class="body" text-anchor="middle">异常检查</text>
+
+  <!-- similar cases -->
+  <path d="M405 809h52" class="line"/>
+  <rect x="460" y="675" width="420" height="340" rx="16" class="card"/>
+  <circle cx="500" cy="720" r="22" fill="#fff" stroke="#154cff" stroke-width="3"/>
+  <text x="500" y="721" class="step">2</text>
+  <text x="535" y="729" class="agent-title en">Similar Case Retrieval</text>
+  <text x="495" y="790" class="body">• 本地病例数据库</text>
+  <text x="495" y="842" class="body en">• BM25 + BGE-M3</text>
+  <text x="495" y="894" class="body">• RRF 融合 → MedCPT 重排序</text>
+  <text x="495" y="946" class="body">• Top 5 相似病例 / ICD</text>
+
+  <!-- merge -->
+  <path d="M880 845h55" class="line"/>
+  <text x="936" y="762" class="note">初始假设</text>
+  <text x="1060" y="762" class="note">相似病例诊断</text>
+  <path d="M966 770v55 M1110 770v55" class="line-thin"/>
+  <rect x="935" y="820" width="250" height="150" rx="16" fill="#fff" stroke="#12327f" stroke-width="3" filter="url(#shadow)"/>
+  <text x="1060" y="881" class="body" text-anchor="middle">按 ICD-10-CM</text>
+  <text x="1060" y="928" class="body" text-anchor="middle">合并去重</text>
+  <path d="M1185 895h55" class="line"/>
+
+  <!-- search planning and evidence -->
+  <rect x="1240" y="535" width="840" height="690" rx="18" class="card"/>
+  <circle cx="1282" cy="580" r="22" fill="#fff" stroke="#154cff" stroke-width="3"/>
+  <text x="1282" y="581" class="step">3</text>
+  <text x="1320" y="590" class="card-title en" fill="#154cff">Search Planning Agent</text>
+  <text x="1280" y="646" class="body">• 保留合并候选</text>
+  <text x="1280" y="692" class="body">• 生成 5–10 条 PubMed 查询</text>
+  <path d="M1275 730h770" stroke="#315cff" stroke-width="3" stroke-dasharray="13 9"/>
+  <rect x="1505" y="708" width="310" height="44" fill="#fff"/>
+  <text x="1660" y="740" class="agent-title" text-anchor="middle">每轮并行证据检索</text>
+
+  <rect x="1275" y="775" width="250" height="350" rx="15" class="teal-card"/>
+  <circle cx="1315" cy="815" r="22" fill="#fff" stroke="#117389" stroke-width="3"/>
+  <text x="1315" y="816" class="step" fill="#117389">4</text>
+  <text x="1400" y="865" class="agent-title en" text-anchor="middle" fill="#075a6b">Knowledge</text>
+  <text x="1400" y="902" class="agent-title en" text-anchor="middle" fill="#075a6b">Searcher Agent</text>
+  <text x="1400" y="965" class="body" text-anchor="middle">PubMed / NCBI</text>
+  <text x="1400" y="1010" class="body-sm en" text-anchor="middle">E-utilities</text>
+  <text x="1400" y="1070" class="body-sm" text-anchor="middle">相关摘要与 URL</text>
+
+  <rect x="1550" y="775" width="495" height="420" rx="15" class="teal-card"/>
+  <circle cx="1590" cy="815" r="22" fill="#fff" stroke="#117389" stroke-width="3"/>
+  <text x="1590" y="816" class="step" fill="#117389">5</text>
+  <text x="1625" y="825" class="agent-title en" fill="#075a6b">Guideline Searcher Agent</text>
+  <text x="1798" y="886" class="card-title" text-anchor="middle">本地指南 Skill</text>
+  <path d="M1585 910h425" stroke="#117389" stroke-width="3"/>
+  <rect x="1578" y="930" width="205" height="144" rx="13" class="soft-card"/>
+  <text x="1680" y="972" class="card-title" text-anchor="middle" font-size="27">直接匹配</text>
+  <text x="1680" y="1020" class="body-sm" text-anchor="middle">诊断候选</text>
+  <text x="1680" y="1052" class="body-sm" text-anchor="middle">→ 疾病 Skill</text>
+  <rect x="1812" y="930" width="205" height="144" rx="13" class="soft-card"/>
+  <text x="1915" y="972" class="card-title" text-anchor="middle" font-size="27">鉴别匹配</text>
+  <text x="1915" y="1014" class="body-sm" text-anchor="middle">直接 Skill →</text>
+  <text x="1915" y="1046" class="body-sm" text-anchor="middle">明确鉴别疾病</text>
+  <path d="M1680 1074v40h235v-40 M1798 1114v22" fill="none" stroke="#12327f" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="1648" y="1130" width="300" height="52" rx="12" fill="#fff" stroke="#117389" stroke-width="3"/>
+  <text x="1798" y="1166" class="body" text-anchor="middle" font-weight="700">调用 Skill</text>
+
+  <!-- diagnosis -->
+  <path d="M2080 895h55" class="line"/>
+  <rect x="2135" y="675" width="330" height="350" rx="16" class="card"/>
+  <circle cx="2178" cy="720" r="30" fill="#12327f"/>
+  <text x="2178" y="721" class="icon" fill="#fff">▥</text>
+  <circle cx="2230" cy="720" r="22" fill="#fff" stroke="#154cff" stroke-width="3"/>
+  <text x="2230" y="721" class="step">6</text>
+  <text x="2330" y="758" class="agent-title en" text-anchor="middle">Digestive</text>
+  <text x="2330" y="794" class="agent-title en" text-anchor="middle">Diagnosis Agent</text>
+  <text x="2170" y="852" class="body">• 仅在候选集中重排</text>
+  <text x="2170" y="903" class="body-sm">• 恰好 5 个唯一 ICD-10-CM</text>
+  <text x="2170" y="952" class="body">• 置信度 · 病例证据</text>
+  <text x="2170" y="1001" class="body">• 下一步建议</text>
+
+  <!-- judgement -->
+  <path d="M2465 850h55" class="line"/>
+  <rect x="2520" y="670" width="315" height="355" rx="42" fill="#fff" stroke="#ed4343" stroke-width="3" filter="url(#shadow)"/>
+  <circle cx="2678" cy="718" r="24" fill="#fff" stroke="#ed4343" stroke-width="3"/>
+  <text x="2678" y="719" class="step" fill="#ed4343">7</text>
+  <text x="2678" y="770" class="agent-title en" text-anchor="middle" fill="#ed4343">Diagnostic</text>
+  <text x="2678" y="806" class="agent-title en" text-anchor="middle" fill="#ed4343">Judgement Agent</text>
+  <text x="2678" y="878" class="body" text-anchor="middle" font-weight="700">最终 Top 5</text>
+  <text x="2678" y="925" class="body" text-anchor="middle" font-weight="700">是否更符合病例？</text>
+  <text x="2678" y="969" class="body-sm" text-anchor="middle" fill="#5e6678" font-size="21">比较检索规划候选</text>
+  <text x="2678" y="998" class="body-sm" text-anchor="middle" fill="#5e6678" font-size="21">与最终诊断</text>
+
+  <path d="M2835 850h76" class="line"/>
+  <text x="2868" y="825" class="note" fill="#117389">通过</text>
+  <circle cx="2950" cy="850" r="42" fill="#0a6679"/>
+  <path d="M2927 849l15 16 31-38" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="2950" y="924" class="card-title" text-anchor="middle">完成</text>
+
+  <!-- feedback loop -->
+  <path d="M2678 1025v150c0 28-24 45-52 45h-520" class="line-red"/>
+  <text x="2510" y="1090" class="body" fill="#ed4343" font-weight="700">未通过：改进检索规划，进入第 2 轮</text>
+  <path d="M2060 1220H1240v-42" class="line-red"/>
+  <rect x="1570" y="1194" width="310" height="52" rx="12" fill="#fff" stroke="#ed4343" stroke-width="3"/>
+  <text x="1725" y="1230" class="body" text-anchor="middle" fill="#ed4343" font-weight="700">相似病例结果复用</text>
+  <rect x="2740" y="1095" width="270" height="120" rx="15" fill="#fff" stroke="#ed4343" stroke-width="3" stroke-dasharray="10 7"/>
+  <text x="2875" y="1140" class="body-sm" text-anchor="middle" fill="#ed4343" font-weight="700">第 2 轮仍未通过</text>
+  <text x="2875" y="1183" class="body-sm" text-anchor="middle">→ 纠正性最终诊断</text>
+  <text x="190" y="1278" class="note">最多 2 轮；患者事实仅来自原始病例，检索内容仅作为外部证据</text>
+
+  <!-- Section 3 -->
+  <rect x="30" y="1336" width="3012" height="280" rx="18" class="panel"/>
+  <circle cx="88" cy="1392" r="36" fill="#12327f"/>
+  <text x="88" y="1394" class="num">3</text>
+  <text x="150" y="1404" class="section-title" style="font-size:31px">结构化结果与交付</text>
+
+  <rect x="430" y="1360" width="810" height="230" rx="16" class="teal-card"/>
+  <text x="475" y="1410" class="card-title">{ }</text>
+  <text x="555" y="1410" class="card-title">结构化诊断结果</text>
+  <text x="560" y="1450" class="body-sm">├─ 初始诊断假设</text>
+  <text x="560" y="1482" class="body-sm">├─ 阳性特征</text>
+  <text x="560" y="1514" class="body-sm">├─ 多轮诊断过程</text>
+  <text x="880" y="1450" class="body-sm">├─ 检索规划</text>
+  <text x="880" y="1482" class="body-sm">├─ 相似病例检索</text>
+  <text x="880" y="1514" class="body-sm">├─ 指南 Skill 证据</text>
+  <text x="880" y="1546" class="body-sm">└─ 最终诊断</text>
+
+  <path d="M1240 1475h125" class="line"/>
+  <rect x="1370" y="1390" width="365" height="150" rx="16" class="teal-card"/>
+  <text x="1430" y="1460" class="icon">●</text>
+  <text x="1580" y="1454" class="card-title en" text-anchor="middle">ChatKit</text>
+  <text x="1580" y="1498" class="card-title" text-anchor="middle" font-size="28">阶段结果</text>
+
+  <path d="M1735 1475h120" class="line"/>
+  <rect x="1860" y="1390" width="440" height="150" rx="16" class="card"/>
+  <text x="1920" y="1468" class="icon">▤</text>
+  <text x="2100" y="1480" class="card-title" text-anchor="middle" fill="#154cff">结构化结果 / JSON</text>
+
+  <path d="M2300 1475h120" class="line"/>
+  <rect x="2425" y="1390" width="390" height="150" rx="16" class="teal-card"/>
+  <text x="2485" y="1468" class="icon">DB</text>
+  <text x="2650" y="1454" class="card-title" text-anchor="middle">批量</text>
+  <text x="2650" y="1499" class="card-title en" text-anchor="middle">JSONL</text>
+  <path d="M1550 1540v45h1070v-45 M2080 1585v-45" fill="none" stroke="#12327f" stroke-width="3" stroke-dasharray="12 9" marker-end="url(#arrow)"/>
+
+  <!-- Section 4 -->
+  <rect x="30" y="1630" width="3012" height="278" rx="18" class="panel"/>
+  <circle cx="88" cy="1686" r="36" fill="#12327f"/>
+  <text x="88" y="1688" class="num">4</text>
+  <text x="150" y="1698" class="section-title" style="font-size:31px">评估与技术底座</text>
+
+  <rect x="390" y="1650" width="910" height="230" rx="16" class="teal-card"/>
+  <circle cx="470" cy="1765" r="62" fill="none" stroke="#12327f" stroke-width="10"/>
+  <circle cx="470" cy="1765" r="32" fill="none" stroke="#12327f" stroke-width="10"/>
+  <path d="M470 1765l58-62" stroke="#12327f" stroke-width="11" stroke-linecap="round"/>
+  <path d="M522 1692l36-18-14 39z" fill="#12327f"/>
+  <text x="580" y="1696" class="card-title">ICD-10-CM Top 5 直接匹配评估</text>
+  <text x="580" y="1738" class="body-sm">• 6 组预测：LLM / BM25 / Embedding / RRF / Rerank / Final</text>
+  <text x="580" y="1778" class="body-sm">• ICD 前 3 位疾病类别 + 前 4 位亚类</text>
+  <text x="580" y="1818" class="body-sm">• Recall@1 / Recall@3 / Recall@5</text>
+  <text x="580" y="1858" class="body-sm">• 按轮次、最终结果与指南使用统计</text>
+
+  <rect x="1360" y="1650" width="470" height="64" rx="13" class="badge"/>
+  <text x="1595" y="1692" class="badge-text" text-anchor="middle">▰　权威病例数据库</text>
+  <rect x="1850" y="1650" width="470" height="64" rx="13" class="badge"/>
+  <text x="2085" y="1692" class="badge-text en" text-anchor="middle">◎　PubMed / NCBI</text>
+  <rect x="2340" y="1650" width="610" height="64" rx="13" class="badge"/>
+  <text x="2645" y="1692" class="badge-text" text-anchor="middle">▣　本地指南 Skill</text>
+
+  <rect x="1360" y="1728" width="470" height="64" rx="13" class="badge"/>
+  <text x="1595" y="1770" class="badge-text en" text-anchor="middle">⌕　BM25 · BGE-M3 · RRF</text>
+  <rect x="1850" y="1728" width="470" height="64" rx="13" class="badge"/>
+  <text x="2085" y="1770" class="badge-text en" text-anchor="middle">⌘　MedCPT Cross-Encoder</text>
+  <rect x="2340" y="1728" width="610" height="64" rx="13" class="badge"/>
+  <text x="2645" y="1770" class="badge-text en" text-anchor="middle">{ }　OpenAI Agents SDK · Pydantic</text>
+
+  <rect x="1360" y="1806" width="760" height="64" rx="13" class="badge"/>
+  <text x="1740" y="1848" class="badge-text en" text-anchor="middle">OpenAI · DeepSeek · Qwen / vLLM</text>
+  <rect x="2140" y="1806" width="810" height="64" rx="13" class="badge"/>
+  <text x="2545" y="1848" class="badge-text en" text-anchor="middle">FastAPI · React 19 · ChatKit</text>
+
+  <!-- Footer -->
+  <rect x="30" y="1922" width="3012" height="102" rx="16" fill="url(#footer)"/>
+  <path d="M720 1942l30 12v24c0 22-13 34-30 43-17-9-30-21-30-43v-24z" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M720 1957v42 M700 1978h40" stroke="#fff" stroke-width="6"/>
+  <text x="1590" y="1991" class="footer-text" text-anchor="middle">科研与辅助分析用途，不替代临床医生诊断、治疗建议或线下医疗评估</text>
+</svg>

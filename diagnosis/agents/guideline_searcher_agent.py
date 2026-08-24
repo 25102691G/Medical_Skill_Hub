@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Type
+from typing import Any, Type
 
 from agents import Agent, Model
 from agents.sandbox import Manifest, SandboxAgent, SandboxPathGrant
@@ -23,16 +23,21 @@ GUIDELINE_ORCHESTRATOR_INSTRUCTIONS = """
 You select local gastroenterology guideline skills from the supplied diagnostic hypotheses and skill
 catalog. The catalog contains each skill's exact name and its SKILL.md front-matter description.
 
-First select every skill whose primary disease directly corresponds to a diagnostic hypothesis. The
-specific disease must match, and every narrower condition required by the skill, such as subtype,
-stage, hereditary status, metastatic site, complication, procedure, or pregnancy, must be explicit in
-the hypothesis. A broad shared disease category is insufficient.
+Select a skill when its primary disease is the same disease as a diagnostic hypothesis or is a broader
+disease that clearly covers that hypothesis. A broad skill may match a more specific hypothesis. For
+example, cholangiocarcinoma matches intrahepatic cholangiocarcinoma, pancreatic cancer matches cancer
+of the pancreatic head, and peptic ulcer matches gastric ulcer with hemorrhage. Do not require
+identical wording or identical disease granularity.
+
+If a skill is narrower than the hypothesis, select it only when all required qualifiers, such as
+subtype, stage, complication, hereditary status, metastatic site, procedure, or pregnancy, are
+explicit in the hypothesis. Do not match based only on the same organ, a symptom, a treatment, or a
+disease listed only as a differential diagnosis.
 
 Return only direct matches. Return each directly matched skill at most once in direct_matches. Do not
-perform differential expansion and do not select a skill merely because a hypothesis appears in its
-differential-disease list. Use exact skill names from the catalog. When at least one skill is selected,
-set unused_reason to null. When no skill is selected, return an empty direct_matches list plus a
-specific unused_reason.
+perform differential expansion. Use exact skill names from the catalog. When at least one skill is
+selected, set unused_reason to null. When no skill is selected, return an empty direct_matches list
+plus a concise unused_reason.
 """.strip()
 
 
@@ -112,6 +117,63 @@ diagnosis task.
 """.strip()
 
 
+QWEN_GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS = """
+## QWEN TOOL EXECUTION RULES
+
+The selected skill name is an exact identifier. Copy it verbatim without adding spaces or changing
+punctuation.
+
+Every exec_command call starts in a fresh working directory. The selected skill is always loaded at
+the fixed path `.agents/selected_skill`. After load_skill, begin every command with
+`cd '.agents/selected_skill' &&`. Read SKILL.md once, then follow its retrieval workflow. Run catalog
+at most once, entries at most once, and sources at most once. For multiple IDs, repeat the option for
+every value, for example `--heading-id H0001 --heading-id H0002` and
+`--source-id L000001-L000003 --source-id L000010-L000012`. Do not place multiple values after one
+option. After sources returns the verified text, immediately produce the final JSON result. Do not use
+ls, find, head, grep, or direct cat commands to explore reference files.
+""".strip()
+
+
+class SelectedGuidelineSkillSource(LocalDirLazySkillSource):
+    selected_skill_name: str
+
+    async def load_skill(
+        self,
+        *,
+        skill_name: str,
+        session: Any,
+        skills_path: str,
+        user: Any = None,
+    ) -> dict[str, str]:
+        metadata = next(
+            skill
+            for skill in self.list_skill_metadata(
+                skills_path=skills_path,
+                source_grants=session.state.manifest.extra_path_grants,
+            )
+            if (
+                skill.name == self.selected_skill_name
+                or skill.path.name == self.selected_skill_name
+            )
+        )
+        skill_source = self.source.model_copy(
+            update={"src": SKILLS_DIR / metadata.path.name},
+            deep=True,
+        )
+        fixed_path = Path(skills_path) / "selected_skill"
+        await skill_source.apply(
+            session,
+            Path(session.state.manifest.root) / fixed_path,
+            base_dir=Path.cwd(),
+            user=user,
+        )
+        return {
+            "status": "loaded",
+            "skill_name": metadata.name,
+            "path": fixed_path.as_posix(),
+        }
+
+
 def guideline_skill_catalog() -> list[dict[str, str]]:
     skill_source = LocalDirLazySkillSource(source=LocalDir(src=SKILLS_DIR))
     return [
@@ -120,11 +182,19 @@ def guideline_skill_catalog() -> list[dict[str, str]]:
     ]
 
 
-def _build_guideline_skill_capability() -> Skills:
-    return Skills(
-        lazy_from=LocalDirLazySkillSource(
+def _build_guideline_skill_capability(
+    selected_skill_name: str | None = None,
+) -> Skills:
+    skill_source = (
+        SelectedGuidelineSkillSource(
             source=LocalDir(src=SKILLS_DIR),
-        ),
+            selected_skill_name=selected_skill_name,
+        )
+        if selected_skill_name is not None
+        else LocalDirLazySkillSource(source=LocalDir(src=SKILLS_DIR))
+    )
+    return Skills(
+        lazy_from=skill_source,
     )
 
 
@@ -187,16 +257,24 @@ def build_guideline_skill_executor_agent(
     model: str | Model,
     *,
     native_structured_output: bool = True,
+    qwen_mode: bool = False,
+    selected_skill_name: str | None = None,
 ) -> SandboxAgent:
+    bound_skill_name = selected_skill_name if qwen_mode else None
     capabilities = (
-        [*Capabilities.default(), _build_guideline_skill_capability()]
+        [*Capabilities.default(), _build_guideline_skill_capability(bound_skill_name)]
         if native_structured_output
-        else [Shell(), _build_guideline_skill_capability()]
+        else [Shell(), _build_guideline_skill_capability(bound_skill_name)]
     )
     return SandboxAgent(
         name="Guideline Skill Executor Agent",
         model=model,
-        instructions=GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS,
+        instructions=(
+            f"{GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS}\n\n"
+            f"{QWEN_GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS}"
+            if qwen_mode
+            else GUIDELINE_SKILL_EXECUTOR_INSTRUCTIONS
+        ),
         output_type=output_type if native_structured_output else None,
         capabilities=capabilities,
         default_manifest=_build_guideline_skill_manifest(),

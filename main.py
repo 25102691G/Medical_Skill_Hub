@@ -129,7 +129,7 @@ def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
     if isinstance(model, QwenChatCompletionsModel):
         return ModelSettings(
             temperature=0,
-            max_tokens=16384,
+            max_tokens=8192,
             extra_body={
                 "chat_template_kwargs": {"enable_thinking": QWEN_THINKING}
             },
@@ -966,10 +966,13 @@ async def _run_guideline_search_async(
     available_skill_names = {item["name"] for item in catalog}
 
     async def run_one_skill(skill_name: str) -> GuidelineSkillResult:
+        qwen_mode = isinstance(model, QwenChatCompletionsModel)
         skill_agent = build_guideline_skill_executor_agent(
             GuidelineSkillResult,
             model,
             native_structured_output=native_structured_output,
+            qwen_mode=qwen_mode,
+            selected_skill_name=skill_name if qwen_mode else None,
         )
         skill_prompt = _prepare_structured_prompt(
             (
@@ -985,12 +988,15 @@ async def _run_guideline_search_async(
             GuidelineSkillResult,
             native_structured_output=native_structured_output,
         )
+        skill_model_settings = _diagnosis_model_settings(model)
+        if qwen_mode:
+            skill_model_settings.extra_args = None
         skill_run = await Runner.run(
             skill_agent,
             skill_prompt,
-            max_turns=15,
+            max_turns=10 if qwen_mode else 15,
             run_config=RunConfig(
-                model_settings=_diagnosis_model_settings(model),
+                model_settings=skill_model_settings,
                 sandbox=SandboxRunConfig(
                     client=UnixLocalSandboxClient(),
                 ),
@@ -1052,10 +1058,15 @@ async def _run_guideline_search_async(
             )
 
         if skill_result.skill_name != skill_name:
-            raise ValueError(
-                f"Skill executor returned {skill_result.skill_name!r} instead of "
-                f"the selected skill {skill_name!r}."
-            )
+            if qwen_mode and "".join(skill_result.skill_name.split()) == "".join(
+                skill_name.split()
+            ):
+                skill_result.skill_name = skill_name
+            else:
+                raise ValueError(
+                    f"Skill executor returned {skill_result.skill_name!r} instead of "
+                    f"the selected skill {skill_name!r}."
+                )
         return skill_result
 
     async def run_selected_guideline_skills(
