@@ -13,8 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
 DEEPSEEK_THINKING = os.getenv("DEEPSEEK_THINKING", "true").strip().lower() == "true"
+DEEPSEEK_REASONING_EFFORT = os.getenv(
+    "DEEPSEEK_REASONING_EFFORT",
+    "high",
+).strip().lower()
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 

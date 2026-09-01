@@ -11,7 +11,7 @@ source "$PROJECT_ROOT/.env"
 set +a
 
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
-export CUDA_VISIBLE_DEVICES=4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 exec vllm serve "$PROJECT_ROOT/models/Qwen3.5-122B-A10B" \
     --served-model-name qwen-local \
     --host 127.0.0.1 \

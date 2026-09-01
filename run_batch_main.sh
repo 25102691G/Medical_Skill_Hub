@@ -17,7 +17,7 @@ fi
 
 INPUT="database/mimic_test_final.csv"
 LIMIT=2000
-WORKERS=12
+WORKERS=25
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 # Run the Python script

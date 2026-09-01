@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
     Field,
     computed_field,
@@ -352,6 +353,7 @@ class HypothesisItem(BaseModel):
         min_length=3,
         max_length=7,
         pattern=r"^[A-Z][0-9][0-9A-Z]{1,5}$",
+        validation_alias=AliasChoices("icd_code", "icode", "icod_code"),
         description="Complete three-to-seven-character ICD-10-CM code without a decimal point",
     )
     category_name: str = Field(

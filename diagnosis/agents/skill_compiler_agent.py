@@ -11,6 +11,7 @@ from config import (
     DEEPSEEK_API_KEY,
     DEEPSEEK_BASE_URL,
     DEEPSEEK_MODEL,
+    DEEPSEEK_REASONING_EFFORT,
     DEEPSEEK_THINKING,
     OPENAI_MODEL,
     SKILL_COMPILER_MODEL,
@@ -420,20 +421,27 @@ def _request_deepseek_text(
     purpose: str,
     max_tokens: int,
 ) -> str:
-    response = client.chat.completions.create(
-        model=DEEPSEEK_MODEL,
-        messages=[
+    request_options = {
+        "model": DEEPSEEK_MODEL,
+        "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0,
-        max_tokens=max_tokens,
-        response_format={"type": "json_object"},
-        extra_body={
+        "max_tokens": max_tokens,
+        "response_format": {"type": "json_object"},
+        "extra_body": {
             "thinking": {
                 "type": "enabled" if DEEPSEEK_THINKING else "disabled",
             }
         },
+    }
+    if DEEPSEEK_THINKING:
+        request_options["reasoning_effort"] = DEEPSEEK_REASONING_EFFORT
+    else:
+        request_options["temperature"] = 0
+
+    response = client.chat.completions.create(
+        **request_options,
     )
     choice = response.choices[0]
     content = choice.message.content or ""

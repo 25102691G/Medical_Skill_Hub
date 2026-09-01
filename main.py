@@ -21,11 +21,13 @@ from agents import (
 from agents.sandbox import SandboxRunConfig
 from agents.sandbox.sandboxes.unix_local import UnixLocalSandboxClient
 from openai import AsyncOpenAI
+from openai.types.shared import Reasoning
 from pydantic import BaseModel
 
 from config import (
     DEEPSEEK_BASE_URL,
     DEEPSEEK_MODEL,
+    DEEPSEEK_REASONING_EFFORT,
     DEEPSEEK_THINKING,
     OPENAI_MODEL,
     QWEN_BASE_URL,
@@ -135,11 +137,17 @@ def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
             },
             extra_args={"response_format": {"type": "json_object"}},
         )
-    thinking_type = "enabled" if DEEPSEEK_THINKING else "disabled"
+    if DEEPSEEK_THINKING:
+        return ModelSettings(
+            max_tokens=16384,
+            reasoning=Reasoning(effort=DEEPSEEK_REASONING_EFFORT),
+            extra_body={"thinking": {"type": "enabled"}},
+            extra_args={"response_format": {"type": "json_object"}},
+        )
     return ModelSettings(
         temperature=0,
         max_tokens=16384,
-        extra_body={"thinking": {"type": thinking_type}},
+        extra_body={"thinking": {"type": "disabled"}},
         extra_args={"response_format": {"type": "json_object"}},
     )
 

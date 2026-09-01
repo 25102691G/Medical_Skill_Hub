@@ -20,6 +20,23 @@ export HF_HUB_DISABLE_XET=1
   --max-workers 1
 ```
 
+## 默认 DeepSeek 诊断模型
+
+诊断流水线默认通过 DeepSeek 的 OpenAI 兼容接口调用 `deepseek-v4-flash`。在项目根目录的
+`.env` 中配置：
+
+```dotenv
+DIAGNOSIS_PROVIDER=deepseek
+DEEPSEEK_API_KEY=<your-api-key>
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_THINKING=true
+DEEPSEEK_REASONING_EFFORT=high
+```
+
+思考模式开启时，请求不发送 `temperature`，并将推理强度显式设为 `high`；设置
+`DEEPSEEK_THINKING=false` 可关闭思考模式，此时请求使用 `temperature=0`。
+
 ## 本地 Qwen 诊断模型
 
 诊断流水线支持通过本机 vLLM 调用下载到本地的 `Qwen3.5-9B` 和 `Qwen3.5-27B`。
