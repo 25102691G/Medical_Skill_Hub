@@ -12,12 +12,19 @@ pip install -r requirements.txt
 
 下载模型：
 ```bash
-unset HF_ENDPOINT
-export HF_HUB_DISABLE_XET=1
-
 .venv/bin/hf download BAAI/bge-m3 \
   --local-dir models/bge-m3 \
   --max-workers 1
+
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/hf download Henrychur/DiagAgent-14B \
+  --local-dir models/DiagAgent-14B \
+  --max-workers 4
+
+HF_ENDPOINT=https://hf-mirror.com \
+.venv/bin/hf download baichuan-inc/Baichuan-M2-32B \
+  --local-dir models/Baichuan-M2-32B \
+  --max-workers 4
 ```
 
 ## 默认 DeepSeek 诊断模型
@@ -101,6 +108,83 @@ bash run_vllm_122b.sh
 上下文长度设为 65536，启用 chunked prefill、prefix caching 和 throughput 模式，并限制
 8192 个批处理 token 及 64 条并发序列。`QWEN_THINKING=false` 默认关闭思考输出，以提高诊断
 流水线结构化 JSON 的稳定性。
+
+## 本地医疗模型 LLM hypotheses 评测
+
+`Henrychur/DiagAgent-14B` 和 `baichuan-inc/Baichuan-M2-32B` 用于独立评测初始
+`llm_hypotheses`。它们复用诊断流水线中相同的 hypothesis preprocessing instructions、病例输入
+格式和 `LlmHypothesesResult` JSON Schema，不运行阳性特征提取、相似病例检索、PubMed、指南或
+最终诊断阶段。
+
+两个启动脚本固定使用 GPU `0,1,2,3`。DiagAgent-14B 在四张卡上各运行一个单卡副本，启动命令：
+
+```bash
+bash run_vllm_diagagent_14b.sh
+```
+
+Baichuan-M2-32B 使用四卡张量并行，启动命令：
+
+```bash
+bash run_vllm_baichuan_m2_32b.sh
+```
+
+两个服务都监听 `127.0.0.1:8000`，应分别启动和评测。
+
+启动 DiagAgent-14B 后，测试 `database/mimic_test.csv`：
+
+```bash
+bash run_batch_llm_hypotheses.sh diagagent-local
+```
+
+启动 Baichuan-M2-32B 后使用：
+
+```bash
+bash run_batch_llm_hypotheses.sh baichuan-m2-local
+```
+
+`run_batch_llm_hypotheses.sh` 默认使用 `LIMIT=10` 和 `WORKERS=4`；正式批量运行前可直接修改
+脚本中的 `INPUT`、`LIMIT` 和 `WORKERS`。
+
+成功结果写入 `output/batch/`。评估生成的 JSONL：
+
+```bash
+bash run_evaluate.sh output/batch/<hypotheses-result>.jsonl
+```
+
+`evaluate.py` 会自动识别这种 hypotheses-only 结果，并输出 LLM hypotheses 的 ICD 前 3 位和
+前 4 位 Recall@1、Recall@3、Recall@5；原有完整流水线结果仍按七个阶段评估。
+
+## DeepSeek + 全指南 RAG baseline
+
+`rag_baseline.py` 是独立的纯 LLM + RAG baseline，不运行相似病例、PubMed、Search Planning、
+指南 Agent 或多轮诊断。它读取 `skills/*/references/guideline-full-text.md` 中的全部指南全文，
+按固定 512 tokens、50 tokens overlap 切块，分别计算 BM25 和 BGE-M3 检索分数。两组分数
+分别排名后使用固定 `RRF_K=60` 的等权 RRF 融合，直接选取 Top 5 指南片段，再通过一个最小
+诊断提示词生成恰好 5 个主诊断 ICD-10-CM 候选。该 baseline 不使用 embedding 缓存或主诊断
+流水线的复杂 Agent 指令。
+API Key、Base URL、thinking 开关和 reasoning effort 复用 `.env` 与主诊断流水线的配置。
+
+先在项目根目录的 `.env` 中配置 `DEEPSEEK_API_KEY` 和所需的 `DEEPSEEK_BASE_URL`，然后运行：
+
+```bash
+bash run_rag_baseline.sh
+```
+
+脚本默认读取 `database/mimic_test.csv`，处理 2000 条病例，并使用 10 个并发 worker；可在
+`run_rag_baseline.sh` 中直接修改 `INPUT`、`LIMIT` 和 `WORKERS`。首次运行会构建全部指南的
+BGE-M3 embedding；每次重新启动脚本时会重新构建内存索引。
+
+结果写入 `output/batch/<输入名>_rag_baseline_<limit>_<时间戳>.jsonl`，每条记录保留 Top 5
+检索片段和 `rag_baseline_result`。`rag_baseline_result` 使用主诊断流水线相同的
+`DiagnosisResult` 结构，包括排名、置信度、患者支持证据、下一步建议、诊断总结和检索到的
+指南片段。由于 baseline 不生成 Search Planning 候选，`excluded_planning_candidates` 固定为空。
+使用现有评估入口验证：
+
+```bash
+bash run_evaluate.sh output/batch/<rag-baseline-result>.jsonl
+```
+
+`evaluate.py` 会自动输出该 baseline 的 ICD 前 3 位和前 4 位 Recall@1、Recall@3、Recall@5。
 
 ## 批量运行
 
@@ -200,6 +284,18 @@ bash run_similar_case.sh --experiments similar_case_experiments.json
 ```bash
 bash run_evaluate.sh output/batch/<输入文件名>_<limit>_<时间戳>.jsonl
 ```
+
+`database/mimic_test_icd_guideline_mapping.json` 记录 `mimic_test.csv` 中每个完整
+ICD code 的病例数量，以及根据 `long_title` 与 `skills/` 目录名称匹配的适用指南。
+指南匹配度使用独立脚本评估：
+
+```bash
+.venv/bin/python evaluate_guideline_matching.py \
+  --input output/batch/<批量诊断结果>.jsonl
+```
+
+逐病例、逐轮明细及汇总结果写入
+`output/evaluate/<批量诊断结果>_guideline_matching.jsonl`。
 
 ## ChatKit 聊天界面
 

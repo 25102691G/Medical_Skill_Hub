@@ -92,8 +92,9 @@ def _print_recall_table(
     title: str,
     total: int,
     summary: dict[str, dict[str, dict[str, float]]],
+    methods: tuple[str, ...] = METHODS,
 ) -> None:
-    method_width = max(len("Method"), *(len(method) for method in METHODS))
+    method_width = max(len("Method"), *(len(method) for method in methods))
     print(f"{title} (n={total})")
     print(
         f"{'Method':<{method_width}}  "
@@ -105,7 +106,7 @@ def _print_recall_table(
         f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7} {'R@20':>7}  "
         f"{'R@1':>7} {'R@3':>7} {'R@5':>7} {'R@10':>7} {'R@20':>7}"
     )
-    for method in METHODS:
+    for method in methods:
         three_digit_values = [
             summary[method]["disease"].get(f"recall{cutoff}")
             for cutoff in (1, 3, 5, 10, 20)
@@ -117,22 +118,211 @@ def _print_recall_table(
         print(
             f"{method:<{method_width}}  "
             + " ".join(
-                f"{value:>7.1%}" if value is not None else f"{'-':>7}"
+                f"{value:>7.2%}" if value is not None else f"{'-':>7}"
                 for value in three_digit_values
             )
             + "  "
             + " ".join(
-                f"{value:>7.1%}" if value is not None else f"{'-':>7}"
+                f"{value:>7.2%}" if value is not None else f"{'-':>7}"
                 for value in four_digit_values
             )
         )
     print()
 
 
+def _evaluate_llm_hypotheses_file(input_path: Path, output_path: Path) -> Path:
+    total = 0
+    recall_hits = {
+        metric: {cutoff: 0 for cutoff in RECALL_CUTOFFS["llm_hypotheses"]}
+        for metric in METRICS
+    }
+
+    with (
+        input_path.open("r", encoding="utf-8") as input_file,
+        output_path.open("w", encoding="utf-8") as output_file,
+    ):
+        for line_number, line in enumerate(input_file, start=1):
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            golden_icd_code = record["icd_code"].strip()
+            predicted_icd_codes = [
+                hypothesis["icd_code"].strip()
+                for hypothesis in record["llm_hypotheses_result"][
+                    "llm_hypotheses"
+                ][:5]
+            ]
+            evaluated_ranks = _evaluate_rank(
+                predicted_icd_codes,
+                golden_icd_code,
+            )
+            for metric in METRICS:
+                evaluated_rank = evaluated_ranks[metric]
+                if evaluated_rank is not None:
+                    for cutoff in RECALL_CUTOFFS["llm_hypotheses"]:
+                        recall_hits[metric][cutoff] += evaluated_rank <= cutoff
+
+            output_file.write(
+                json.dumps(
+                    {
+                        "subject_id": record.get("subject_id"),
+                        "hadm_id": record.get("hadm_id"),
+                        "golden_icd_code": golden_icd_code,
+                        "golden_diagnosis": record["long_title"].strip(),
+                        "llm_hypotheses": {
+                            "predicted_icd_codes": predicted_icd_codes,
+                            "evaluated_ranks": evaluated_ranks,
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            total += 1
+            print(
+                f"[{line_number}] Evaluated "
+                f"subject_id={record.get('subject_id')}, "
+                f"hadm_id={record.get('hadm_id')} | "
+                f"LLM hypotheses: ICD-3 rank="
+                f"{evaluated_ranks['disease'] or 'not found'}, ICD-4 rank="
+                f"{evaluated_ranks['subcategory'] or 'not found'}",
+                file=sys.stderr,
+            )
+
+        if total == 0:
+            raise ValueError("Input JSONL contains no result records.")
+        summary = {
+            "llm_hypotheses": {
+                metric: {
+                    f"recall{cutoff}": recall_hits[metric][cutoff] / total
+                    for cutoff in RECALL_CUTOFFS["llm_hypotheses"]
+                }
+                for metric in METRICS
+            }
+        }
+        output_file.write(
+            json.dumps(
+                {"total": total, "final_result": summary},
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
+
+    _print_recall_table(
+        "LLM Hypotheses Results",
+        total,
+        summary,
+        methods=("llm_hypotheses",),
+    )
+    print(f"Evaluation details: {output_path}", file=sys.stderr)
+    return output_path
+
+
+def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
+    cutoffs = (1, 3, 5)
+    total = 0
+    recall_hits = {
+        metric: {cutoff: 0 for cutoff in cutoffs}
+        for metric in METRICS
+    }
+
+    with (
+        input_path.open("r", encoding="utf-8") as input_file,
+        output_path.open("w", encoding="utf-8") as output_file,
+    ):
+        for line_number, line in enumerate(input_file, start=1):
+            if not line.strip():
+                continue
+            record = json.loads(line)
+            golden_icd_code = record["icd_code"].strip()
+            predicted_icd_codes = [
+                diagnosis["icd_code"].strip()
+                for diagnosis in record["rag_baseline_result"][
+                    "topk_diagnoses"
+                ][:5]
+            ]
+            evaluated_ranks = _evaluate_rank(
+                predicted_icd_codes,
+                golden_icd_code,
+            )
+            for metric in METRICS:
+                evaluated_rank = evaluated_ranks[metric]
+                if evaluated_rank is not None:
+                    for cutoff in cutoffs:
+                        recall_hits[metric][cutoff] += evaluated_rank <= cutoff
+
+            output_file.write(
+                json.dumps(
+                    {
+                        "subject_id": record.get("subject_id"),
+                        "hadm_id": record.get("hadm_id"),
+                        "golden_icd_code": golden_icd_code,
+                        "golden_diagnosis": record["long_title"].strip(),
+                        "rag_baseline": {
+                            "predicted_icd_codes": predicted_icd_codes,
+                            "evaluated_ranks": evaluated_ranks,
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            total += 1
+            print(
+                f"[{line_number}] Evaluated "
+                f"subject_id={record.get('subject_id')}, "
+                f"hadm_id={record.get('hadm_id')} | "
+                f"RAG baseline: ICD-3 rank="
+                f"{evaluated_ranks['disease'] or 'not found'}, ICD-4 rank="
+                f"{evaluated_ranks['subcategory'] or 'not found'}",
+                file=sys.stderr,
+            )
+
+        if total == 0:
+            raise ValueError("Input JSONL contains no result records.")
+        summary = {
+            "rag_baseline": {
+                metric: {
+                    f"recall{cutoff}": recall_hits[metric][cutoff] / total
+                    for cutoff in cutoffs
+                }
+                for metric in METRICS
+            }
+        }
+        output_file.write(
+            json.dumps(
+                {"total": total, "final_result": summary},
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
+
+    _print_recall_table(
+        "DeepSeek + Guideline RAG Baseline Results",
+        total,
+        summary,
+        methods=("rag_baseline",),
+    )
+    print(f"Evaluation details: {output_path}", file=sys.stderr)
+    return output_path
+
+
 def evaluate_file(input_path: Path) -> Path:
     input_path = input_path.expanduser().resolve()
     output_path = DEFAULT_OUTPUT_DIR / f"{input_path.stem}_evaluation.jsonl"
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with input_path.open("r", encoding="utf-8") as input_file:
+        first_record = next(
+            (json.loads(line) for line in input_file if line.strip()),
+            None,
+        )
+    if first_record is None:
+        raise ValueError("Input JSONL contains no result records.")
+    if "rag_baseline_result" in first_record:
+        return _evaluate_rag_baseline_file(input_path, output_path)
+    if "multi_round_diagnosis" not in first_record:
+        return _evaluate_llm_hypotheses_file(input_path, output_path)
 
     total = 0
     final_recall_hits = {

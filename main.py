@@ -105,6 +105,10 @@ class QwenChatCompletionsModel(OpenAIChatCompletionsModel):
     pass
 
 
+class VllmChatCompletionsModel(OpenAIChatCompletionsModel):
+    pass
+
+
 def _to_jsonable(value: object) -> object:
     if hasattr(value, "model_dump"):
         return value.model_dump()
@@ -135,6 +139,12 @@ def _diagnosis_model_settings(model: str | Model) -> ModelSettings:
             extra_body={
                 "chat_template_kwargs": {"enable_thinking": QWEN_THINKING}
             },
+            extra_args={"response_format": {"type": "json_object"}},
+        )
+    if isinstance(model, VllmChatCompletionsModel):
+        return ModelSettings(
+            temperature=0,
+            max_tokens=8192,
             extra_args={"response_format": {"type": "json_object"}},
         )
     if DEEPSEEK_THINKING:
@@ -360,10 +370,6 @@ async def _run_preprocessing_async(
     progress_callback: DiagnosisProgressCallback | None = None,
 ) -> PreprocessingResult:
     native_structured_output = _uses_native_structured_output(model)
-    hypothesis_agent = build_hypothesis_preprocessing_agent(
-        model,
-        native_structured_output=native_structured_output,
-    )
     positive_feature_agent = build_positive_feature_preprocessing_agent(
         model,
         native_structured_output=native_structured_output,
@@ -372,11 +378,6 @@ async def _run_preprocessing_async(
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>"
-    )
-    hypothesis_prompt = _prepare_structured_prompt(
-        patient_information,
-        LlmHypothesesResult,
-        native_structured_output=native_structured_output,
     )
     positive_feature_prompt = _prepare_structured_prompt(
         patient_information,
@@ -388,21 +389,13 @@ async def _run_preprocessing_async(
         "Preprocessing Agent",
         None,
     )
-    hypothesis_run, positive_feature_run = await asyncio.gather(
-        Runner.run(
-            hypothesis_agent,
-            hypothesis_prompt,
-            run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
-        ),
+    llm_hypotheses_result, positive_feature_run = await asyncio.gather(
+        make_llm_hypotheses_async(case_text, model=model),
         Runner.run(
             positive_feature_agent,
             positive_feature_prompt,
             run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
         ),
-    )
-    llm_hypotheses_result = _parse_structured_result(
-        hypothesis_run.final_output,
-        LlmHypothesesResult,
     )
     try:
         positive_features_result = _parse_structured_result(
@@ -446,6 +439,37 @@ async def _run_preprocessing_async(
         progress_callback=progress_callback,
     )
     return result
+
+
+async def make_llm_hypotheses_async(
+    case_text: str,
+    *,
+    model: str | Model,
+) -> LlmHypothesesResult:
+    native_structured_output = _uses_native_structured_output(model)
+    hypothesis_agent = build_hypothesis_preprocessing_agent(
+        model,
+        native_structured_output=native_structured_output,
+    )
+    patient_information = (
+        "<PATIENT_INFORMATION>\n"
+        f"{case_text}\n"
+        "</PATIENT_INFORMATION>"
+    )
+    hypothesis_prompt = _prepare_structured_prompt(
+        patient_information,
+        LlmHypothesesResult,
+        native_structured_output=native_structured_output,
+    )
+    hypothesis_run = await Runner.run(
+        hypothesis_agent,
+        hypothesis_prompt,
+        run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
+    )
+    return _parse_structured_result(
+        hypothesis_run.final_output,
+        LlmHypothesesResult,
+    )
 
 
 async def _merge_planning_hypotheses(
