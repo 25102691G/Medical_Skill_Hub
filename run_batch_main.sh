@@ -17,16 +17,26 @@ fi
 
 INPUT="database/mimic_test.csv"
 LIMIT=2000
-WORKERS=25
+# 不同模型的 workers推荐值
+# openai-gpt-5.5 
+# deepseek-v4-pro: 50
+# qwen3.5-27b: 40
+# qwen3.5-122b-a10b: 25
+WORKERS=40
+# HISTORY_OUTPUT="output/batch/mimic_test_2000_20260903_110705_298959.jsonl"
 MODEL="${DIAGNOSIS_PROVIDER:-}"
+
+HISTORY_ARGS=()
+if [[ -n "${HISTORY_OUTPUT:-}" ]]; then
+    HISTORY_ARGS=(--history-output "$HISTORY_OUTPUT")
+fi
 
 # Run the Python script
 "$PROJECT_ROOT/.venv/bin/python" batch_main.py \
     --model "$MODEL" \
     --openai_apikey "${OPENAI_API_KEY:-}" \
-    --openai_model "${OPENAI_MODEL:-}" \
     --deepseek_apikey "${DEEPSEEK_API_KEY:-}" \
-    --deepseek_model "${DEEPSEEK_MODEL:-}" \
     --input "$INPUT" \
     --limit "$LIMIT" \
-    --workers "$WORKERS"
+    --workers "$WORKERS" \
+    "${HISTORY_ARGS[@]}"

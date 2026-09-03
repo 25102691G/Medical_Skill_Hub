@@ -26,12 +26,11 @@ from pydantic import BaseModel
 
 from config import (
     DEEPSEEK_BASE_URL,
-    DEEPSEEK_MODEL,
     DEEPSEEK_REASONING_EFFORT,
     DEEPSEEK_THINKING,
+    DIAGNOSIS_MODELS,
     OPENAI_MODEL,
     QWEN_BASE_URL,
-    QWEN_MODEL,
     QWEN_THINKING,
 )
 from diagnosis.agents.digestive_diagnosis_agent import build_digestive_diagnosis_agent
@@ -39,7 +38,6 @@ from diagnosis.agents.diagnostic_judgement_agent import build_diagnostic_judgeme
 from diagnosis.agents.guideline_searcher_agent import (
     build_guideline_expansion_agent,
     build_guideline_orchestrator_agent,
-    build_guideline_result_filter_agent,
     build_guideline_skill_executor_agent,
     guideline_skill_catalog,
 )
@@ -68,9 +66,7 @@ from schemas import (
     FinalDiagnosisContent,
     GuidelineDirectSkillSelection,
     GuidelineDirectSkillMatch,
-    GuidelineExpandedResultSelection,
     GuidelineExpandedSkillMatch,
-    GuidelineResultFilterResult,
     GuidelineSearchResult,
     GuidelineSkillExpansionSelection,
     GuidelineSkillResult,
@@ -665,11 +661,12 @@ async def _run_search_planning_async(
             f"{_as_json(previous_guideline_evidence or [])}\n"
             "</PREVIOUS_GUIDELINE_EVIDENCE>\n\n"
             "## Task\n\n"
-            "The diagnostic judgement found that search_planning_diagnoses were closer to the "
-            "patient information than the previous final_diagnoses. Regenerate improved "
-            "search_queries for the next diagnosis round. Copy MERGED_HYPOTHESES exactly into "
-            "hypotheses. Use the previous artifacts, including previous guideline evidence, only to "
-            "improve the retrieval strategy, and do not treat their contents as new patient facts."
+            "The evidence-sufficiency judgement requested another retrieval round. Regenerate "
+            "search_queries that directly address its focus_diagnoses, evidence_gaps, and "
+            "query_directions while collectively covering MERGED_HYPOTHESES. Copy "
+            "MERGED_HYPOTHESES exactly into hypotheses. Use the previous diagnosis and guideline "
+            "evidence only to improve the retrieval strategy, and do not treat previous artifacts "
+            "as new patient facts."
         )
 
     search_planning_prompt = _prepare_structured_prompt(
@@ -836,7 +833,7 @@ async def _run_knowledge_search_async(
     result = KnowledgeSearchResult(
         relevant_pubmed_results=relevant_pubmed_results,
         reason="; ".join(
-            query_result["reason"]
+            query_result.get("reason")
             for query_result in pubmed_results
             if query_result.get("reason")
         ) or None,
@@ -983,7 +980,6 @@ async def _run_similar_case_rerank_async(
 
 
 async def _run_guideline_search_async(
-    case_text: str,
     hypotheses: list[HypothesisItem],
     positive_features: PositiveFeaturesResult,
     *,
@@ -1358,166 +1354,6 @@ async def _run_guideline_search_async(
             for evidence in skill_result.guideline_evidence
         ]
 
-    expanded_matches_by_name = {
-        match.skill_name: match for match in result.expanded_matches
-    }
-    expanded_guideline_results = [
-        {
-            "skill_name": skill_result.skill_name,
-            "source_skill_name": expanded_matches_by_name[
-                skill_result.skill_name
-            ].source_skill_name,
-            "differential_disease": expanded_matches_by_name[
-                skill_result.skill_name
-            ].differential_disease,
-            "disease_name": skill_result.disease_name,
-            "guideline_diagnosis": skill_result.guideline_diagnosis,
-            "guideline_evidence": skill_result.guideline_evidence,
-        }
-        for skill_result in result.skill_results
-        if skill_result.skill_name in expanded_matches_by_name
-    ]
-    expanded_skill_names_before_filter = [
-        str(item["skill_name"])
-        for item in expanded_guideline_results
-    ]
-    if expanded_guideline_results:
-        filter_agent = build_guideline_result_filter_agent(
-            GuidelineExpandedResultSelection,
-            model,
-            native_structured_output=native_structured_output,
-        )
-        filter_prompt = _prepare_structured_prompt(
-            (
-                "<PATIENT_INFORMATION>\n"
-                f"{case_text}\n"
-                "</PATIENT_INFORMATION>\n\n"
-                "<DIAGNOSTIC_HYPOTHESES>\n"
-                f"{_as_json(hypotheses)}\n"
-                "</DIAGNOSTIC_HYPOTHESES>\n\n"
-                "<EXPANDED_GUIDELINE_RESULTS>\n"
-                f"{_as_json(expanded_guideline_results)}\n"
-                "</EXPANDED_GUIDELINE_RESULTS>\n\n"
-                "## Task\n\n"
-                "Return the exact skill names of the expanded guideline results that should be "
-                "retained for final diagnosis."
-            ),
-            GuidelineExpandedResultSelection,
-            native_structured_output=native_structured_output,
-        )
-        _notify_agent_started(
-            progress_callback,
-            "Guideline Result Filter Agent",
-            round_index,
-        )
-        try:
-            raw_filter_selection = (
-                await Runner.run(
-                    filter_agent,
-                    filter_prompt,
-                    max_turns=1,
-                    run_config=RunConfig(
-                        model_settings=_diagnosis_model_settings(model)
-                    ),
-                )
-            ).final_output
-            filter_selection = _parse_structured_result(
-                raw_filter_selection,
-                GuidelineExpandedResultSelection,
-            )
-            available_expanded_names = {
-                item["skill_name"] for item in expanded_guideline_results
-            }
-            selected_expanded_names = (
-                filter_selection.selected_expanded_skill_names
-            )
-            if len(selected_expanded_names) != len(set(selected_expanded_names)):
-                raise ValueError(
-                    "Guideline result filter returned duplicate expanded skill names."
-                )
-            unknown_skill_names = (
-                set(selected_expanded_names) - available_expanded_names
-            )
-            if unknown_skill_names:
-                raise ValueError(
-                    "Guideline result filter returned unknown expanded skill names: "
-                    f"{sorted(unknown_skill_names)}."
-                )
-        except Exception as exc:
-            filter_error = f"{type(exc).__name__}: {exc}"
-            filter_failure = (
-                f"Guideline result filtering failed; all completed expanded skill results "
-                f"were retained: {filter_error}"
-            )
-            result.filter_result = GuidelineResultFilterResult(
-                status="failed",
-                expanded_skill_names_before_filter=(
-                    expanded_skill_names_before_filter
-                ),
-                retained_expanded_skill_names=(
-                    expanded_skill_names_before_filter
-                ),
-                filtered_out_expanded_skill_names=[],
-                reason=filter_error,
-            )
-            result.reason = (
-                f"{result.reason}; {filter_failure}"
-                if result.reason
-                else filter_failure
-            )
-        else:
-            selected_expanded_name_set = set(selected_expanded_names)
-            retained_expanded_skill_names = [
-                skill_name
-                for skill_name in expanded_skill_names_before_filter
-                if skill_name in selected_expanded_name_set
-            ]
-            filtered_out_expanded_skill_names = [
-                skill_name
-                for skill_name in expanded_skill_names_before_filter
-                if skill_name not in selected_expanded_name_set
-            ]
-            result.filter_result = GuidelineResultFilterResult(
-                status="completed",
-                expanded_skill_names_before_filter=(
-                    expanded_skill_names_before_filter
-                ),
-                retained_expanded_skill_names=(
-                    retained_expanded_skill_names
-                ),
-                filtered_out_expanded_skill_names=(
-                    filtered_out_expanded_skill_names
-                ),
-                reason=None,
-            )
-            result.expanded_matches = [
-                match
-                for match in result.expanded_matches
-                if match.skill_name in selected_expanded_name_set
-            ]
-            result.skill_results = [
-                skill_result
-                for skill_result in result.skill_results
-                if (
-                    skill_result.skill_name not in available_expanded_names
-                    or skill_result.skill_name in selected_expanded_name_set
-                )
-            ]
-            result.used_skill = bool(result.skill_results)
-            if not result.used_skill:
-                result.unused_reason = (
-                    "No completed guideline results passed final relevance filtering."
-                )
-    else:
-        result.filter_result = GuidelineResultFilterResult(
-            status="not_triggered",
-            expanded_skill_names_before_filter=[],
-            retained_expanded_skill_names=[],
-            filtered_out_expanded_skill_names=[],
-            reason=(
-                "No completed expanded guideline results were available for filtering."
-            ),
-        )
     _publish_stage_result(
         f"Guideline Search Result - Round {round_index}",
         result,
@@ -1639,8 +1475,8 @@ async def _run_final_diagnosis_async(
             f"{_as_json(diagnostic_judgement_result)}\n"
             "</DIAGNOSTIC_JUDGEMENT>\n\n"
             "## Revision Instructions\n\n"
-            "Revise the diagnosis specifically to correct the candidate omissions and ranking "
-            "problems identified by the diagnostic judgement.\n\n"
+            "Reassess all candidates using the newly retrieved evidence and address the focused "
+            "diagnoses and evidence gaps identified by the evidence-sufficiency judgement.\n\n"
         )
     diagnosis_prompt = (
         "<PATIENT_INFORMATION>\n"
@@ -1810,7 +1646,9 @@ async def _run_final_diagnosis_async(
 
 async def _run_diagnostic_judgement_async(
     case_text: str,
-    search_planning_diagnoses: list[HypothesisItem],
+    search_planning_result: SearchPlanningResult,
+    knowledge_search_result: KnowledgeSearchResult,
+    guideline_search_result: GuidelineSearchResult,
     diagnosis_result: DiagnosisResult,
     *,
     model: str | Model,
@@ -1823,27 +1661,24 @@ async def _run_diagnostic_judgement_async(
         model,
         native_structured_output=native_structured_output,
     )
-    final_diagnoses = [
-        {
-            "icd_code": diagnosis.icd_code,
-            "category_name": diagnosis.category_name,
-        }
-        for diagnosis in diagnosis_result.topk_diagnoses
-    ]
     diagnostic_judgement_prompt = (
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>\n\n"
-        "<SEARCH_PLANNING_DIAGNOSES>\n"
-        f"{_as_json(search_planning_diagnoses)}\n"
-        "</SEARCH_PLANNING_DIAGNOSES>\n\n"
-        "<FINAL_DIAGNOSES>\n"
-        f"{_as_json(final_diagnoses)}\n"
-        "</FINAL_DIAGNOSES>\n\n"
+        "<CURRENT_SEARCH_PLANNING_RESULT>\n"
+        f"{_as_json(search_planning_result)}\n"
+        "</CURRENT_SEARCH_PLANNING_RESULT>\n\n"
+        "<CURRENT_KNOWLEDGE_SEARCH_RESULT>\n"
+        f"{_as_json(knowledge_search_result)}\n"
+        "</CURRENT_KNOWLEDGE_SEARCH_RESULT>\n\n"
+        "<CURRENT_GUIDELINE_SEARCH_RESULT>\n"
+        f"{_as_json(guideline_search_result)}\n"
+        "</CURRENT_GUIDELINE_SEARCH_RESULT>\n\n"
+        "<CURRENT_DIAGNOSIS_RESULT>\n"
+        f"{_as_json(diagnosis_result)}\n"
+        "</CURRENT_DIAGNOSIS_RESULT>\n\n"
         "## Task\n\n"
-        "Judge whether final_diagnoses or search_planning_diagnoses is closer to the patient "
-        "information. "
-        "Keep closer_result as the required enum value."
+        "Judge whether one additional targeted external-evidence retrieval round is needed."
     )
     diagnostic_judgement_prompt = _prepare_structured_prompt(
         diagnostic_judgement_prompt,
@@ -1942,7 +1777,6 @@ async def make_diagnosis_pipeline_async(
                 progress_callback=progress_callback,
             ),
             _run_guideline_search_async(
-                case_text,
                 search_planning_result.hypotheses,
                 positive_features_result,
                 model=diagnosis_model,
@@ -2004,31 +1838,15 @@ async def make_diagnosis_pipeline_async(
             progress_callback=progress_callback,
         )
 
-        diagnostic_judgement_result = await _run_diagnostic_judgement_async(
-            case_text,
-            search_planning_result.hypotheses,
-            diagnosis_result,
-            model=diagnosis_model,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
-        )
-
-        if (
-            diagnostic_judgement_result.closer_result != "final_diagnoses"
-            and round_index == max_diagnosis_rounds
-        ):
-            diagnosis_result = await _run_final_diagnosis_async(
+        diagnostic_judgement_result = None
+        if round_index < max_diagnosis_rounds:
+            diagnostic_judgement_result = await _run_diagnostic_judgement_async(
                 case_text,
-                llm_hypotheses_result,
                 search_planning_result,
                 knowledge_search_result,
                 guideline_search_result,
-                similar_case_retrieval_result,
+                diagnosis_result,
                 model=diagnosis_model,
-                previous_diagnosis_result=diagnosis_result,
-                diagnostic_judgement_result=diagnostic_judgement_result,
-                corrective=True,
                 debug=debug,
                 round_index=round_index,
                 progress_callback=progress_callback,
@@ -2047,8 +1865,8 @@ async def make_diagnosis_pipeline_async(
         )
 
         if (
-            diagnostic_judgement_result.closer_result == "final_diagnoses"
-            or round_index == max_diagnosis_rounds
+            diagnostic_judgement_result is None
+            or not diagnostic_judgement_result.need_next_round
         ):
             return DiagnosisPipelineResult(
                 llm_hypotheses_result=llm_hypotheses_result,
@@ -2100,17 +1918,21 @@ def build_diagnosis_model(
     provider: str,
     *,
     openai_api_key: str = "",
-    openai_model: str = "",
     deepseek_api_key: str = "",
-    deepseek_model: str = "",
 ) -> Model:
-    normalized_provider = provider.strip().lower()
+    model_selection = provider.strip().lower()
+    if model_selection not in DIAGNOSIS_MODELS:
+        raise ValueError(
+            "DIAGNOSIS_PROVIDER must be one of: "
+            + ", ".join(DIAGNOSIS_MODELS)
+        )
+    normalized_provider, model_name = DIAGNOSIS_MODELS[model_selection]
     if normalized_provider == "openai":
         api_key = openai_api_key or os.getenv("OPENAI_API_KEY", "")
         if not api_key:
             raise ValueError("OPENAI API key is required.")
         return OpenAIResponsesModel(
-            model=openai_model or OPENAI_MODEL,
+            model=model_name,
             openai_client=AsyncOpenAI(api_key=api_key),
         )
     if normalized_provider == "deepseek":
@@ -2118,7 +1940,7 @@ def build_diagnosis_model(
         if not api_key:
             raise ValueError("DEEPSEEK API key is required.")
         return OpenAIChatCompletionsModel(
-            model=deepseek_model or DEEPSEEK_MODEL,
+            model=model_name,
             openai_client=AsyncOpenAI(
                 api_key=api_key,
                 base_url=DEEPSEEK_BASE_URL,
@@ -2126,10 +1948,9 @@ def build_diagnosis_model(
         )
     if normalized_provider == "qwen":
         return QwenChatCompletionsModel(
-            model=QWEN_MODEL,
+            model=model_name,
             openai_client=AsyncOpenAI(
                 api_key="EMPTY",
                 base_url=QWEN_BASE_URL,
             ),
         )
-    raise ValueError("Model provider must be openai, deepseek, or qwen.")

@@ -13,23 +13,24 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
-DEEPSEEK_THINKING = os.getenv("DEEPSEEK_THINKING", "true").strip().lower() == "true"
-DEEPSEEK_REASONING_EFFORT = os.getenv(
-    "DEEPSEEK_REASONING_EFFORT",
-    "high",
-).strip().lower()
+DEEPSEEK_MODEL = "deepseek-v4-pro"
+DEEPSEEK_THINKING = True
+DEEPSEEK_REASONING_EFFORT = "high"
 
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
+OPENAI_MODEL = "gpt-5.5"
 
 QWEN_BASE_URL = os.getenv("QWEN_BASE_URL", "http://127.0.0.1:8000/v1")
-QWEN_MODEL = os.getenv(
-    "QWEN_MODEL",
-    str(PROJECT_ROOT / "models" / "Qwen3.5-9B"),
-)
-QWEN_THINKING = os.getenv("QWEN_THINKING", "false").strip().lower() == "true"
+QWEN_THINKING = False
 
-DIAGNOSIS_PROVIDER = os.getenv("DIAGNOSIS_PROVIDER", "deepseek").strip().lower()
+DIAGNOSIS_MODELS = {
+    "openai-gpt-5.5": ("openai", OPENAI_MODEL),
+    "deepseek-v4-pro": ("deepseek", DEEPSEEK_MODEL),
+    "qwen3.5-27b": ("qwen", "Qwen3.5-27B"),
+    "qwen3.5-122b-a10b": ("qwen", "Qwen3.5-122B-A10B"),
+}
+DIAGNOSIS_PROVIDER = os.getenv(
+    "DIAGNOSIS_PROVIDER", "deepseek-v4-pro"
+).strip().lower()
 CHATKIT_TRANSLATION_MODEL = os.getenv("CHATKIT_TRANSLATION_MODEL", DEEPSEEK_MODEL)
 
 NCBI_API_KEY = os.getenv("NCBI_API_KEY", "")

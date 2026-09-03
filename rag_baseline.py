@@ -239,7 +239,7 @@ async def _run_batch_async(args: argparse.Namespace) -> Path:
         raise FileNotFoundError(f"Input CSV does not exist: {input_path}")
 
     guideline_index = _build_guideline_index()
-    model = build_diagnosis_model("deepseek")
+    model = build_diagnosis_model("deepseek-v4-pro")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     limit_label = args.limit if args.limit is not None else "all"

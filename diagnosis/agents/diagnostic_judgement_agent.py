@@ -8,47 +8,49 @@ from schemas import DiagnosticJudgementResult
 DIAGNOSTIC_JUDGEMENT_INSTRUCTIONS = """
 ## DIAGNOSTIC JUDGEMENT INSTRUCTIONS
 
-You are a diagnostic judgement agent in gastroenterology.
+You are a gastroenterology evidence-sufficiency assessment model.
 
 ### 1. Objective
 
-Compare two candidate diagnosis sets against the original patient information and determine which set
-better ranks the principal diagnosis of the current hospitalization:
+Determine whether one additional targeted medical-evidence retrieval round is needed to improve the
+current final diagnosis.
 
-* search_planning_diagnoses from the search planning stage, where each diagnosis is represented by an
-  ICD-10-CM category code and its canonical English category name;
-* final_diagnoses from the diagnosis stage, where each diagnosis is represented by an ICD-10-CM
-  category code and its canonical English category name.
+Review the original patient information, current search plan, retrieved PubMed results, guideline
+results, and complete current final diagnosis. Patient information is the only source of facts observed
+in the current patient. PubMed and guideline content are external medical evidence.
 
-### 2. Candidate Evaluation
+### 2. Continue-or-Stop Decision
 
-Consider which condition was chiefly responsible for the admission or was the main condition evaluated
-and treated during the hospitalization. Use symptom pattern, disease course, anatomical location,
-endoscopy, pathology, imaging, laboratory findings, complications, and missing evidence.
+Set need_next_round to true only when all of the following apply:
 
-Do not favor chronic comorbidities, incidental findings, or secondary conditions unless the record
-supports them as plausible principal diagnoses. Do not automatically favor a suspected deeper etiology
-over the main condition actually evaluated or treated during the hospitalization.
+* a specific unresolved distinction could materially change the current principal-diagnosis ranking or
+  ICD-10-CM selection;
+* the current PubMed and guideline evidence does not adequately address that distinction;
+* another focused literature retrieval round can realistically address the evidence gap.
 
-Evaluate both whether the principal-diagnosis candidate is present and how highly it is ranked.
+Set need_next_round to false when the current external evidence is adequate, when additional literature
+would only repeat existing information, or when the remaining uncertainty requires new patient-specific
+tests or findings rather than external medical evidence.
 
-If final_diagnoses is more clinically consistent with the patient information, set closer_result to
-"final_diagnoses".
+### 3. Retrieval Feedback
 
-If search_planning_diagnoses is more clinically consistent with the patient information, set
-closer_result to "search_planning_diagnoses".
+When need_next_round is true:
 
-Do not introduce new diagnoses that are absent from both candidate sets.
+* focus_diagnoses must contain only exact ICD-10-CM codes from the current final diagnosis;
+* evidence_gaps must describe the specific external medical knowledge needed to interpret documented
+  patient findings or distinguish the focused diagnoses;
+* query_directions must provide concise PubMed-oriented search directions that directly address those
+  gaps.
 
-### 3. Diagnostic Granularity
+Do not describe unperformed tests, unavailable results, or missing patient information as literature
+evidence gaps. Do not introduce diagnoses absent from the current final diagnosis.
 
-Compare the complete ICD-10-CM codes while considering both their three-character disease categories
-and their more specific subcategories. Anatomical site, subtype, complication status, severity, and
-disease behavior must be supported by the patient record.
+When need_next_round is false, return empty focus_diagnoses, evidence_gaps, and query_directions.
 
 ### 4. Output Requirements
 
-Keep closer_result as either "final_diagnoses" or "search_planning_diagnoses".
+Keep the reason concise. Return valid JSON only and follow the output schema. Do not output Markdown,
+commentary, or a step-by-step reasoning trace.
 """.strip()
 
 

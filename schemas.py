@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from pydantic import (
     AliasChoices,
@@ -271,33 +271,6 @@ class GuidelineSkillExpansionSelection(BaseModel):
     )
 
 
-class GuidelineExpandedResultSelection(BaseModel):
-    selected_expanded_skill_names: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Exact expanded guideline skill names whose completed results should be retained"
-        ),
-    )
-
-
-class GuidelineResultFilterResult(BaseModel):
-    status: Literal["not_triggered", "completed", "failed"] = Field(
-        description="Execution status of expanded guideline result filtering"
-    )
-    expanded_skill_names_before_filter: list[str] = Field(
-        description="Completed expanded guideline skill results supplied to the filter"
-    )
-    retained_expanded_skill_names: list[str] = Field(
-        description="Expanded guideline skill results retained for final diagnosis"
-    )
-    filtered_out_expanded_skill_names: list[str] = Field(
-        description="Expanded guideline skill results removed before final diagnosis"
-    )
-    reason: str | None = Field(
-        description="Reason filtering was not triggered or failed; null after successful filtering"
-    )
-
-
 class GuidelineSearchResult(BaseModel):
     used_skill: bool = Field(description="Whether any guideline skill was loaded and searched")
     unused_reason: str | None = Field(
@@ -313,10 +286,6 @@ class GuidelineSearchResult(BaseModel):
     )
     skill_results: list[GuidelineSkillResult] = Field(
         description="Guideline evidence and diagnostic conclusion grouped by used skill"
-    )
-    filter_result: GuidelineResultFilterResult | None = Field(
-        default=None,
-        description="Expanded guideline result filtering details when available",
     )
     reason: str | None = Field(
         default=None,
@@ -367,11 +336,19 @@ class HypothesisItem(BaseModel):
 
 class LlmHypothesesResult(BaseModel):
     llm_hypotheses: list[HypothesisItem] = Field(
+        min_length=5,
         max_length=5,
         description=(
-            "Up to 5 principal-diagnosis hypotheses generated directly from the original case text"
+            "Exactly 5 principal-diagnosis hypotheses generated directly from the original case text"
         ),
     )
+
+    @model_validator(mode="after")
+    def validate_unique_hypotheses(self) -> "LlmHypothesesResult":
+        icd_codes = [item.icd_code for item in self.llm_hypotheses]
+        if len(icd_codes) != len(set(icd_codes)):
+            raise ValueError("LLM hypothesis ICD codes must be unique.")
+        return self
 
 
 class PositiveFeaturesResult(BaseModel):
@@ -409,9 +386,10 @@ class PositiveFeaturesResult(BaseModel):
 
 class PreprocessingResult(BaseModel):
     llm_hypotheses: list[HypothesisItem] = Field(
+        min_length=5,
         max_length=5,
         description=(
-            "Up to 5 principal-diagnosis hypotheses generated directly from the original case text"
+            "Exactly 5 principal-diagnosis hypotheses generated directly from the original case text"
         ),
     )
     positive_features: PositiveFeaturesResult = Field(
@@ -531,10 +509,22 @@ class SimilarCaseRetrievalResult(BaseModel):
 
 
 class DiagnosticJudgementResult(BaseModel):
-    closer_result: Literal["final_diagnoses", "search_planning_diagnoses"] = Field(
-        description="Which candidate diagnosis set is closer to the patient information"
+    need_next_round: bool = Field(
+        description="Whether another targeted evidence-retrieval round is needed"
     )
-    reason: str = Field(description="Reasoning for the diagnostic judgement")
+    reason: str = Field(description="Concise reason for the evidence-sufficiency judgement")
+    focus_diagnoses: list[str] = Field(
+        default_factory=list,
+        description="ICD-10-CM codes from the current final diagnoses requiring more evidence",
+    )
+    evidence_gaps: list[str] = Field(
+        default_factory=list,
+        description="Specific external medical-evidence gaps that another retrieval round can address",
+    )
+    query_directions: list[str] = Field(
+        default_factory=list,
+        description="Focused PubMed query directions for addressing the evidence gaps",
+    )
 
 
 class DiagnosisRoundResult(BaseModel):
@@ -544,7 +534,7 @@ class DiagnosisRoundResult(BaseModel):
     knowledge_search_result: KnowledgeSearchResult
     guideline_search_result: GuidelineSearchResult
     diagnosis_result: DiagnosisResult
-    diagnostic_judgement_result: DiagnosticJudgementResult
+    diagnostic_judgement_result: DiagnosticJudgementResult | None = None
 
 
 class MultiRoundDiagnosisResult(BaseModel):

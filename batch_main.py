@@ -4,13 +4,14 @@ import argparse
 import asyncio
 import csv
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 from agents import Model
 
-from config import DIAGNOSIS_PROVIDER
+from config import DIAGNOSIS_MODELS, DIAGNOSIS_PROVIDER
 from main import build_diagnosis_model, make_diagnosis_pipeline_async
 
 
@@ -43,6 +44,11 @@ def _parse_args() -> argparse.Namespace:
         help="Maximum number of cases to process. If omitted, process all rows.",
     )
     parser.add_argument(
+        "--history-output",
+        type=Path,
+        help="Previous batch JSONL output whose completed cases should be skipped.",
+    )
+    parser.add_argument(
         "--workers",
         type=_positive_int,
         default=1,
@@ -50,14 +56,12 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        choices=("openai", "deepseek", "qwen"),
+        choices=tuple(DIAGNOSIS_MODELS),
         default=DIAGNOSIS_PROVIDER,
-        help=f"LLM provider. Default: {DIAGNOSIS_PROVIDER}.",
+        help=f"Diagnosis model. Default: {DIAGNOSIS_PROVIDER}.",
     )
     parser.add_argument("--openai_apikey")
-    parser.add_argument("--openai_model")
     parser.add_argument("--deepseek_apikey")
-    parser.add_argument("--deepseek_model")
     return parser.parse_args()
 
 
@@ -74,17 +78,40 @@ async def _run_batch_async(
     limit: int | None,
     workers: int,
     diagnosis_model: Model,
+    history_output_path: Path | None = None,
 ) -> Path:
     resolved_csv_path = csv_path.expanduser().resolve()
     if not resolved_csv_path.is_file():
         raise FileNotFoundError(f"Input CSV does not exist: {resolved_csv_path}")
 
+    completed_case_ids: set[tuple[str, str]] = set()
+    resolved_history_output_path: Path | None = None
+    if history_output_path is not None:
+        resolved_history_output_path = history_output_path.expanduser().resolve()
+        if not resolved_history_output_path.is_file():
+            raise FileNotFoundError(
+                f"History output does not exist: {resolved_history_output_path}"
+            )
+        with resolved_history_output_path.open("r", encoding="utf-8") as history_file:
+            for line in history_file:
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                completed_case_ids.add(
+                    (str(record["subject_id"]), str(record["hadm_id"]))
+                )
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     limit_label = limit if limit is not None else "all"
-    output_path = (
-        OUTPUT_DIR / f"{resolved_csv_path.stem}_{limit_label}_{timestamp}.jsonl"
+    model_label = re.sub(
+        r"[^A-Za-z0-9._-]+", "_", str(diagnosis_model.model)
+    ).strip("_")
+    output_path = resolved_history_output_path or (
+        OUTPUT_DIR
+        / f"{model_label}_{resolved_csv_path.stem}_{limit_label}_{timestamp}.jsonl"
     )
+    output_mode = "a" if resolved_history_output_path is not None else "w"
 
     attempted_count = 0
     success_count = 0
@@ -92,6 +119,7 @@ async def _run_batch_async(
 
     async def diagnose_row(
         attempted_index: int,
+        total_count: int,
         row_number: int,
         row: dict[str, str | None],
     ) -> dict[str, object] | None:
@@ -102,7 +130,8 @@ async def _run_batch_async(
         )
         if not case_text:
             print(
-                f"[{attempted_index}] Skipped CSV row {row_number} ({case_label}): "
+                f"[{attempted_index}/{total_count}] Skipped CSV row {row_number} "
+                f"({case_label}): "
                 f"{CASE_TEXT_COLUMN} is empty.",
                 file=sys.stderr,
             )
@@ -111,7 +140,7 @@ async def _run_batch_async(
         for attempt in range(1, MAX_DIAGNOSIS_ATTEMPTS + 1):
             action = "Diagnosing" if attempt == 1 else "Retrying"
             print(
-                f"[{attempted_index}] {action} {case_label} "
+                f"[{attempted_index}/{total_count}] {action} {case_label} "
                 f"(attempt {attempt}/{MAX_DIAGNOSIS_ATTEMPTS}) ...",
                 file=sys.stderr,
             )
@@ -124,21 +153,22 @@ async def _run_batch_async(
             except Exception as exc:
                 error_stage = getattr(exc, "stage", "diagnosis_pipeline")
                 print(
-                    f"[{attempted_index}] Attempt {attempt}/{MAX_DIAGNOSIS_ATTEMPTS} "
+                    f"[{attempted_index}/{total_count}] Attempt "
+                    f"{attempt}/{MAX_DIAGNOSIS_ATTEMPTS} "
                     f"failed for CSV row {row_number} ({case_label}) at {error_stage}: "
                     f"{type(exc).__name__}: {exc}",
                     file=sys.stderr,
                 )
         else:
             print(
-                f"[{attempted_index}] Failed {case_label} after "
+                f"[{attempted_index}/{total_count}] Failed {case_label} after "
                 f"{MAX_DIAGNOSIS_ATTEMPTS} attempts.",
                 file=sys.stderr,
             )
             return None
 
         print(
-            f"[{attempted_index}] Completed {case_label} on attempt "
+            f"[{attempted_index}/{total_count}] Completed {case_label} on attempt "
             f"{attempt}/{MAX_DIAGNOSIS_ATTEMPTS}.",
             file=sys.stderr,
         )
@@ -152,10 +182,24 @@ async def _run_batch_async(
 
     with (
         resolved_csv_path.open("r", encoding="utf-8-sig", newline="") as input_file,
-        output_path.open("w", encoding="utf-8") as output_file,
+        output_path.open(output_mode, encoding="utf-8") as output_file,
     ):
         reader = csv.DictReader(input_file)
         _validate_columns(reader.fieldnames)
+
+        pending_rows: list[tuple[int, dict[str, str | None]]] = []
+        for row_number, row in enumerate(reader, start=2):
+            case_id = (
+                str(row.get("subject_id") or ""),
+                str(row.get("hadm_id") or ""),
+            )
+            if case_id in completed_case_ids:
+                continue
+            pending_rows.append((row_number, row))
+            if limit is not None and len(pending_rows) >= limit:
+                break
+
+        total_count = len(pending_rows)
 
         row_queue: asyncio.Queue[
             tuple[int, int, dict[str, str | None]] | None
@@ -170,6 +214,7 @@ async def _run_batch_async(
                 attempted_index, pending_row_number, row = pending_row
                 output_record = await diagnose_row(
                     attempted_index,
+                    total_count,
                     pending_row_number,
                     row,
                 )
@@ -186,10 +231,7 @@ async def _run_batch_async(
             asyncio.create_task(worker())
             for _ in range(workers)
         ]
-        for row_number, row in enumerate(reader, start=2):
-            if limit is not None and attempted_count >= limit:
-                break
-
+        for row_number, row in pending_rows:
             attempted_count += 1
             await row_queue.put((attempted_count, row_number, row))
 
@@ -210,6 +252,7 @@ def run_batch(
     limit: int | None,
     diagnosis_model: Model,
     workers: int = 1,
+    history_output_path: Path | None = None,
 ) -> Path:
     return asyncio.run(
         _run_batch_async(
@@ -217,6 +260,7 @@ def run_batch(
             limit,
             workers,
             diagnosis_model,
+            history_output_path,
         )
     )
 
@@ -227,15 +271,14 @@ def main() -> int:
         diagnosis_model = build_diagnosis_model(
             args.model,
             openai_api_key=args.openai_apikey or "",
-            openai_model=args.openai_model or "",
             deepseek_api_key=args.deepseek_apikey or "",
-            deepseek_model=args.deepseek_model or "",
         )
         run_batch(
             args.input,
             args.limit,
             diagnosis_model,
             workers=args.workers,
+            history_output_path=args.history_output,
         )
     except (FileNotFoundError, OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

@@ -438,14 +438,14 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
         )
 
     if stage_name == "Diagnostic Judgement Result":
-        accepted = parsed_content.get("closer_result") == "final_diagnoses"
+        need_next_round = bool(parsed_content.get("need_next_round"))
         if language == "zh-CN":
-            outcome = "当前诊断通过" if accepted else "需要补充检索，进入下一轮"
+            outcome = "需要补充检索，进入下一轮" if need_next_round else "当前证据充分"
             return f"{round_prefix}诊断结果评估完成：{outcome}"
         outcome = (
-            "current diagnosis accepted"
-            if accepted
-            else "more evidence is needed; proceeding to the next round"
+            "more evidence is needed; proceeding to the next round"
+            if need_next_round
+            else "current evidence is sufficient"
         )
         return f"{round_prefix}Diagnostic result assessment completed: {outcome}"
 
@@ -694,10 +694,7 @@ class MedicalDiagnosisChatKitServer(ChatKitServer[dict[str, Any]]):
 
                 event_type, title, content = progress_event
                 if event_type == "agent_started":
-                    if title in {
-                        "Planning Hypotheses Reranker Agent",
-                        "Guideline Result Filter Agent",
-                    }:
+                    if title == "Planning Hypotheses Reranker Agent":
                         continue
                     agent_name = AGENT_DISPLAY_NAMES[display_language].get(
                         title,

@@ -106,15 +106,15 @@ bash run_vllm_122b.sh
 122B-A10B 时，`run_vllm_122b.sh` 使用
 `--tensor-parallel-size 4 --data-parallel-size 1` 将一个模型切分到四张 GPU。三个脚本都将
 上下文长度设为 65536，启用 chunked prefill、prefix caching 和 throughput 模式，并限制
-8192 个批处理 token 及 64 条并发序列。`QWEN_THINKING=false` 默认关闭思考输出，以提高诊断
-流水线结构化 JSON 的稳定性。
+8192 个批处理 token 及 64 条并发序列。122B-A10B 脚本额外启用 2-token MTP speculative
+decoding。`QWEN_THINKING=false` 默认关闭思考输出，以提高诊断流水线结构化 JSON 的稳定性。
 
 ## 本地医疗模型 LLM hypotheses 评测
 
 `Henrychur/DiagAgent-14B` 和 `baichuan-inc/Baichuan-M2-32B` 用于独立评测初始
 `llm_hypotheses`。它们复用诊断流水线中相同的 hypothesis preprocessing instructions、病例输入
 格式和 `LlmHypothesesResult` JSON Schema，不运行阳性特征提取、相似病例检索、PubMed、指南或
-最终诊断阶段。
+最终诊断阶段。每个病例固定输出 5 个唯一的主诊断候选。
 
 两个启动脚本固定使用 GPU `0,1,2,3`。DiagAgent-14B 在四张卡上各运行一个单卡副本，启动命令：
 
@@ -190,15 +190,35 @@ bash run_evaluate.sh output/batch/<rag-baseline-result>.jsonl
 
 `batch_main.py` 读取通过 `--input` 指定的 CSV，使用
 `discharge_text_before_disposition` 作为 `case_text` 运行完整诊断流水线。使用
-`--limit` 控制本次处理的病例数量。单个病例的完整诊断流水线失败时，最多执行
+`--limit` 控制本次处理的病例数量。可通过 `--history-output` 指定此前运行生成的
+JSONL，程序会按 `subject_id` 和 `hadm_id` 跳过其中已经成功完成的病例，再从剩余病例中
+选择本次要处理的数量。运行进度以 `[当前序号/本次总数]` 显示。单个病例的完整诊断流水线失败时，最多执行
 3 次（首次执行加 2 次重试），终端会显示每次失败的阶段、错误原因和重试轮次。
+`run_batch_main.sh` 默认读取 `database/mimic_test.csv`，使用 8 个病例 worker；每个病例内部最多
+并发执行 4 个指南 Skill。
 阳性特征和最终诊断的结构化输出校验失败时，当前阶段仍会先根据具体错误纠正一次。
+初始 LLM 候选与相似病例候选合并去重后，由 Planning Hypotheses Reranker Agent 根据原始
+病例、候选来源及来源排名重新排序，再交给 Search Planning 生成 PubMed 查询。每轮最终
+诊断读取原始病例、Search Planning 候选、候选来源、相似病例排名、当前轮指南判断与证据
+以及 PubMed 证据，从候选集中生成 5 个唯一的 ICD-10-CM 主诊断，并为未原样进入 Top 5 的
+规划候选提供基于患者事实的排除或编码修正理由。诊断判断读取原始病例、当前检索计划、
+PubMed 结果、指南结果和最终诊断，判断当前外部证据是否充分；只有存在可通过文献检索解决
+的具体证据缺口时才进入第二轮，并将上一轮诊断、指南证据、聚焦诊断、证据缺口和查询方向
+交给 Search Planning 改进检索词。第二轮最终诊断同时读取上一轮 Top 5 和判断反馈并重新评估
+全部候选。第二轮结束后不再继续检索。
 成功结果写入 JSONL；最终失败的病例只在终端报告，不另外生成错误文件：
 
 ```bash
 .venv/bin/python batch_main.py \
   --input database/mimic_test_case.csv \
-  --limit 10
+  --limit 10 \
+  --history-output output/batch/<previous-batch-result>.jsonl
+```
+
+使用 `run_batch_main.sh` 时，可设置脚本顶部的 `HISTORY_OUTPUT`，也可在运行时指定；留空则不读取历史结果：
+
+```bash
+HISTORY_OUTPUT="output/batch/<previous-batch-result>.jsonl" bash run_batch_main.sh
 ```
 
 ## 相似病例检索
