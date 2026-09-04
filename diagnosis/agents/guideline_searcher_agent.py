@@ -80,7 +80,15 @@ diagnosis task.
 5. If the skill materials do not provide clear relevant evidence, return an empty guideline_evidence
    list and explain the insufficiency in guideline_diagnosis. Do not invent recommendation numbers,
    evidence levels, recommendation strengths, or guideline statements.
-6. Return exactly one GuidelineSkillResult for the selected skill. Use the exact original skill name.
+6. Set applicability to exactly one of these values:
+   - supported: documented patient findings clearly support the disease evaluated by this guideline.
+   - possible: documented findings are compatible and the disease remains a reasonable candidate,
+     but required confirmation is missing.
+   - insufficient_evidence: the supplied patient findings or retrieved guideline evidence are
+     insufficient to assess the disease. Always use this value when guideline_evidence is empty.
+   - not_supported: documented patient findings contradict required diagnostic features or clearly
+     favor another diagnosis. Missing or unreported findings alone do not justify this value.
+7. Return exactly one GuidelineSkillResult for the selected skill. Use the exact original skill name.
    Include medical evidence only; do not include source block IDs, full-text line ranges, or locator
    text in guideline_evidence.
 """.strip()

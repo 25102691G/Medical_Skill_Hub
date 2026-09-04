@@ -22,8 +22,8 @@ LIMIT=2000
 # deepseek-v4-pro: 50
 # qwen3.5-27b: 40
 # qwen3.5-122b-a10b: 25
-WORKERS=40
-# HISTORY_OUTPUT="output/batch/mimic_test_2000_20260903_110705_298959.jsonl"
+WORKERS=25
+# HISTORY_OUTPUT="output/batch/Qwen3.5-27B_mimic_test_2000_20260903_143221_154428.jsonl"
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 HISTORY_ARGS=()

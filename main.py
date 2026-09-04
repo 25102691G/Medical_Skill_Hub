@@ -64,6 +64,7 @@ from schemas import (
     DiagnosticJudgementResult,
     ExcludedPlanningCandidate,
     FinalDiagnosisContent,
+    GuidelineApplicability,
     GuidelineDirectSkillSelection,
     GuidelineDirectSkillMatch,
     GuidelineExpandedSkillMatch,
@@ -77,6 +78,7 @@ from schemas import (
     MultiRoundDiagnosisResult,
     PlanningHypothesesRerankResult,
     PositiveFeaturesResult,
+    PreFinalDiagnosisInput,
     PreprocessingResult,
     PubMedQueryResult,
     SearchPlanningResult,
@@ -276,20 +278,15 @@ def _validate_final_diagnosis_content(
 ) -> list[ExcludedPlanningCandidate]:
     for diagnosis in diagnosis_content.topk_diagnoses:
         expected_category_name = candidate_names.get(diagnosis.icd_code)
-        if (
-            expected_category_name is not None
-            and diagnosis.category_name != expected_category_name
-        ):
+        if expected_category_name is None:
+            raise ValueError(
+                "Final diagnosis must use only supplied search planning candidates. "
+                f"Unexpected ICD code: {diagnosis.icd_code}."
+            )
+        if diagnosis.category_name != expected_category_name:
             raise ValueError(
                 f"Final diagnosis changed the candidate name for {diagnosis.icd_code}: "
                 f"expected {expected_category_name!r}, got {diagnosis.category_name!r}"
-            )
-        if expected_category_name is None and not any(
-            evidence.strip() for evidence in diagnosis.supporting_evidence
-        ):
-            raise ValueError(
-                f"Final diagnosis outside the planning candidate set must include supporting "
-                f"evidence from the current patient: {diagnosis.icd_code}."
             )
 
     selected_codes = {
@@ -304,7 +301,7 @@ def _validate_final_diagnosis_content(
     if missing_excluded_codes:
         raise ValueError(
             "Every search planning candidate omitted from the final top five must include "
-            "patient-grounded exclusion or ICD correction reasons. "
+            "patient-grounded exclusion reasons. "
             f"Missing {sorted(missing_excluded_codes)}; "
             f"final top five contains {sorted(selected_codes)}."
         )
@@ -321,7 +318,7 @@ def _validate_final_diagnosis_content(
             evidence.strip() for evidence in candidate.patient_contrary_evidence
         ):
             raise ValueError(
-                f"Excluded planning candidate {icd_code} has an empty exclusion or correction reason."
+                f"Excluded planning candidate {icd_code} has an empty exclusion reason."
             )
         validated_excluded_candidates.append(candidate)
     return validated_excluded_candidates
@@ -479,68 +476,47 @@ async def _merge_planning_hypotheses(
 ) -> list[HypothesisItem]:
     merged_hypotheses: list[HypothesisItem] = []
     seen_codes: set[str] = set()
-    initial_llm_ranks: dict[str, int] = {}
-    similar_case_ranks: dict[str, int] = {}
-    for rank, hypothesis in enumerate(
-        llm_hypotheses_result.llm_hypotheses,
-        start=1,
-    ):
-        initial_llm_ranks.setdefault(hypothesis.icd_code, rank)
+    llm_hypotheses = [
+        {
+            "icd_code": hypothesis.icd_code,
+            "long_title": hypothesis.category_name,
+        }
+        for hypothesis in llm_hypotheses_result.llm_hypotheses
+    ]
+    for hypothesis in llm_hypotheses_result.llm_hypotheses:
         if hypothesis.icd_code in seen_codes:
             continue
         seen_codes.add(hypothesis.icd_code)
         merged_hypotheses.append(hypothesis)
 
-    for rank, similar_case in enumerate(
+    similar_cases = (
         similar_case_retrieval_result.rerank
-        or similar_case_retrieval_result.rrf[:5],
-        start=1,
-    ):
+        or similar_case_retrieval_result.rrf[:5]
+    )
+    similar_case_hypotheses = [
+        {
+            "icd_code": similar_case.icd_code,
+            "long_title": similar_case.discharge_disease,
+        }
+        for similar_case in similar_cases
+    ]
+    for similar_case in similar_cases:
         hypothesis = HypothesisItem(
             icd_code=similar_case.icd_code,
             category_name=similar_case.discharge_disease,
         )
-        similar_case_ranks.setdefault(hypothesis.icd_code, rank)
         if hypothesis.icd_code in seen_codes:
             continue
         seen_codes.add(hypothesis.icd_code)
         merged_hypotheses.append(hypothesis)
         if len(merged_hypotheses) == 10:
             break
-    merged_hypotheses = [
-        hypothesis
-        for hypothesis in merged_hypotheses
-        if not any(
-            other.icd_code.startswith(hypothesis.icd_code)
-            and len(other.icd_code) > len(hypothesis.icd_code)
-            for other in merged_hypotheses
-        )
-    ]
     if len(merged_hypotheses) < 2:
         return merged_hypotheses
 
-    candidate_by_id: dict[str, HypothesisItem] = {}
-    rerank_candidates: list[dict[str, object]] = []
-    for index, hypothesis in enumerate(
-        sorted(merged_hypotheses, key=lambda item: item.icd_code),
-        start=1,
-    ):
-        candidate_id = f"C{index:02d}"
-        candidate_by_id[candidate_id] = hypothesis
-        initial_llm_rank = initial_llm_ranks.get(hypothesis.icd_code)
-        similar_case_rank = similar_case_ranks.get(hypothesis.icd_code)
-        rerank_candidates.append(
-            {
-                "candidate_id": candidate_id,
-                "icd_code": hypothesis.icd_code,
-                "category_name": hypothesis.category_name,
-                "initial_llm_rank": initial_llm_rank,
-                "similar_case_rank": similar_case_rank,
-                "cross_source_match": (
-                    initial_llm_rank is not None and similar_case_rank is not None
-                ),
-            }
-        )
+    candidate_by_code = {
+        hypothesis.icd_code: hypothesis for hypothesis in merged_hypotheses
+    }
 
     native_structured_output = _uses_native_structured_output(model)
     reranker_agent = build_planning_hypotheses_reranker_agent(
@@ -552,12 +528,15 @@ async def _merge_planning_hypotheses(
             "<PATIENT_INFORMATION>\n"
             f"{case_text}\n"
             "</PATIENT_INFORMATION>\n\n"
-            "<CANDIDATE_DIAGNOSES>\n"
-            f"{_as_json(rerank_candidates)}\n"
-            "</CANDIDATE_DIAGNOSES>\n\n"
+            "<LLM_HYPOTHESES>\n"
+            f"{_as_json(llm_hypotheses)}\n"
+            "</LLM_HYPOTHESES>\n\n"
+            "<SIMILAR_CASE_HYPOTHESES>\n"
+            f"{_as_json(similar_case_hypotheses)}\n"
+            "</SIMILAR_CASE_HYPOTHESES>\n\n"
             "## Task\n\n"
-            "Return every supplied candidate_id exactly once in ranked_candidate_ids, ordered "
-            "from most to least likely to be the principal diagnosis."
+            "Return all unique supplied ICD codes in ranked_icd_codes, ordered from most to "
+            "least likely to be the principal diagnosis."
         ),
         PlanningHypothesesRerankResult,
         native_structured_output=native_structured_output,
@@ -584,14 +563,14 @@ async def _merge_planning_hypotheses(
     except Exception:
         return merged_hypotheses
 
-    ranked_candidate_ids = rerank_result.ranked_candidate_ids
+    ranked_icd_codes = rerank_result.ranked_icd_codes
     if (
-        len(ranked_candidate_ids) != len(candidate_by_id)
-        or len(set(ranked_candidate_ids)) != len(ranked_candidate_ids)
-        or set(ranked_candidate_ids) != set(candidate_by_id)
+        len(ranked_icd_codes) != len(candidate_by_code)
+        or len(set(ranked_icd_codes)) != len(ranked_icd_codes)
+        or set(ranked_icd_codes) != set(candidate_by_code)
     ):
         return merged_hypotheses
-    return [candidate_by_id[candidate_id] for candidate_id in ranked_candidate_ids]
+    return [candidate_by_code[icd_code] for icd_code in ranked_icd_codes]
 
 
 async def _run_search_planning_async(
@@ -663,10 +642,10 @@ async def _run_search_planning_async(
             "## Task\n\n"
             "The evidence-sufficiency judgement requested another retrieval round. Regenerate "
             "search_queries that directly address its focus_diagnoses, evidence_gaps, and "
-            "query_directions while collectively covering MERGED_HYPOTHESES. Copy "
-            "MERGED_HYPOTHESES exactly into hypotheses. Use the previous diagnosis and guideline "
-            "evidence only to improve the retrieval strategy, and do not treat previous artifacts "
-            "as new patient facts."
+            "query_directions. Do not repeat broad queries for hypotheses unrelated to those gaps. "
+            "Copy MERGED_HYPOTHESES exactly into hypotheses. Use the previous diagnosis and "
+            "guideline evidence only to improve the retrieval strategy, and do not treat previous "
+            "artifacts as new patient facts."
         )
 
     search_planning_prompt = _prepare_structured_prompt(
@@ -1374,6 +1353,7 @@ async def _run_final_diagnosis_async(
     model: str | Model,
     previous_diagnosis_result: DiagnosisResult | None = None,
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None,
+    free_diagnosis: bool = False,
     corrective: bool = False,
     debug: bool = False,
     round_index: int | None = None,
@@ -1384,42 +1364,78 @@ async def _run_final_diagnosis_async(
         FinalDiagnosisContent,
         model=model,
         native_structured_output=native_structured_output,
+        free_diagnosis=free_diagnosis,
     )
-    llm_hypothesis_codes = {
-        hypothesis.icd_code
-        for hypothesis in llm_hypotheses_result.llm_hypotheses
-    }
-    similar_case_ranks = {
-        similar_case.icd_code.strip().upper().replace(".", ""): rank
-        for rank, similar_case in enumerate(
-            similar_case_retrieval_result.rerank
-            or similar_case_retrieval_result.rrf[:5],
-            start=1,
-        )
-    }
     candidate_diagnoses = []
     candidate_names: dict[str, str] = {}
-    for hypothesis in search_planning_result.hypotheses:
-        if hypothesis.icd_code in candidate_names:
-            continue
-        candidate_names[hypothesis.icd_code] = hypothesis.category_name
-        sources: list[str] = []
-        if hypothesis.icd_code in llm_hypothesis_codes:
-            sources.append("initial_llm")
-        if hypothesis.icd_code in similar_case_ranks:
-            sources.append("similar_case_rerank")
-        candidate: dict[str, object] = {
-            "icd_code": hypothesis.icd_code,
-            "category_name": hypothesis.category_name,
-            "sources": sources,
+    planning_candidates: dict[str, str] = {}
+    if not free_diagnosis:
+        initial_llm_ranks = {
+            hypothesis.icd_code: rank
+            for rank, hypothesis in enumerate(
+                llm_hypotheses_result.llm_hypotheses,
+                start=1,
+            )
         }
-        if hypothesis.icd_code in similar_case_ranks:
-            candidate["similar_case_rank"] = similar_case_ranks[hypothesis.icd_code]
-        candidate_diagnoses.append(candidate)
-    planning_candidates = {
-        hypothesis.icd_code: hypothesis.category_name
-        for hypothesis in search_planning_result.hypotheses
-    }
+        similar_case_ranks = {
+            similar_case.icd_code.strip().upper().replace(".", ""): rank
+            for rank, similar_case in enumerate(
+                similar_case_retrieval_result.rerank
+                or similar_case_retrieval_result.rrf[:5],
+                start=1,
+            )
+        }
+        initial_llm_codes = set(initial_llm_ranks)
+        similar_case_codes = set(similar_case_ranks)
+        for planning_rank, hypothesis in enumerate(
+            search_planning_result.hypotheses,
+            start=1,
+        ):
+            if hypothesis.icd_code in candidate_names:
+                continue
+            candidate_names[hypothesis.icd_code] = hypothesis.category_name
+            sources: list[str] = []
+            if hypothesis.icd_code in initial_llm_ranks:
+                sources.append("initial_llm")
+            if hypothesis.icd_code in similar_case_ranks:
+                sources.append("similar_case_rerank")
+            candidate: dict[str, object] = {
+                "icd_code": hypothesis.icd_code,
+                "category_name": hypothesis.category_name,
+                "sources": sources,
+                "initial_llm_rank": initial_llm_ranks.get(hypothesis.icd_code),
+                "similar_case_rank": similar_case_ranks.get(hypothesis.icd_code),
+                "planning_rank": planning_rank,
+                "exact_cross_source_match": (
+                    hypothesis.icd_code in initial_llm_codes
+                    and hypothesis.icd_code in similar_case_codes
+                ),
+                "four_digit_cross_source_match": (
+                    any(
+                        code[:4] == hypothesis.icd_code[:4]
+                        for code in initial_llm_codes
+                    )
+                    and any(
+                        code[:4] == hypothesis.icd_code[:4]
+                        for code in similar_case_codes
+                    )
+                ),
+                "three_digit_cross_source_match": (
+                    any(
+                        code[:3] == hypothesis.icd_code[:3]
+                        for code in initial_llm_codes
+                    )
+                    and any(
+                        code[:3] == hypothesis.icd_code[:3]
+                        for code in similar_case_codes
+                    )
+                ),
+            }
+            candidate_diagnoses.append(candidate)
+        planning_candidates = {
+            hypothesis.icd_code: hypothesis.category_name
+            for hypothesis in search_planning_result.hypotheses
+        }
     direct_skill_names = {
         match.skill_name for match in guideline_search_result.direct_matches
     }
@@ -1427,9 +1443,25 @@ async def _run_final_diagnosis_async(
         match.skill_name: match
         for match in guideline_search_result.expanded_matches
     }
+    filtered_skill_results = [
+        skill_result
+        for skill_result in guideline_search_result.skill_results
+        if (
+            skill_result.skill_name in direct_skill_names
+            and skill_result.applicability
+            in {
+                GuidelineApplicability.SUPPORTED,
+                GuidelineApplicability.POSSIBLE,
+            }
+        )
+        or (
+            skill_result.skill_name not in direct_skill_names
+            and skill_result.applicability == GuidelineApplicability.SUPPORTED
+        )
+    ]
     numbered_evidence: list[str] = []
     guideline_assessments: list[dict[str, object]] = []
-    for skill_result in guideline_search_result.skill_results:
+    for skill_result in filtered_skill_results:
         skill_evidence: list[str] = []
         for evidence in skill_result.guideline_evidence:
             numbered_item = (
@@ -1441,6 +1473,7 @@ async def _run_final_diagnosis_async(
         assessment: dict[str, object] = {
             "skill_name": skill_result.skill_name,
             "disease_name": skill_result.disease_name,
+            "applicability": skill_result.applicability,
             "match_type": (
                 "direct"
                 if skill_result.skill_name in direct_skill_names
@@ -1475,16 +1508,28 @@ async def _run_final_diagnosis_async(
             f"{_as_json(diagnostic_judgement_result)}\n"
             "</DIAGNOSTIC_JUDGEMENT>\n\n"
             "## Revision Instructions\n\n"
-            "Reassess all candidates using the newly retrieved evidence and address the focused "
-            "diagnoses and evidence gaps identified by the evidence-sufficiency judgement.\n\n"
+            + (
+                "No further retrieval round is available. Produce a conservative corrected final "
+                "diagnosis using the accumulated evidence. Do not present unresolved evidence gaps "
+                "as resolved, avoid unsupported ICD specificity, and lower confidence where the "
+                "remaining uncertainty affects a diagnosis.\n\n"
+                if corrective
+                else "Reassess all candidates using the accumulated evidence and address the focused "
+                "diagnoses and evidence gaps identified by the evidence-sufficiency judgement.\n\n"
+            )
         )
     diagnosis_prompt = (
         "<PATIENT_INFORMATION>\n"
         f"{case_text}\n"
         "</PATIENT_INFORMATION>\n\n"
-        "<CANDIDATE_DIAGNOSES>\n"
-        f"{_as_json(candidate_diagnoses)}\n"
-        "</CANDIDATE_DIAGNOSES>\n\n"
+    )
+    if not free_diagnosis:
+        diagnosis_prompt += (
+            "<CANDIDATE_DIAGNOSES>\n"
+            f"{_as_json(candidate_diagnoses)}\n"
+            "</CANDIDATE_DIAGNOSES>\n\n"
+        )
+    diagnosis_prompt += (
         "<GUIDELINE_ASSESSMENTS>\n"
         f"{_as_json(guideline_assessments)}\n"
         "</GUIDELINE_ASSESSMENTS>\n\n"
@@ -1493,10 +1538,20 @@ async def _run_final_diagnosis_async(
         "</LITERATURE_EVIDENCE>\n\n"
         f"{revision_context}"
         "## Task\n\n"
-        "Rank all supplied candidates, then output exactly five principal-diagnosis candidates. "
-        "Optimize rank 1 for precision, ranks 1-3 for the strongest alternatives, and ranks 1-5 "
-        "for clinically plausible three- and four-character ICD-10-CM coverage."
     )
+    if free_diagnosis:
+        diagnosis_prompt += (
+            "Independently determine and rank exactly five principal-diagnosis candidates from "
+            "the patient information, using the guideline and literature evidence only as "
+            "external diagnostic knowledge."
+        )
+    else:
+        diagnosis_prompt += (
+            "Rank all supplied candidates, then output exactly five principal-diagnosis candidates "
+            "using only the supplied candidate ICD codes. "
+            "Optimize rank 1 for precision, ranks 1-3 for the strongest alternatives, and ranks 1-5 "
+            "for clinically plausible three- and four-character ICD-10-CM coverage."
+        )
     diagnosis_prompt = _prepare_structured_prompt(
         diagnosis_prompt,
         FinalDiagnosisContent,
@@ -1505,21 +1560,32 @@ async def _run_final_diagnosis_async(
     agent_name = (
         "Corrective Digestive Diagnosis Agent"
         if corrective
-        else "Digestive Diagnosis Agent"
+        else (
+            "Free Digestive Diagnosis Agent"
+            if free_diagnosis
+            else "Digestive Diagnosis Agent"
+        )
     )
     _notify_agent_started(progress_callback, agent_name, round_index)
     validation_error: ValueError | None = None
     for attempt in range(2):
         current_prompt = diagnosis_prompt
         if validation_error is not None:
+            correction_requirement = (
+                "Return exactly five unique ICD-10-CM codes, keep "
+                "excluded_planning_candidates empty, and continue to follow every citation and "
+                "ranking requirement above."
+                if free_diagnosis
+                else "Return exactly five unique ICD-10-CM codes and continue to follow every "
+                "candidate, citation, exclusion, and ranking requirement above."
+            )
             current_prompt = (
                 f"{diagnosis_prompt}\n\n"
                 "## Correction Required\n\n"
                 f"The previous response failed validation: {type(validation_error).__name__}: "
                 f"{validation_error}\n"
                 "Generate the complete final diagnosis JSON again and correct that exact error. "
-                "Return exactly five unique ICD-10-CM codes and continue to follow every candidate, "
-                "citation, exclusion, and ranking requirement above."
+                f"{correction_requirement}"
             )
         raw_result = (
             await Runner.run(
@@ -1533,11 +1599,18 @@ async def _run_final_diagnosis_async(
                 raw_result,
                 FinalDiagnosisContent,
             )
-            validated_excluded_candidates = _validate_final_diagnosis_content(
-                diagnosis_content,
-                candidate_names,
-                planning_candidates,
-            )
+            if free_diagnosis:
+                if diagnosis_content.excluded_planning_candidates:
+                    raise ValueError(
+                        "Free final diagnosis must keep excluded_planning_candidates empty."
+                    )
+                validated_excluded_candidates = []
+            else:
+                validated_excluded_candidates = _validate_final_diagnosis_content(
+                    diagnosis_content,
+                    candidate_names,
+                    planning_candidates,
+                )
             break
         except ValueError as exc:
             if attempt == 1:
@@ -1548,7 +1621,7 @@ async def _run_final_diagnosis_async(
 
     skill_names = [
         skill_result.skill_name
-        for skill_result in guideline_search_result.skill_results
+        for skill_result in filtered_skill_results
     ]
     referenced_numbers = {
         int(reference)
@@ -1623,7 +1696,7 @@ async def _run_final_diagnosis_async(
             for text in candidate.patient_contrary_evidence
         ]
     result = DiagnosisResult(
-        used_skill=guideline_search_result.used_skill,
+        used_skill=bool(filtered_skill_results),
         skill_names=skill_names,
         topk_diagnoses=diagnosis_content.topk_diagnoses,
         excluded_planning_candidates=validated_excluded_candidates,
@@ -1633,7 +1706,11 @@ async def _run_final_diagnosis_async(
     result_title = (
         f"Corrective Final Diagnosis Result - Round {round_index}"
         if corrective
-        else f"Final Diagnosis Result - Round {round_index}"
+        else (
+            f"Free Final Diagnosis Result - Round {round_index}"
+            if free_diagnosis
+            else f"Final Diagnosis Result - Round {round_index}"
+        )
     )
     _publish_stage_result(
         result_title,
@@ -1694,6 +1771,17 @@ async def _run_diagnostic_judgement_async(
         )
     ).final_output
     result = _parse_structured_result(raw_result, DiagnosticJudgementResult)
+    current_diagnosis_codes = {
+        diagnosis.icd_code for diagnosis in diagnosis_result.topk_diagnoses
+    }
+    unknown_focus_diagnoses = (
+        set(result.focus_diagnoses) - current_diagnosis_codes
+    )
+    if unknown_focus_diagnoses:
+        raise ValueError(
+            "Diagnostic judgement focus_diagnoses must come from the current final diagnoses. "
+            f"Unexpected codes: {sorted(unknown_focus_diagnoses)}."
+        )
     _publish_stage_result(
         f"Diagnostic Judgement Result - Round {round_index}",
         result,
@@ -1713,6 +1801,263 @@ async def make_diagnosis_pipeline_async(
     diagnosis_model = model or OPENAI_MODEL
     max_diagnosis_rounds = 2
 
+    prefinal_input = await make_prefinal_diagnosis_input_async(
+        case_text,
+        model=diagnosis_model,
+        debug=debug,
+        progress_callback=progress_callback,
+    )
+    llm_hypotheses_result = prefinal_input.llm_hypotheses_result
+    positive_features_result = prefinal_input.positive_features_result
+    similar_case_retrieval_result = prefinal_input.similar_case_retrieval_result
+    search_planning_result = prefinal_input.search_planning_result
+    knowledge_search_result = prefinal_input.knowledge_search_result
+    guideline_search_result = prefinal_input.guideline_search_result
+    previous_diagnosis_result: DiagnosisResult | None = None
+    previous_diagnostic_judgement_result: DiagnosticJudgementResult | None = None
+    diagnosis_rounds: list[DiagnosisRoundResult] = []
+
+    for round_index in range(1, max_diagnosis_rounds + 1):
+        if round_index > 1:
+            try:
+                new_knowledge_search_result = await _run_knowledge_search_async(
+                    search_planning_result.search_queries,
+                    model=diagnosis_model,
+                    debug=debug,
+                    round_index=round_index,
+                    progress_callback=progress_callback,
+                )
+            except Exception as exc:
+                new_knowledge_search_result = KnowledgeSearchResult(
+                    relevant_pubmed_results=[],
+                    reason=_stage_failure_reason("Knowledge search", exc),
+                )
+                _publish_stage_result(
+                    f"Knowledge Search Result - Round {round_index}",
+                    new_knowledge_search_result,
+                    debug=debug,
+                    progress_callback=progress_callback,
+                )
+
+            seen_sections = {
+                (item.pmid, section.section_index)
+                for query_result in knowledge_search_result.relevant_pubmed_results
+                for item in query_result.results
+                for section in item.abstract_sections
+            }
+            merged_pubmed_results = [
+                query_result.model_copy(deep=True)
+                for query_result in knowledge_search_result.relevant_pubmed_results
+            ]
+            for query_result in new_knowledge_search_result.relevant_pubmed_results:
+                new_results = []
+                for item in query_result.results:
+                    new_sections = [
+                        section
+                        for section in item.abstract_sections
+                        if (item.pmid, section.section_index) not in seen_sections
+                    ]
+                    if not new_sections:
+                        continue
+                    seen_sections.update(
+                        (item.pmid, section.section_index)
+                        for section in new_sections
+                    )
+                    new_results.append(
+                        item.model_copy(
+                            update={"abstract_sections": new_sections},
+                            deep=True,
+                        )
+                    )
+                if new_results:
+                    merged_pubmed_results.append(
+                        PubMedQueryResult(
+                            query=query_result.query,
+                            results=new_results,
+                        )
+                    )
+            knowledge_search_result = KnowledgeSearchResult(
+                relevant_pubmed_results=merged_pubmed_results,
+                reason="; ".join(
+                    reason
+                    for reason in [
+                        knowledge_search_result.reason,
+                        new_knowledge_search_result.reason,
+                    ]
+                    if reason
+                )
+                or None,
+            )
+
+        diagnosis_result = await _run_final_diagnosis_async(
+            case_text,
+            llm_hypotheses_result,
+            search_planning_result,
+            knowledge_search_result,
+            guideline_search_result,
+            similar_case_retrieval_result,
+            model=diagnosis_model,
+            previous_diagnosis_result=previous_diagnosis_result,
+            diagnostic_judgement_result=previous_diagnostic_judgement_result,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
+
+        diagnostic_judgement_result = await _run_diagnostic_judgement_async(
+            case_text,
+            search_planning_result,
+            knowledge_search_result,
+            guideline_search_result,
+            diagnosis_result,
+            model=diagnosis_model,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        )
+
+        if (
+            round_index == max_diagnosis_rounds
+            and diagnostic_judgement_result.need_next_round
+        ):
+            diagnosis_result = await _run_final_diagnosis_async(
+                case_text,
+                llm_hypotheses_result,
+                search_planning_result,
+                knowledge_search_result,
+                guideline_search_result,
+                similar_case_retrieval_result,
+                model=diagnosis_model,
+                previous_diagnosis_result=diagnosis_result,
+                diagnostic_judgement_result=diagnostic_judgement_result,
+                corrective=True,
+                debug=debug,
+                round_index=round_index,
+                progress_callback=progress_callback,
+            )
+
+        diagnosis_rounds.append(
+            DiagnosisRoundResult(
+                round=round_index,
+                search_planning_result=search_planning_result,
+                similar_case_retrieval_result=similar_case_retrieval_result,
+                knowledge_search_result=knowledge_search_result,
+                guideline_search_result=guideline_search_result,
+                diagnosis_result=diagnosis_result,
+                diagnostic_judgement_result=diagnostic_judgement_result,
+            )
+        )
+
+        if (
+            not diagnostic_judgement_result.need_next_round
+            or round_index == max_diagnosis_rounds
+        ):
+            return DiagnosisPipelineResult(
+                llm_hypotheses_result=llm_hypotheses_result,
+                positive_features_result=positive_features_result,
+                multi_round_diagnosis=MultiRoundDiagnosisResult(
+                    is_multi_round=len(diagnosis_rounds) > 1,
+                    rounds=diagnosis_rounds,
+                )
+            )
+
+        previous_diagnosis_result = diagnosis_result
+        previous_diagnostic_judgement_result = diagnostic_judgement_result
+        search_planning_result = await _run_search_planning_with_fallback(
+            case_text,
+            llm_hypotheses_result,
+            positive_features_result,
+            similar_case_retrieval_result,
+            model=diagnosis_model,
+            previous_search_planning_result=search_planning_result,
+            previous_diagnosis_result=diagnosis_result,
+            diagnostic_judgement_result=diagnostic_judgement_result,
+            previous_guideline_evidence=[
+                f"{skill_result.skill_name}：{evidence}"
+                for skill_result in guideline_search_result.skill_results
+                for evidence in skill_result.guideline_evidence
+            ],
+            debug=debug,
+            round_index=round_index + 1,
+            progress_callback=progress_callback,
+        )
+
+
+async def _run_external_evidence_async(
+    search_planning_result: SearchPlanningResult,
+    positive_features_result: PositiveFeaturesResult,
+    *,
+    model: str | Model,
+    debug: bool,
+    round_index: int,
+    progress_callback: DiagnosisProgressCallback | None,
+) -> tuple[KnowledgeSearchResult, GuidelineSearchResult]:
+    knowledge_search_outcome, guideline_search_outcome = await asyncio.gather(
+        _run_knowledge_search_async(
+            search_planning_result.search_queries,
+            model=model,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        ),
+        _run_guideline_search_async(
+            search_planning_result.hypotheses,
+            positive_features_result,
+            model=model,
+            debug=debug,
+            round_index=round_index,
+            progress_callback=progress_callback,
+        ),
+        return_exceptions=True,
+    )
+
+    if isinstance(knowledge_search_outcome, Exception):
+        knowledge_search_result = KnowledgeSearchResult(
+            relevant_pubmed_results=[],
+            reason=_stage_failure_reason(
+                "Knowledge search",
+                knowledge_search_outcome,
+            ),
+        )
+        _publish_stage_result(
+            f"Knowledge Search Result - Round {round_index}",
+            knowledge_search_result,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+    else:
+        knowledge_search_result = knowledge_search_outcome
+
+    if isinstance(guideline_search_outcome, Exception):
+        guideline_search_result = GuidelineSearchResult(
+            used_skill=False,
+            unused_reason="Guideline search failed.",
+            skill_results=[],
+            reason=_stage_failure_reason(
+                "Guideline search",
+                guideline_search_outcome,
+            ),
+        )
+        _publish_stage_result(
+            f"Guideline Search Result - Round {round_index}",
+            guideline_search_result,
+            debug=debug,
+            progress_callback=progress_callback,
+        )
+    else:
+        guideline_search_result = guideline_search_outcome
+
+    return knowledge_search_result, guideline_search_result
+
+
+async def make_prefinal_diagnosis_input_async(
+    case_text: str,
+    *,
+    model: str | Model | None = None,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> PreFinalDiagnosisInput:
+    diagnosis_model = model or OPENAI_MODEL
     preprocessing_result = await _run_preprocessing_async(
         case_text,
         model=diagnosis_model,
@@ -1760,143 +2105,49 @@ async def make_diagnosis_pipeline_async(
         round_index=1,
         progress_callback=progress_callback,
     )
-    previous_diagnosis_result: DiagnosisResult | None = None
-    previous_diagnostic_judgement_result: DiagnosticJudgementResult | None = None
-    diagnosis_rounds: list[DiagnosisRoundResult] = []
-
-    for round_index in range(1, max_diagnosis_rounds + 1):
-        (
-            knowledge_search_outcome,
-            guideline_search_outcome,
-        ) = await asyncio.gather(
-            _run_knowledge_search_async(
-                search_planning_result.search_queries,
-                model=diagnosis_model,
-                debug=debug,
-                round_index=round_index,
-                progress_callback=progress_callback,
-            ),
-            _run_guideline_search_async(
-                search_planning_result.hypotheses,
-                positive_features_result,
-                model=diagnosis_model,
-                debug=debug,
-                round_index=round_index,
-                progress_callback=progress_callback,
-            ),
-            return_exceptions=True,
-        )
-
-        if isinstance(knowledge_search_outcome, Exception):
-            knowledge_search_result = KnowledgeSearchResult(
-                relevant_pubmed_results=[],
-                reason=_stage_failure_reason(
-                    "Knowledge search",
-                    knowledge_search_outcome,
-                ),
-            )
-            _publish_stage_result(
-                f"Knowledge Search Result - Round {round_index}",
-                knowledge_search_result,
-                debug=debug,
-                progress_callback=progress_callback,
-            )
-        else:
-            knowledge_search_result = knowledge_search_outcome
-
-        if isinstance(guideline_search_outcome, Exception):
-            guideline_search_result = GuidelineSearchResult(
-                used_skill=False,
-                unused_reason="Guideline search failed.",
-                skill_results=[],
-                reason=_stage_failure_reason(
-                    "Guideline search",
-                    guideline_search_outcome,
-                ),
-            )
-            _publish_stage_result(
-                f"Guideline Search Result - Round {round_index}",
-                guideline_search_result,
-                debug=debug,
-                progress_callback=progress_callback,
-            )
-        else:
-            guideline_search_result = guideline_search_outcome
-
-        diagnosis_result = await _run_final_diagnosis_async(
-            case_text,
-            llm_hypotheses_result,
+    knowledge_search_result, guideline_search_result = (
+        await _run_external_evidence_async(
             search_planning_result,
-            knowledge_search_result,
-            guideline_search_result,
-            similar_case_retrieval_result,
-            model=diagnosis_model,
-            previous_diagnosis_result=previous_diagnosis_result,
-            diagnostic_judgement_result=previous_diagnostic_judgement_result,
-            debug=debug,
-            round_index=round_index,
-            progress_callback=progress_callback,
-        )
-
-        diagnostic_judgement_result = None
-        if round_index < max_diagnosis_rounds:
-            diagnostic_judgement_result = await _run_diagnostic_judgement_async(
-                case_text,
-                search_planning_result,
-                knowledge_search_result,
-                guideline_search_result,
-                diagnosis_result,
-                model=diagnosis_model,
-                debug=debug,
-                round_index=round_index,
-                progress_callback=progress_callback,
-            )
-
-        diagnosis_rounds.append(
-            DiagnosisRoundResult(
-                round=round_index,
-                search_planning_result=search_planning_result,
-                similar_case_retrieval_result=similar_case_retrieval_result,
-                knowledge_search_result=knowledge_search_result,
-                guideline_search_result=guideline_search_result,
-                diagnosis_result=diagnosis_result,
-                diagnostic_judgement_result=diagnostic_judgement_result,
-            )
-        )
-
-        if (
-            diagnostic_judgement_result is None
-            or not diagnostic_judgement_result.need_next_round
-        ):
-            return DiagnosisPipelineResult(
-                llm_hypotheses_result=llm_hypotheses_result,
-                positive_features_result=positive_features_result,
-                multi_round_diagnosis=MultiRoundDiagnosisResult(
-                    is_multi_round=len(diagnosis_rounds) > 1,
-                    rounds=diagnosis_rounds,
-                )
-            )
-
-        previous_diagnosis_result = diagnosis_result
-        previous_diagnostic_judgement_result = diagnostic_judgement_result
-        search_planning_result = await _run_search_planning_with_fallback(
-            case_text,
-            llm_hypotheses_result,
             positive_features_result,
-            similar_case_retrieval_result,
             model=diagnosis_model,
-            previous_search_planning_result=search_planning_result,
-            previous_diagnosis_result=diagnosis_result,
-            diagnostic_judgement_result=diagnostic_judgement_result,
-            previous_guideline_evidence=[
-                f"{skill_result.skill_name}：{evidence}"
-                for skill_result in guideline_search_result.skill_results
-                for evidence in skill_result.guideline_evidence
-            ],
             debug=debug,
-            round_index=round_index + 1,
+            round_index=1,
             progress_callback=progress_callback,
         )
+    )
+    return PreFinalDiagnosisInput(
+        case_text=case_text,
+        llm_hypotheses_result=llm_hypotheses_result,
+        positive_features_result=positive_features_result,
+        search_planning_result=search_planning_result,
+        similar_case_retrieval_result=similar_case_retrieval_result,
+        knowledge_search_result=knowledge_search_result,
+        guideline_search_result=guideline_search_result,
+    )
+
+
+async def make_final_diagnosis_from_prefinal_async(
+    prefinal_input: PreFinalDiagnosisInput,
+    *,
+    model: str | Model | None = None,
+    free_diagnosis: bool = False,
+    debug: bool = False,
+    progress_callback: DiagnosisProgressCallback | None = None,
+) -> DiagnosisResult:
+    return await _run_final_diagnosis_async(
+        prefinal_input.case_text,
+        prefinal_input.llm_hypotheses_result,
+        prefinal_input.search_planning_result,
+        prefinal_input.knowledge_search_result,
+        prefinal_input.guideline_search_result,
+        prefinal_input.similar_case_retrieval_result,
+        model=model or OPENAI_MODEL,
+        free_diagnosis=free_diagnosis,
+        debug=debug,
+        round_index=1,
+        progress_callback=progress_callback,
+    )
+
 
 async def make_diagnosis_async(
     case_text: str,

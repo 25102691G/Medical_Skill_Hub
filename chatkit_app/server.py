@@ -440,10 +440,18 @@ def _format_stage_progress(title: str, content: str, language: str) -> str | Non
     if stage_name == "Diagnostic Judgement Result":
         need_next_round = bool(parsed_content.get("need_next_round"))
         if language == "zh-CN":
-            outcome = "需要补充检索，进入下一轮" if need_next_round else "当前证据充分"
+            outcome = (
+                "证据仍不充分，执行保守诊断修正"
+                if need_next_round and round_index == "2"
+                else "需要补充检索，进入下一轮"
+                if need_next_round
+                else "当前证据充分"
+            )
             return f"{round_prefix}诊断结果评估完成：{outcome}"
         outcome = (
-            "more evidence is needed; proceeding to the next round"
+            "evidence remains insufficient; proceeding to conservative diagnosis correction"
+            if need_next_round and round_index == "2"
+            else "more evidence is needed; proceeding to the next round"
             if need_next_round
             else "current evidence is sufficient"
         )

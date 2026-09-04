@@ -186,6 +186,62 @@ bash run_evaluate.sh output/batch/<rag-baseline-result>.jsonl
 
 `evaluate.py` 会自动输出该 baseline 的 ICD 前 3 位和前 4 位 Recall@1、Recall@3、Recall@5。
 
+## 分离测试 Final Diagnosis
+
+`batch_prefinal.py` 对每条病例执行第一轮预处理、相似病例检索与重排、Search Planning、
+PubMed 检索和指南 Skill 检索，在调用 Final Diagnosis 前停止。结果写入
+`output/batch/*_prefinal_*.jsonl`，其中保留原始病例和 Final Diagnosis 所需的全部上游结果。
+第二轮检索依赖第一轮 Final Diagnosis 和 Diagnostic Judgement，因此 pre-final 文件只表示
+第一轮 Final Diagnosis 的输入。
+
+使用 DeepSeek V4 Pro 生成 pre-final 文件：
+
+```bash
+.venv/bin/python batch_prefinal.py \
+  --input database/mimic_test.csv \
+  --limit 2000 \
+  --workers 60 \
+  --model deepseek-v4-pro \
+  --history-output "output/batch/deepseek-v4-pro_mimic_test_2000_prefinal_20260903_174101_160880.jsonl"
+```
+
+不传 `--history-output` 时会新建输出文件。需要断点续跑时，可将此前生成的 pre-final JSONL
+传给 `--history-output`，程序会跳过其中已有的 `subject_id` 和 `hadm_id`，并将新结果追加到
+同一文件。
+
+pre-final 文件生成完毕后，使用 `batch_final_diagnosis.py` 重复测试 Final Diagnosis。
+`current` 模式保持当前 Final Diagnosis 的输入、Prompt、候选约束、证据编号和结果校验逻辑：
+
+```bash
+.venv/bin/python batch_final_diagnosis.py \
+  --input output/batch/deepseek-v4-pro_mimic_test_2000_prefinal_20260903_174101_160880.jsonl \
+  --mode current \
+  --workers 50 \
+  --model deepseek-v4-pro
+```
+
+`free` 模式只向 Final Diagnosis 提供完整病例、指南判断及证据和 PubMed 证据，不提供初始
+LLM 候选、Search Planning 候选、相似病例、阳性特征或候选来源与排名。模型自由生成恰好
+5 个主诊断 ICD-10-CM 候选：
+
+```bash
+.venv/bin/python batch_final_diagnosis.py \
+  --input output/batch/deepseek-v4-pro_mimic_test_2000_prefinal_20260903_174101_160880.jsonl \
+  --mode free \
+  --workers 50 \
+  --model deepseek-v4-pro
+```
+
+两种模式的结果均写入 `output/batch/`，文件名分别带有 `final_current` 或 `final_free`。
+输出使用单轮完整流水线结构，可以直接调用现有评估入口：
+
+```bash
+bash run_evaluate.sh output/batch/<final-result>.jsonl
+```
+
+运行 Final Diagnosis 测试前应等待 pre-final 文件完全生成，否则只能读取运行时已经写入的
+记录。
+
 ## 批量运行
 
 `batch_main.py` 读取通过 `--input` 指定的 CSV，使用
@@ -199,13 +255,14 @@ JSONL，程序会按 `subject_id` 和 `hadm_id` 跳过其中已经成功完成�
 阳性特征和最终诊断的结构化输出校验失败时，当前阶段仍会先根据具体错误纠正一次。
 初始 LLM 候选与相似病例候选合并去重后，由 Planning Hypotheses Reranker Agent 根据原始
 病例、候选来源及来源排名重新排序，再交给 Search Planning 生成 PubMed 查询。每轮最终
-诊断读取原始病例、Search Planning 候选、候选来源、相似病例排名、当前轮指南判断与证据
-以及 PubMed 证据，从候选集中生成 5 个唯一的 ICD-10-CM 主诊断，并为未原样进入 Top 5 的
-规划候选提供基于患者事实的排除或编码修正理由。诊断判断读取原始病例、当前检索计划、
+诊断读取原始病例、Search Planning 候选、候选来源、相似病例排名、指南判断与证据
+以及累计 PubMed 证据，只从候选集中生成 5 个唯一的 ICD-10-CM 主诊断，并为未进入 Top 5 的
+规划候选提供基于患者事实的排除理由。诊断判断读取原始病例、当前检索计划、
 PubMed 结果、指南结果和最终诊断，判断当前外部证据是否充分；只有存在可通过文献检索解决
 的具体证据缺口时才进入第二轮，并将上一轮诊断、指南证据、聚焦诊断、证据缺口和查询方向
-交给 Search Planning 改进检索词。第二轮最终诊断同时读取上一轮 Top 5 和判断反馈并重新评估
-全部候选。第二轮结束后不再继续检索。
+交给 Search Planning 生成少量定向检索词。第二轮沿用第一轮指南结果，将两轮 PubMed 证据
+去重合并后重新评估全部候选。第二轮诊断后再次判断；如果证据仍不充分，不再继续检索，
+而是根据两轮累计证据执行一次保守诊断修正后返回。
 成功结果写入 JSONL；最终失败的病例只在终端报告，不另外生成错误文件：
 
 ```bash

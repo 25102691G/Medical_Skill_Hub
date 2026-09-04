@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import Annotated
 
 from pydantic import (
@@ -136,8 +137,7 @@ class ExcludedPlanningCandidate(BaseModel):
         min_length=1,
         description=(
             "Reasons grounded in explicit current-patient findings for excluding this planning "
-            "candidate or replacing it with a corrected ICD-10-CM code; supporting numbered "
-            "guideline or literature evidence may be cited"
+            "candidate; supporting numbered guideline or literature evidence may be cited"
         ),
     )
 
@@ -155,7 +155,7 @@ class FinalDiagnosisContent(BaseModel):
     excluded_planning_candidates: list[ExcludedPlanningCandidate] = Field(
         description=(
             "Search planning candidates not selected unchanged in the final top five, each with "
-            "patient-grounded reasons for exclusion or ICD-10-CM correction"
+            "patient-grounded reasons for exclusion"
         ),
     )
     summary: str = Field(description="Brief diagnostic analysis summary")
@@ -204,9 +204,19 @@ class DiagnosisResult(BaseModel):
     )
 
 
+class GuidelineApplicability(str, Enum):
+    SUPPORTED = "supported"
+    POSSIBLE = "possible"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+    NOT_SUPPORTED = "not_supported"
+
+
 class GuidelineSkillResult(BaseModel):
     skill_name: str = Field(description="Original local guideline skill name")
     disease_name: str = Field(description="Disease evaluated by this guideline skill")
+    applicability: GuidelineApplicability = Field(
+        description="Whether this guideline's disease applies to the current patient"
+    )
     guideline_evidence: list[str] = Field(
         description=(
             "Relevant evidence retrieved and verified according to this skill's SKILL.md workflow"
@@ -398,13 +408,21 @@ class PreprocessingResult(BaseModel):
 
 
 class PlanningHypothesesRerankResult(BaseModel):
-    ranked_candidate_ids: list[str] = Field(
+    ranked_icd_codes: list[str] = Field(
         min_length=1,
         max_length=10,
         description=(
-            "Candidate IDs ordered from most to least likely to be the principal diagnosis"
+            "All unique supplied ICD-10-CM codes ordered from most to least likely to be the "
+            "principal diagnosis"
         ),
     )
+
+    @field_validator("ranked_icd_codes", mode="before")
+    @classmethod
+    def normalize_icd_codes(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        return [_normalize_icd_code(str(code)) for code in value]
 
 
 class SimilarCaseRerankResult(BaseModel):
@@ -429,9 +447,8 @@ class SearchPlanningResult(BaseModel):
     search_queries: list[str] = Field(
         max_length=10,
         description=(
-            "Five to ten concise PubMed search queries that collectively cover every hypothesis; "
-            "each query combines one or more clinically relevant candidate diseases with the most "
-            "discriminative positive patient feature, and may be empty only when search planning fails"
+            "Concise PubMed search queries: five to ten for initial broad planning or one to five "
+            "for a targeted second round; may be empty only when search planning fails"
         ),
     )
     reason: str | None = Field(
@@ -512,7 +529,10 @@ class DiagnosticJudgementResult(BaseModel):
     need_next_round: bool = Field(
         description="Whether another targeted evidence-retrieval round is needed"
     )
-    reason: str = Field(description="Concise reason for the evidence-sufficiency judgement")
+    reason: str = Field(
+        min_length=1,
+        description="Concise reason for the evidence-sufficiency judgement",
+    )
     focus_diagnoses: list[str] = Field(
         default_factory=list,
         description="ICD-10-CM codes from the current final diagnoses requiring more evidence",
@@ -526,6 +546,33 @@ class DiagnosticJudgementResult(BaseModel):
         description="Focused PubMed query directions for addressing the evidence gaps",
     )
 
+    normalize_focus_diagnoses = field_validator("focus_diagnoses", mode="before")(
+        lambda value: (
+            [_normalize_icd_code(str(code)) for code in value]
+            if isinstance(value, list)
+            else value
+        )
+    )
+
+    @model_validator(mode="after")
+    def validate_retrieval_feedback(self) -> "DiagnosticJudgementResult":
+        if self.need_next_round:
+            if not (
+                self.focus_diagnoses
+                and self.evidence_gaps
+                and self.query_directions
+            ):
+                raise ValueError(
+                    "A requested next round requires focus diagnoses, evidence gaps, and query directions."
+                )
+            if len(self.focus_diagnoses) != len(set(self.focus_diagnoses)):
+                raise ValueError("Diagnostic judgement focus diagnoses must be unique.")
+        elif self.focus_diagnoses or self.evidence_gaps or self.query_directions:
+            raise ValueError(
+                "Retrieval feedback must be empty when no next round is requested."
+            )
+        return self
+
 
 class DiagnosisRoundResult(BaseModel):
     round: int
@@ -535,6 +582,16 @@ class DiagnosisRoundResult(BaseModel):
     guideline_search_result: GuidelineSearchResult
     diagnosis_result: DiagnosisResult
     diagnostic_judgement_result: DiagnosticJudgementResult | None = None
+
+
+class PreFinalDiagnosisInput(BaseModel):
+    case_text: str
+    llm_hypotheses_result: LlmHypothesesResult
+    positive_features_result: PositiveFeaturesResult
+    search_planning_result: SearchPlanningResult
+    similar_case_retrieval_result: SimilarCaseRetrievalResult
+    knowledge_search_result: KnowledgeSearchResult
+    guideline_search_result: GuidelineSearchResult
 
 
 class MultiRoundDiagnosisResult(BaseModel):

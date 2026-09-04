@@ -31,7 +31,8 @@ the principal diagnosis of the current hospitalization. This is not a treatment 
 Return:
 
 * hypotheses: the supplied merged candidate diagnoses without modification;
-* search_queries: 5 to 10 medical literature search queries;
+* search_queries: 5 to 10 queries for initial planning, or 1 to 5 focused queries when previous-round
+  judgement is supplied;
 * reason: a failure reason when planning cannot be completed, otherwise null.
 
 Do not generate, remove, rename, rerank, or otherwise modify hypotheses. Copy every supplied merged
@@ -75,9 +76,11 @@ Write each query as a concise PubMed-oriented keyword phrase rather than a full 
 names, the selected patient feature, and only the additional biomedical concepts needed for the query
 intent, such as anatomical site, imaging, endoscopy, pathology, or procedure context.
 
-The complete set of queries must collectively cover every supplied hypothesis. Do not mechanically
-append generic terms such as "diagnosis" to a disease name. Do not wrap terms in quotation marks or
-include literal backslashes in a query.
+For initial planning, the complete set of queries must collectively cover every supplied hypothesis.
+For a second round, query only the focus diagnoses and evidence gaps from the diagnostic judgement;
+do not repeat broad coverage of candidates unrelated to those gaps. Do not mechanically append generic
+terms such as "diagnosis" to a disease name. Do not wrap terms in quotation marks or include literal
+backslashes in a query.
 
 Avoid duplicate or overly broad queries.
 
@@ -101,22 +104,30 @@ Do not output Markdown, commentary, or fields that are not defined in the schema
 PLANNING_HYPOTHESES_RERANK_INSTRUCTIONS = """
 ## PLANNING HYPOTHESES RERANK INSTRUCTIONS
 
-Rank the supplied candidate diagnoses from most to least likely to be the principal diagnosis of the
-current hospitalization.
+Rank all unique ICD-10-CM diagnoses supplied in LLM_HYPOTHESES and SIMILAR_CASE_HYPOTHESES from most
+to least likely to be the principal diagnosis of the current hospitalization.
 
 Use patient_information as the only source of facts about the current patient. Evaluate the documented
 symptoms, disease course, anatomical distribution, laboratory findings, imaging, endoscopy, pathology,
 complications, relevant negative findings, and the main condition evaluated or treated during the
 hospitalization.
 
-Candidate source ranks are weak candidate-generation signals only. A candidate matched by both the
-initial LLM and similar-case retrieval has a weak positive consensus signal, especially when clinical
-fit is otherwise similar, but cross-source agreement must not override contradictory patient findings.
-Do not treat similar-case retrieval or candidate source metadata as patient evidence.
+First rank candidates by their fit to the original patient record. When clinical fit is similar, raise
+the priority of diagnoses supported by cross-source ICD agreement. Compare codes after converting them
+to uppercase and removing decimal points. Agreement is stronger in this order:
 
-Input order has no clinical meaning. Return ranked_candidate_ids as an exact permutation of all supplied
-candidate_id values. Include every candidate_id exactly once. Do not output ICD-10-CM codes, disease
-names, explanations, or additional fields.
+1. the complete ICD code matches across the two sources;
+2. the first four characters match across the two sources;
+3. the first three characters match across the two sources.
+
+Cross-source agreement is a secondary signal and must not override patient findings that contradict a
+candidate. Apply agreement only across LLM_HYPOTHESES and SIMILAR_CASE_HYPOTHESES, not between two
+items from the same source. Diagnosis titles and source membership are candidate information, not
+patient facts.
+
+Input order has no clinical meaning. Return ranked_icd_codes as an exact permutation of all unique
+supplied ICD-10-CM codes after normalization. Include every unique code exactly once. Do not generate a
+new code, omit a code, or output disease names, explanations, or additional fields.
 """.strip()
 
 
