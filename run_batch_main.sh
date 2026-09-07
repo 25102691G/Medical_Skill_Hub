@@ -21,9 +21,9 @@ LIMIT=2000
 # openai-gpt-5.5 
 # deepseek-v4-pro: 50
 # qwen3.5-27b: 40
-# qwen3.5-122b-a10b: 25
-WORKERS=25
-# HISTORY_OUTPUT="output/batch/Qwen3.5-27B_mimic_test_2000_20260903_143221_154428.jsonl"
+# qwen3.5-122b-a10b: 15
+WORKERS=15
+HISTORY_OUTPUT="output/batch/Qwen3.5-122B-A10B_mimic_test_2000_20260904_162902_958833.jsonl"
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 HISTORY_ARGS=()

@@ -485,3 +485,8 @@ python -m pip install uv
 uv pip install vllm \
   --torch-backend=auto \
   --extra-index-url https://wheels.vllm.ai/nightly
+
+# 论文编译
+cd ~/user_workspace/Medical_Skill_Hub/paper
+latexmk -xelatex main.tex # 手动编译
+latexmk -xelatex -pvc main.tex # 保存后自动编译

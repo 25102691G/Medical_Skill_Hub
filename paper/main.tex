@@ -1,0 +1,526 @@
+\documentclass[10pt,letterpaper]{article}
+
+% DeepRare-inspired single-column manuscript template.
+% Compile with: latexmk -xelatex main.tex
+
+\usepackage[letterpaper,top=0.72in,bottom=0.70in,left=0.92in,right=0.92in]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[backend=biber,style=numeric,sorting=none,maxbibnames=99]{biblatex}
+\usepackage[colorlinks=true,citecolor=blue!70!black,linkcolor=blue!55!black,urlcolor=blue!70!black]{hyperref}
+
+\addbibresource{references.bib}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.42em}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{leftmargin=2.2em,itemsep=0.25em,topsep=0.3em}
+\captionsetup{font=small,labelfont=bf}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.65em}{}
+\titlespacing*{\section}{0pt}{1.0em}{0.25em}
+\titlespacing*{\subsection}{0pt}{0.75em}{0.15em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[R]{\small $\vert$\,\thepage}
+
+\newcommand{\systemname}{\textbf{Medical Skill Hub}}
+
+\title{\vspace{-1.8em}\bfseries
+An Agentic System for Evidence-Grounded\\
+Digestive Disease Diagnosis}
+
+\author{
+First Author$^{1,*}$, Second Author$^{1,*}$, Third Author$^{2}$,\\
+Senior Author$^{1,\dagger}$ and Corresponding Author$^{2,\dagger}$\\[0.55em]
+\small $^{1}$Department or School, University, City, Country\\
+\small $^{2}$Hospital or Research Institute, City, Country\\[0.35em]
+\small $^{*}$Equal contributions \qquad $^{\dagger}$Corresponding authors\\
+\small Correspondence: \href{mailto:author@example.com}{author@example.com}
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+\vspace{-1.5em}
+
+% DeepRare uses an unlabelled summary rather than a conventional Abstract heading.
+Accurate differential diagnosis in gastroenterology requires the integration of
+longitudinal clinical narratives, similar cases, current biomedical literature,
+and specialty guidelines. Here we present \systemname, an agentic clinical
+decision-support system that produces ranked diagnostic candidates with
+ICD-10-CM codes and traceable supporting evidence. The system combines an
+initial language-model assessment with hybrid similar-case retrieval, PubMed
+search, and locally compiled guideline skills. We evaluate the system across
+diverse digestive diseases using stage-specific and final Top-$k$ recall. This
+template paragraph should be replaced with a concise summary of the clinical
+motivation, methods, principal numerical findings, and implications of the work.
+
+\section{Main}
+
+Digestive diseases present substantial diagnostic challenges because symptoms,
+laboratory abnormalities, imaging findings, and endoscopic observations often
+overlap across conditions. Clinical decision-support systems must therefore
+combine broad medical knowledge with patient-specific evidence while preserving
+traceability and clearly separating observed facts from retrieved information.
+
+Recent progress in large language models and retrieval-augmented generation has
+enabled systems that synthesize heterogeneous evidence sources
+\cite{singhal2023clinical,lewis2020retrieval}. However, diagnostic performance
+alone is insufficient for medical use: each candidate should be supported by
+verifiable evidence, and external knowledge must not be presented as an observed
+patient fact.
+
+Here, we introduce \systemname, a multi-stage framework for digestive disease
+diagnosis. Given a complete case narrative, the system generates initial
+hypotheses, retrieves similar cases, plans literature searches, consults local
+guideline skills, and produces five unique ranked diagnoses with ICD-10-CM
+codes. A diagnostic judgement stage determines whether a second evidence-
+gathering round is needed.
+
+Our main contributions are:
+
+\begin{itemize}
+  \item an evidence-grounded, multi-agent workflow covering the full spectrum of
+        digestive diseases rather than a single condition;
+  \item hybrid case retrieval that combines lexical and dense representations;
+  \item traceable use of PubMed literature and locally compiled clinical
+        guidelines; and
+  \item stage-wise evaluation of diagnostic recall and evidence usage.
+\end{itemize}
+
+\section{Results}
+
+\subsection{System Overview}
+
+Figure~\ref{fig:overview} summarizes the diagnostic workflow. The preprocessing
+agent extracts positive clinical features and proposes initial hypotheses. A
+retrieval module ranks local cases using BM25 and dense similarity, fuses the
+rankings, and applies a medical cross-encoder. Search-planning, literature, and
+guideline agents then collect evidence for the final diagnostic agent.
+
+\begin{figure}[htbp]
+  \centering
+  % Replace this framed box with:
+  % \includegraphics[width=\textwidth]{figures/system-overview.pdf}
+  \fbox{\rule{0pt}{2.15in}\rule{0.94\textwidth}{0pt}}
+  \caption{\textbf{Overview of the Medical Skill Hub workflow.}
+  Replace the placeholder with a vector PDF or high-resolution image. Describe
+  each panel in order and define all abbreviations.}
+  \label{fig:overview}
+\end{figure}
+
+\subsection{Evaluation Settings}
+
+Describe the study population, inclusion criteria, case sources, comparison
+methods, model settings, and primary endpoints. Keep training, validation, and
+test cohorts clearly separated. For clinical datasets such as MIMIC-IV
+\cite{johnson2023mimic}, report governance and data-access requirements.
+
+The primary metrics are category- and subcategory-level Recall@1, Recall@3, and
+Recall@5. Confidence intervals and statistical tests should be reported where
+appropriate. Table~\ref{tab:main-results} gives a compact example layout.
+
+\begin{table}[htbp]
+  \centering
+  \caption{\textbf{Main diagnostic performance.} Replace all values with study
+  results and report uncertainty where applicable.}
+  \label{tab:main-results}
+  \begin{tabular}{lccc}
+    \toprule
+    Method & Recall@1 & Recall@3 & Recall@5 \\
+    \midrule
+    Initial LLM hypotheses & -- & -- & -- \\
+    Similar-case retrieval & -- & -- & -- \\
+    Medical Skill Hub      & -- & -- & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Overall Diagnostic Performance}
+
+Report the principal comparison first, including cohort size, effect magnitude,
+and uncertainty. Follow with results across disease categories, care settings,
+or case-complexity strata. Avoid restating every value shown in a table.
+
+\subsection{Contribution of Evidence Sources}
+
+Quantify the contribution of similar cases, biomedical literature, and local
+guideline skills. Distinguish evidence availability from evidence correctness,
+and document cases in which an external source could not be retrieved.
+
+\subsection{Ablation and Error Analysis}
+
+Evaluate key pipeline components and summarize clinically meaningful failure
+modes. Suggested groups include insufficient case information, competing
+diagnoses with overlapping presentations, coding granularity errors, retrieval
+failures, and unsupported model inferences.
+
+\section{Discussion}
+
+Interpret the findings in relation to the clinical problem and prior work.
+Discuss why particular components improved or failed to improve performance,
+how traceable evidence may support clinician review, and which conclusions are
+supported by the reported experiments. Avoid implying autonomous clinical use.
+
+\section{Limitations}
+
+Discuss dataset representativeness, retrospective design, coding quality,
+possible information leakage, dependence on external models and databases,
+guideline coverage, and the need for prospective evaluation. State explicitly
+that the system supports research and technical demonstration and does not
+replace clinician diagnosis, treatment decisions, or in-person assessment.
+
+\section{Acknowledgments}
+
+List funding sources, institutional support, data providers, and individuals who
+contributed but do not meet authorship criteria. Include grant numbers where
+required.
+
+\section{Author Contributions}
+
+Use the CRediT taxonomy where possible. Example: F.A. and S.A. conceived the
+study; F.A. implemented the system; F.A. and T.A. performed experiments; all
+authors analyzed results, revised the manuscript, and approved the final version.
+
+\section{Competing Interests}
+
+The authors declare no competing interests. Replace this statement if any
+financial or non-financial interests must be disclosed.
+
+\section{Methods}
+
+\subsection{Problem Formulation}
+
+We formulated digestive-disease diagnosis as principal-diagnosis ranking from a
+complete free-text clinical record. For a case $x$, the system returns an ordered
+set $\widehat{Y}_{5}=\{(d_j,c_j,q_j,e_j,a_j)\}_{j=1}^{5}$, where $d_j$ is a
+unique ICD-10-CM code, $c_j$ is its canonical English name, $q_j$ is an integer
+confidence score from 0 to 100, $e_j$ contains case-grounded supporting evidence,
+and $a_j$ contains recommended next examinations or management directions. The
+first-ranked item is intended to represent the condition chiefly responsible for
+the admission or the main condition evaluated and treated during the encounter.
+Codes are normalized to uppercase and stored without decimal points. Three-
+character categories are used only when a more specific supported subcategory is
+not available.
+
+We enforced a strict provenance boundary throughout the pipeline. The original
+case text was the only permissible source of facts about the current patient.
+Initial hypotheses, retrieved cases, PubMed abstracts, guideline statements, and
+outputs from previous rounds were treated as candidate-generation signals or
+external knowledge, not as observations in the current patient. Consequently,
+the system could use external evidence to interpret a documented finding but
+could not import a symptom, test result, or diagnosis from another source into
+the patient's record.
+
+\subsection{Overall Diagnostic Workflow}
+
+The pipeline comprised six linked stages. First, two independent preprocessing
+agents generated an initial differential diagnosis and extracted structured
+positive findings from the original record. Second, the structured findings were
+used to retrieve diagnostically similar cases from a local case bank. Third, the
+five initial hypotheses and the leading similar-case diagnoses were merged and
+ranked to form a candidate set, and a search-planning agent generated PubMed
+queries for that set. Fourth, PubMed retrieval and local guideline-skill search
+were executed concurrently. Fifth, a diagnosis agent ranked the supplied
+candidates using the patient record and the retrieved external evidence. Finally,
+an evidence-sufficiency agent determined whether a second, targeted literature
+retrieval round was warranted.
+
+The initial preprocessing and similar-case retrieval were performed once. The
+system allowed at most two diagnostic rounds. When the first-round evidence was
+sufficient, the pipeline returned immediately. Otherwise, the second round
+retained the original candidate set, similar-case results, and guideline results,
+but regenerated focused PubMed queries and accumulated newly selected abstract
+sections before revising the final ranking. This bounded design prevented an
+open-ended agent loop while preserving one opportunity to resolve a specific
+evidence gap.
+
+\subsection{Independent Clinical Preprocessing}
+
+Two agents processed the same original case in parallel and were not shown each
+other's outputs. The hypothesis agent independently produced exactly five unique
+principal-diagnosis candidates, each represented by a complete ICD-10-CM code and
+canonical English name. Chronic comorbidities, incidental findings, symptoms,
+and secondary complications were not used merely to fill lower ranks.
+
+The feature-extraction agent organized explicitly documented positive findings
+into five fields: present illness history, past medical history, physical
+examination, family history, and pertinent laboratory, imaging, endoscopic,
+pathological, and microbiological results. Each finding was represented as a
+short English phrase while retaining clinically relevant duration, severity,
+anatomical location, measurements, and trends. Denied symptoms, normal or
+negative examinations, planned tests, and inferred findings were excluded. Empty
+fields were preserved as empty lists. These field-specific representations were
+used only as queries for similar-case and guideline retrieval; all subsequent
+diagnostic claims remained anchored to the full original record.
+
+\subsection{Similar-Case Retrieval}
+
+The local case bank stored one admission identifier, discharge diagnosis,
+ICD-10-CM code, and the same five clinical fields for each case. Non-empty fields
+were segmented into non-overlapping chunks of at most 510 tokenizer tokens. For
+the current patient, all items within each non-empty feature field were
+concatenated to create one field-specific query. Retrieval was conducted
+independently within the corresponding field of the case bank, avoiding, for
+example, direct comparison of a laboratory query with a family-history section.
+
+We used parallel lexical and dense retrieval branches. The lexical branch applied
+BM25 \cite{robertson1995okapi} after lower-casing and tokenizing text with the
+scientific spaCy tokenizer, and retained up to 50 positive-scoring sections per
+field. The dense branch encoded each query and case section with BGE-M3
+\cite{chen2024bgem3}. We used the normalized embedding of the first output token,
+truncated model inputs to 1,024 tokens, and ranked sections by the dot product of
+L2-normalized vectors, which is equivalent to cosine similarity. Up to 50 dense
+candidates were retained per field. Corpus embeddings and BM25 indices were
+cached and invalidated when the source case-bank fingerprint changed.
+
+Section scores were aggregated at the admission level. For each field and
+retrieval branch, the case score was the best section score plus 0.2 times the
+second-best score when a second matching section existed. The five feature fields
+were assigned weights of 1.0, 0.5, 0.5, 0.2, and 1.0 for present illness, past
+medical history, physical examination, family history, and pertinent results,
+respectively. We combined ranks using reciprocal rank fusion (RRF)
+\cite{cormack2009rrf}. Let $\mathcal{F}$ denote the non-empty patient fields,
+$\bar{w}_f=w_f/\sum_{g\in\mathcal{F}}w_g$ the normalized field weight, and
+$r_{m,f}(i)$ the rank of case $i$ for modality $m$ and field $f$. The modality-
+specific fusion score was
+
+\begin{equation}
+  S_m(i)=\sum_{f\in\mathcal{F}}
+  \frac{\bar{w}_f}{60+r_{m,f}(i)},
+\end{equation}
+
+where a term was omitted when the case did not occur in that ranked list. The
+hybrid score combined the lexical and dense branches as
+
+\begin{equation}
+  S_{\mathrm{hybrid}}(i)=\sum_{f\in\mathcal{F}}\bar{w}_f
+  \left[
+  \frac{0.4}{60+r_{\mathrm{BM25},f}(i)}+
+  \frac{0.6}{60+r_{\mathrm{dense},f}(i)}
+  \right].
+\end{equation}
+
+The fused ranking was deduplicated by ICD-10-CM code and truncated to 20 disease
+candidates. When more than five candidates were available, an LLM reranker was
+given anonymous candidate identifiers, diagnosis codes and names, BM25, dense,
+and RRF ranks, and the two highest-scoring fused sections. It selected exactly
+five unique candidates according to their fit with the current patient's
+structured findings. Similar-case text remained explicitly marked as external
+case evidence. If reranking failed validation or timed out after 120 seconds, the
+top five RRF candidates were used; when five or fewer fused candidates were
+available, their RRF order was retained directly. The pipeline also preserved
+the distinct top-five BM25, dense, RRF, and LLM-reranked outputs for analysis.
+
+\subsection{Candidate Integration and Search Planning}
+
+Candidate construction began with the five independently generated hypotheses,
+followed by up to five LLM-reranked similar-case diagnoses, with the top RRF cases
+used as fallback. Exact normalized ICD-10-CM duplicates were removed while
+preserving the first occurrence, yielding at most ten candidates. When at least
+two candidates were present, a separate planning reranker ordered all supplied
+codes against the original case. Exact, four-character, and three-character
+agreement between the initial-LLM and similar-case sources served as secondary
+signals and could not override contradictory patient findings. The reranker was
+required to return an exact permutation of the input codes; otherwise, the
+initial merge order was retained.
+
+The search-planning agent copied this ranked candidate set without adding,
+removing, or renaming a diagnosis. In the initial round, it generated five to ten
+concise PubMed-oriented keyword queries whose collective coverage included every
+candidate and the most discriminative documented patient features. Queries could
+target diagnostic criteria, anatomical distributions, imaging, endoscopy,
+histopathology, procedural complications, or pairwise differential diagnosis.
+If a second round was requested, the agent instead generated one to five focused
+queries restricted to the diagnoses and knowledge gaps specified by the
+evidence-sufficiency judgement.
+
+\subsection{PubMed Retrieval and Evidence Selection}
+
+Each planned query was submitted to the PubMed E-utilities ESearch endpoint, and
+up to three identifiers were retrieved. The corresponding records were then
+downloaded from EFetch in XML format. Requests included the configured tool name,
+email address, and API key when available. A process-wide rate limiter enforced
+the configured request frequency; HTTP 429 and server errors were retried with
+exponential delay and jitter. Queries from the same planning result were
+executed concurrently.
+
+The parser retained only records with a numeric PMID, non-empty title, and at
+least one abstract section. Structured abstracts were preserved as separate,
+one-indexed sections rather than collapsed into a single text block. A knowledge-
+search agent received all retrieved titles and sections and returned only exact
+$(\mathrm{PMID},\mathrm{section\ index})$ pairs judged relevant to one or more
+planned queries. Repeated retrieval of a PMID across queries was treated as a
+relevance signal but was not sufficient for selection. The agent could neither
+rewrite an abstract nor invent a PMID or section index.
+
+\subsection{Local Guideline-Skill Retrieval}
+
+Clinical guidelines were prepared offline as local Agent Skills. Each skill
+contained disease-scope metadata, workflow instructions, a recommendation index,
+the converted guideline full text, and a local search utility. At run time, the
+guideline orchestrator compared the candidate diagnoses with the skill catalog.
+A skill was selected directly when its primary disease matched a candidate or
+when its broader scope clearly covered that candidate. A narrower skill was
+eligible only if all of its required qualifiers, such as subtype, complication,
+stage, hereditary status, or procedure context, were present in the candidate.
+Shared organ systems, symptoms, or treatments alone were not sufficient.
+
+For every directly matched skill, the system performed one non-recursive forward
+expansion through differential diseases explicitly declared in that skill's
+metadata. An additional skill was selected only when its primary scope directly
+matched one of these declared differentials; reverse, multi-hop, and generic
+category expansion were prohibited. Selected skills were executed concurrently,
+with at most ten active executions. Each executor ran in a read-only sandbox,
+loaded exactly one selected skill, read its complete instructions, used the
+recommendation index to locate relevant passages, and verified those passages
+against the guideline full text.
+
+Each executor returned the disease assessed, verified evidence, a concise
+patient-to-guideline comparison, and one of four applicability labels:
+\emph{supported}, \emph{possible}, \emph{insufficient evidence}, or
+\emph{not supported}. Empty guideline evidence necessarily produced the
+insufficient-evidence label. Before final diagnosis, directly matched skills were
+retained when labelled supported or possible, whereas differentially expanded
+skills were retained only when labelled supported. This stricter rule prevented
+a one-hop expansion from entering the final evidence set solely because it was
+compatible with the patient.
+
+\subsection{Candidate-Constrained Final Diagnosis}
+
+The final diagnosis agent received the original case, the candidate diagnoses,
+selected guideline assessments, and selected PubMed sections. Each candidate was
+annotated with its planning rank, source membership, initial-LLM rank, similar-
+case rank, and exact, four-character, and three-character cross-source agreement.
+Guideline evidence was numbered first, followed by PubMed evidence. Candidate
+metadata and numbered material were treated as ranking priors and external
+knowledge, respectively, rather than patient facts.
+
+The agent was constrained to return exactly five unique codes from the supplied
+candidate set and to preserve each corresponding canonical name. Rank 1 was
+optimized for principal-diagnosis precision, ranks 1--3 for the strongest
+alternatives, and ranks 1--5 for plausible diagnostic coverage. The first initial
+LLM hypothesis was retained at rank 1 unless explicit patient findings favored
+another supplied candidate and cross-source evidence also supported that change.
+Lower ranks could add three- or four-character ICD diversity only when clinical
+support was otherwise comparable; diversity alone could not displace a stronger
+candidate. Unsupported etiological, anatomical, complication, or severity
+specificity was prohibited.
+
+For each diagnosis, the output included an independent integer confidence from 0
+to 100, supporting findings copied or concisely derived from the current record,
+and recommended next steps. Every planning candidate omitted from the top five
+had to be returned once with a patient-grounded reason for exclusion. Programmatic
+validation rejected new codes, altered names, duplicate diagnoses, ranks other
+than 1--5, missing excluded candidates, and empty exclusion reasons. One
+correction attempt was allowed after a validation error. Finally, only external
+evidence actually cited in a diagnosis, exclusion reason, or next step was kept,
+and citation numbers were compactly reassigned in order of first appearance.
+
+\subsection{Evidence-Sufficiency Judgement and Iterative Refinement}
+
+After each final diagnosis, a separate judgement agent reviewed the patient
+record, search plan, retrieved PubMed and guideline results, and complete ranked
+output. It requested a second round only when a specific unresolved distinction
+could materially change the principal-diagnosis ranking or ICD-10-CM selection,
+the available external evidence did not address that distinction, and another
+literature search could realistically resolve it. Uncertainty requiring a new
+patient-specific test did not qualify as an external evidence gap.
+
+When further retrieval was requested, the judgement output had to identify
+unique focus codes from the current top five, specific evidence gaps, and PubMed
+query directions. The search-planning agent used this feedback to revise the
+queries but retained the original candidate set. During round 2, only PubMed
+search was rerun; similar-case retrieval and guideline-skill execution were not
+repeated. Newly selected PubMed sections were merged with round-1 evidence and
+deduplicated by PMID and section index. The diagnosis agent then reassessed all
+candidates using the accumulated evidence and the previous judgement.
+
+If the second judgement still requested more evidence, no third retrieval round
+was initiated. Instead, the system performed one corrective final-diagnosis pass
+using the accumulated evidence, explicitly preserving unresolved uncertainty,
+avoiding unsupported code specificity, and reducing confidence when appropriate.
+The last completed diagnosis was returned as the pipeline output.
+
+\subsection{Failure Handling and Implementation}
+
+The orchestration was implemented in Python 3.10 with the OpenAI Agents SDK, and
+all inter-agent outputs were validated with Pydantic schemas. The diagnosis model
+was configurable between the OpenAI Responses API, a DeepSeek OpenAI-compatible
+endpoint, and locally served Qwen models. Native structured output was used when
+supported; compatible chat-completion models were instructed to return JSON
+objects. Model temperature was set to zero where supported.
+
+The external PubMed and guideline branches were run with independent exception
+handling. Failure of either branch produced an empty stage result and a failure
+reason while allowing diagnosis to continue with the remaining evidence.
+Similar-case retrieval failure was handled in the same way. If search planning
+failed, the merged candidate list was preserved and PubMed queries were left
+empty. These fallbacks affected evidence availability but did not relax the final
+five-code schema or the constraint that patient facts originate only from the
+case record.
+
+\subsection{Evaluation}
+
+Batch evaluation used the recorded principal ICD-10-CM code as the reference
+standard. We evaluated seven outputs: the initial LLM hypotheses; BM25, dense,
+RRF, and LLM-reranked similar cases; the merged search-planning candidates; and
+the final diagnoses. Before comparison, reference and predicted codes were
+upper-cased and stripped of decimal points. Disease-category agreement required
+the first three characters to match, whereas subcategory agreement required the
+first four characters to match.
+
+For a dataset of $N$ cases and an ICD prefix length $p\in\{3,4\}$, Recall@$k$
+was computed as
+
+\begin{equation}
+  \operatorname{Recall@}k^{(p)} = \frac{1}{N}\sum_{i=1}^{N}
+  \mathbb{I}\!\left(y_i^{(p)} \in \widehat{Y}_{i,k}^{(p)}\right),
+\end{equation}
+
+where $y_i^{(p)}$ is the length-$p$ prefix of the reference code and
+$\widehat{Y}_{i,k}^{(p)}$ is the set of corresponding prefixes among the top $k$
+predictions. Recall@1, Recall@3, and Recall@5 were reported for all stages;
+Recall@20 was additionally available for the RRF candidate list, and Recall@10
+for the search-planning list. Metrics were summarized for each diagnostic round
+and for the final returned round. Guideline-skill usage rate and per-skill usage
+counts were reported separately.
+
+\section{Data Availability}
+
+Describe which data can be shared, where they can be accessed, and any clinical
+privacy or licensing restrictions.
+
+\section{Code Availability}
+
+Provide the repository URL, release identifier, license, environment setup, and
+instructions needed to reproduce the reported experiments.
+
+\printbibliography[title={References}]
+
+\section{Figure Legends}
+
+\textbf{Figure 1. Overview of the Medical Skill Hub workflow.}
+Provide a self-contained legend, explain each panel, and define every acronym,
+color, symbol, and statistical annotation.
+
+\appendix
+\section{Supplementary Information}
+
+Place extended methods, prompts, additional analyses, dataset descriptions, and
+case studies here, or move them to a separate supplementary manuscript if the
+target journal requires separate submission files.
+
+\end{document}
