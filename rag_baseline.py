@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import csv
 import json
+import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,10 +12,13 @@ from pathlib import Path
 from typing import Any
 
 from agents import Agent, RunConfig, Runner
-from rank_bm25 import BM25Okapi
 
+from config import (
+    DIAGNOSIS_MODELS,
+    DIAGNOSIS_PROVIDER,
+    SIMILAR_CASE_EMBEDDING_BATCH_SIZE,
+)
 from diagnosis.agents.similar_case_retrieval_agent import (
-    _encode_texts,
     _load_dense_model,
     _require_dense_dependencies,
 )
@@ -33,9 +37,38 @@ OUTPUT_DIR = PROJECT_ROOT / "output" / "batch"
 CASE_TEXT_COLUMN = "discharge_text_before_disposition"
 OUTPUT_COLUMNS = ("subject_id", "hadm_id", "icd_code", "long_title")
 CHUNK_SIZE = 512
-CHUNK_OVERLAP = 50
-TOP_K = 5
-RRF_K = 60
+CHUNK_OVERLAP = 64
+TOP_K = 10
+QUERY_MAX_LENGTH = 8192
+
+
+RAG_DIAGNOSIS_INSTRUCTIONS = """
+You are a gastroenterology clinical decision-support model using retrieval-augmented generation.
+
+Your task is to identify and rank exactly five unique ICD-10-CM candidates for the principal diagnosis
+responsible for the current hospitalization.
+
+Use the complete patient case as the only source of facts about the current patient. Retrieved guideline
+chunks are external medical knowledge: use them to interpret patient findings and support diagnostic or
+management reasoning, but never present their content as findings observed in the patient. Do not invent
+missing symptoms, examinations, test results, or history.
+
+Rank the diagnosis chiefly responsible for admission first. Prefer principal diseases over chronic
+comorbidities, incidental findings, symptoms, aftercare codes, and secondary complications. Keep lower-ranked
+diagnoses clinically plausible when the available evidence is uncertain.
+
+For every diagnosis, use a complete ICD-10-CM code without a decimal point and its canonical English
+description. Do not infer a subtype, cause, site, or complication that the patient case does not support.
+Use unique codes and ranks 1 through 5 in list order.
+
+Each supporting_evidence item must be anchored in the patient case. When a retrieved chunk supports the
+interpretation, append its citation number, such as [1] or [1][2]. Apply the same citation format to
+recommended_next_steps that use retrieved knowledge. Cite only the supplied numbers and do not invent
+references. Set excluded_planning_candidates to an empty array.
+
+Write all output in English. Use integer confidence values from 0 to 100, keep the summary concise, and
+return only valid JSON matching the requested schema. Do not output Markdown or a reasoning trace.
+""".strip()
 
 
 @dataclass(frozen=True)
@@ -43,15 +76,10 @@ class GuidelineChunk:
     skill_name: str
     content: str
 
-    @property
-    def retrieval_text(self) -> str:
-        return f"{self.skill_name}\n{self.content}"
 
-
-@dataclass
-class GuidelineIndex:
+@dataclass(frozen=True)
+class VectorKnowledgeBase:
     chunks: list[GuidelineChunk]
-    bm25: BM25Okapi
     embeddings: Any
 
 
@@ -64,23 +92,43 @@ def _positive_int(value: str) -> int:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run the configured DeepSeek model plus all-guideline RAG baseline."
+        description="Run a basic LLM plus guideline vector-RAG diagnosis baseline."
     )
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--limit", type=_positive_int)
     parser.add_argument("--workers", type=_positive_int, default=1)
+    parser.add_argument(
+        "--model",
+        choices=tuple(DIAGNOSIS_MODELS),
+        default=DIAGNOSIS_PROVIDER,
+    )
     return parser.parse_args()
 
 
-def _bm25_tokens(text: str) -> list[str]:
-    return text.lower().split()
+def _encode_texts(texts: list[str], *, max_length: int) -> Any:
+    torch, functional, _, _ = _require_dense_dependencies()
+    tokenizer, model, device = _load_dense_model()
+    embeddings = []
+    for start in range(0, len(texts), SIMILAR_CASE_EMBEDDING_BATCH_SIZE):
+        batch = texts[start : start + SIMILAR_CASE_EMBEDDING_BATCH_SIZE]
+        inputs = tokenizer(
+            batch,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt",
+        )
+        inputs = {name: value.to(device) for name, value in inputs.items()}
+        with torch.inference_mode():
+            outputs = model(**inputs)
+        embeddings.append(
+            functional.normalize(outputs.last_hidden_state[:, 0, :], p=2, dim=1)
+        )
+    return torch.cat(embeddings, dim=0)
 
 
 def _guideline_paths() -> list[Path]:
-    paths = sorted(
-        SKILLS_DIR.glob("*/references/guideline-full-text.md"),
-        key=lambda path: path.as_posix(),
-    )
+    paths = sorted(SKILLS_DIR.glob("*/references/guideline-full-text.md"))
     if not paths:
         raise FileNotFoundError(
             f"No guideline-full-text.md files were found below {SKILLS_DIR}."
@@ -102,7 +150,9 @@ def _split_guideline(path: Path, tokenizer: Any) -> list[GuidelineChunk]:
         chunk_offsets = offsets[start : start + CHUNK_SIZE]
         if not chunk_offsets:
             break
-        chunk_content = content[chunk_offsets[0][0] : chunk_offsets[-1][1]].strip()
+        chunk_content = content[
+            chunk_offsets[0][0] : chunk_offsets[-1][1]
+        ].strip()
         if chunk_content:
             chunks.append(
                 GuidelineChunk(
@@ -113,61 +163,41 @@ def _split_guideline(path: Path, tokenizer: Any) -> list[GuidelineChunk]:
     return chunks
 
 
-def _build_guideline_index() -> GuidelineIndex:
-    _require_dense_dependencies()
+def _build_vector_knowledge_base() -> VectorKnowledgeBase:
     tokenizer, _, _ = _load_dense_model()
     paths = _guideline_paths()
     chunks = [chunk for path in paths for chunk in _split_guideline(path, tokenizer)]
     print(
-        f"Indexing {len(chunks)} chunks from {len(paths)} guideline full texts...",
+        f"Building vector knowledge base from {len(chunks)} chunks "
+        f"across {len(paths)} guidelines...",
         file=sys.stderr,
     )
-    embeddings = _encode_texts([chunk.retrieval_text for chunk in chunks])
-
-    return GuidelineIndex(
-        chunks=chunks,
-        bm25=BM25Okapi([_bm25_tokens(chunk.retrieval_text) for chunk in chunks]),
-        embeddings=embeddings,
+    embeddings = _encode_texts(
+        [f"{chunk.skill_name}\n{chunk.content}" for chunk in chunks],
+        max_length=CHUNK_SIZE,
     )
+    return VectorKnowledgeBase(chunks=chunks, embeddings=embeddings)
 
 
-def _retrieve_chunks(index: GuidelineIndex, case_text: str) -> list[dict[str, object]]:
+def _retrieve_chunks(
+    knowledge_base: VectorKnowledgeBase,
+    case_text: str,
+) -> list[dict[str, object]]:
     torch, _, _, _ = _require_dense_dependencies()
-    bm25_scores = index.bm25.get_scores(_bm25_tokens(case_text))
-    query_embedding = _encode_texts([case_text])[0]
-    dense_scores = torch.matmul(index.embeddings, query_embedding)
-
-    bm25_ranking = sorted(
-        range(len(index.chunks)),
-        key=lambda chunk_index: (-float(bm25_scores[chunk_index]), chunk_index),
-    )
-    dense_ranking = torch.argsort(dense_scores, descending=True).tolist()
-    bm25_ranks = {
-        chunk_index: rank for rank, chunk_index in enumerate(bm25_ranking, start=1)
-    }
-    dense_ranks = {
-        chunk_index: rank for rank, chunk_index in enumerate(dense_ranking, start=1)
-    }
-    rrf_scores = {
-        chunk_index: 1 / (RRF_K + bm25_ranks[chunk_index])
-        + 1 / (RRF_K + dense_ranks[chunk_index])
-        for chunk_index in range(len(index.chunks))
-    }
-    retrieved_indices = sorted(
-        rrf_scores,
-        key=lambda chunk_index: (-rrf_scores[chunk_index], chunk_index),
-    )[:TOP_K]
-
+    query_embedding = _encode_texts(
+        [case_text],
+        max_length=QUERY_MAX_LENGTH,
+    )[0]
+    scores = torch.matmul(knowledge_base.embeddings, query_embedding)
+    indices = torch.argsort(scores, descending=True)[:TOP_K].tolist()
     return [
         {
             "chunk_id": f"G{chunk_index + 1:05d}",
-            "skill_name": index.chunks[chunk_index].skill_name,
-            "content": index.chunks[chunk_index].content,
-            "bm25_rank": bm25_ranks[chunk_index],
-            "dense_rank": dense_ranks[chunk_index],
-            "rrf_score": round(rrf_scores[chunk_index], 8),
+            "skill_name": knowledge_base.chunks[chunk_index].skill_name,
+            "content": knowledge_base.chunks[chunk_index].content,
+            "similarity": round(float(scores[chunk_index]), 6),
         }
-        for chunk_index in retrieved_indices
+        for chunk_index in indices
     ]
 
 
@@ -176,30 +206,26 @@ async def _diagnose_case(
     retrieved_chunks: list[dict[str, object]],
     model: Any,
 ) -> DiagnosisResult:
-    evidence = [
+    numbered_evidence = [
         f"[{number}] {chunk['skill_name']}：{chunk['content']}"
         for number, chunk in enumerate(retrieved_chunks, start=1)
     ]
-    guideline_context = "\n\n".join(evidence)
     prompt = (
-        "Diagnose the principal condition responsible for this hospitalization.\n"
-        "Return exactly five unique, ranked ICD-10-CM candidates in English. "
-        "Use the patient record for patient facts and the retrieved guideline chunks "
-        "only as external medical knowledge. Set excluded_planning_candidates to [].\n\n"
-        "<PATIENT_RECORD>\n"
+        "<PATIENT_CASE>\n"
         f"{case_text}\n"
-        "</PATIENT_RECORD>\n\n"
-        "<RETRIEVED_GUIDELINES>\n"
-        f"{guideline_context}\n"
-        "</RETRIEVED_GUIDELINES>"
+        "</PATIENT_CASE>\n\n"
+        "<RETRIEVED_GUIDELINE_CONTEXT>\n"
+        f"{json.dumps(numbered_evidence, ensure_ascii=False, indent=2)}\n"
+        "</RETRIEVED_GUIDELINE_CONTEXT>\n\n"
+        "## Task\n\n"
+        "Analyze the complete patient case together with the retrieved external context and return "
+        "the five most likely principal-diagnosis candidates with patient-grounded evidence, "
+        "appropriate citations, and recommended next steps."
     )
-    diagnosis_agent = Agent(
-        name="Basic RAG Diagnosis Agent",
+    agent = Agent(
+        name="Basic Vector RAG Diagnosis Agent",
         model=model,
-        instructions=(
-            "You are a gastroenterology diagnosis model. Follow the user request and "
-            "return valid JSON only. Do not invent patient findings."
-        ),
+        instructions=RAG_DIAGNOSIS_INSTRUCTIONS,
     )
     structured_prompt = _prepare_structured_prompt(
         prompt,
@@ -207,7 +233,7 @@ async def _diagnose_case(
         native_structured_output=False,
     )
     run = await Runner.run(
-        diagnosis_agent,
+        agent,
         structured_prompt,
         run_config=RunConfig(model_settings=_diagnosis_model_settings(model)),
     )
@@ -220,6 +246,57 @@ async def _diagnose_case(
             "RAG baseline must return an empty excluded_planning_candidates array."
         )
 
+    citation_pattern = re.compile(r"\[(\d+)\]")
+    referenced_numbers = {
+        int(reference)
+        for diagnosis in diagnosis_content.topk_diagnoses
+        for text in [
+            *diagnosis.supporting_evidence,
+            *diagnosis.recommended_next_steps,
+        ]
+        for reference in citation_pattern.findall(text)
+        if 1 <= int(reference) <= len(numbered_evidence)
+    }
+    ordered_numbers = [
+        number
+        for number in range(1, len(numbered_evidence) + 1)
+        if number in referenced_numbers
+    ]
+    citation_mapping = {
+        old_number: new_number
+        for new_number, old_number in enumerate(ordered_numbers, start=1)
+    }
+    evidence = [
+        citation_pattern.sub(
+            f"[{citation_mapping[old_number]}]",
+            numbered_evidence[old_number - 1],
+            count=1,
+        )
+        for old_number in ordered_numbers
+    ]
+    for diagnosis in diagnosis_content.topk_diagnoses:
+        diagnosis.supporting_evidence = [
+            citation_pattern.sub(
+                lambda match: (
+                    f"[{citation_mapping[int(match.group(1))]}]"
+                    if int(match.group(1)) in citation_mapping
+                    else ""
+                ),
+                text,
+            ).strip()
+            for text in diagnosis.supporting_evidence
+        ]
+        diagnosis.recommended_next_steps = [
+            citation_pattern.sub(
+                lambda match: (
+                    f"[{citation_mapping[int(match.group(1))]}]"
+                    if int(match.group(1)) in citation_mapping
+                    else ""
+                ),
+                text,
+            ).strip()
+            for text in diagnosis.recommended_next_steps
+        ]
     skill_names = list(
         dict.fromkeys(str(chunk["skill_name"]) for chunk in retrieved_chunks)
     )
@@ -238,13 +315,14 @@ async def _run_batch_async(args: argparse.Namespace) -> Path:
     if not input_path.is_file():
         raise FileNotFoundError(f"Input CSV does not exist: {input_path}")
 
-    guideline_index = _build_guideline_index()
-    model = build_diagnosis_model("deepseek-v4-pro")
+    knowledge_base = _build_vector_knowledge_base()
+    model = build_diagnosis_model(args.model)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     limit_label = args.limit if args.limit is not None else "all"
     output_path = (
-        OUTPUT_DIR / f"{input_path.stem}_rag_baseline_{limit_label}_{timestamp}.jsonl"
+        OUTPUT_DIR
+        / f"{input_path.stem}_rag_baseline_{limit_label}_{timestamp}.jsonl"
     )
 
     attempted_count = 0
@@ -258,9 +336,8 @@ async def _run_batch_async(args: argparse.Namespace) -> Path:
         required_columns = {*OUTPUT_COLUMNS, CASE_TEXT_COLUMN}
         missing_columns = required_columns.difference(reader.fieldnames or [])
         if missing_columns:
-            raise ValueError(
-                f"Input CSV is missing required columns: {', '.join(sorted(missing_columns))}"
-            )
+            missing_text = ", ".join(sorted(missing_columns))
+            raise ValueError(f"Input CSV is missing required columns: {missing_text}")
 
         row_queue: asyncio.Queue[
             tuple[int, int, dict[str, str | None]] | None
@@ -287,11 +364,12 @@ async def _run_batch_async(args: argparse.Namespace) -> Path:
                     failed_count += 1
                     continue
                 try:
-                    retrieved_chunks = _retrieve_chunks(guideline_index, case_text)
+                    retrieved_chunks = _retrieve_chunks(knowledge_base, case_text)
                     result = await _diagnose_case(case_text, retrieved_chunks, model)
                 except Exception as exc:
                     print(
-                        f"[{index}] Failed {case_label}: {type(exc).__name__}: {exc}",
+                        f"[{index}] Failed {case_label}: "
+                        f"{type(exc).__name__}: {exc}",
                         file=sys.stderr,
                     )
                     failed_count += 1

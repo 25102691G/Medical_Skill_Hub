@@ -58,7 +58,7 @@ Senior Author$^{1,\dagger}$ and Corresponding Author$^{2,\dagger}$\\[0.55em]
 % DeepRare uses an unlabelled summary rather than a conventional Abstract heading.
 Accurate differential diagnosis in gastroenterology requires the integration of
 longitudinal clinical narratives, similar cases, current biomedical literature,
-and specialty guidelines. Here we present \systemname, an agentic clinical
+and specialty guidelines. Here we present \systemname{}, an agentic clinical
 decision-support system that produces ranked diagnostic candidates with
 ICD-10-CM codes and traceable supporting evidence. The system combines an
 initial language-model assessment with hybrid similar-case retrieval, PubMed
@@ -82,7 +82,7 @@ alone is insufficient for medical use: each candidate should be supported by
 verifiable evidence, and external knowledge must not be presented as an observed
 patient fact.
 
-Here, we introduce \systemname, a multi-stage framework for digestive disease
+Here, we introduce \systemname{}, a multi-stage framework for digestive disease
 diagnosis. Given a complete case narrative, the system generates initial
 hypotheses, retrieves similar cases, plans literature searches, consults local
 guideline skills, and produces five unique ranked diagnoses with ICD-10-CM
@@ -130,23 +130,8 @@ test cohorts clearly separated. For clinical datasets such as MIMIC-IV
 
 The primary metrics are category- and subcategory-level Recall@1, Recall@3, and
 Recall@5. Confidence intervals and statistical tests should be reported where
-appropriate. Table~\ref{tab:main-results} gives a compact example layout.
-
-\begin{table}[htbp]
-  \centering
-  \caption{\textbf{Main diagnostic performance.} Replace all values with study
-  results and report uncertainty where applicable.}
-  \label{tab:main-results}
-  \begin{tabular}{lccc}
-    \toprule
-    Method & Recall@1 & Recall@3 & Recall@5 \\
-    \midrule
-    Initial LLM hypotheses & -- & -- & -- \\
-    Similar-case retrieval & -- & -- & -- \\
-    Medical Skill Hub      & -- & -- & -- \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+appropriate. Complete baseline and system results are reported in Extended Data
+Table 2.
 
 \subsection{Overall Diagnostic Performance}
 
@@ -169,18 +154,180 @@ failures, and unsupported model inferences.
 
 \section{Discussion}
 
-Interpret the findings in relation to the clinical problem and prior work.
-Discuss why particular components improved or failed to improve performance,
-how traceable evidence may support clinician review, and which conclusions are
-supported by the reported experiments. Avoid implying autonomous clinical use.
+In this study, we present \systemname{}, an agentic clinical decision-support
+system for principal-diagnosis ranking across digestive diseases. Rather than
+relying on a single language model or a single knowledge source, the system
+combines full-text case interpretation, hybrid similar-case retrieval, targeted
+PubMed search, and disease-specific guideline skills within a candidate-
+constrained diagnostic workflow. This design addresses a central challenge in
+clinical artificial intelligence: diagnostic reasoning requires not only broad
+medical knowledge, but also faithful preservation of patient information,
+selection of evidence that is applicable to the specific clinical context, and
+a clear distinction between observed patient facts and externally retrieved
+knowledge.
+
+Existing medical knowledge systems only partially address these requirements.
+Conventional retrieval-augmented generation typically follows a
+query--document-chunk--language-model pipeline \cite{lewis2020retrieval}. Although
+this approach can provide relevant background information, similarity-based
+chunk retrieval does not ensure clinical applicability. Guideline
+recommendations often depend on combinations of disease subtype, anatomical
+site, severity, disease stage, complications, previous treatment, and patient
+characteristics. These conditions may be separated across multiple chunks or
+omitted from the retrieved context, allowing an individually relevant passage
+to be applied outside its intended scope. Chunk-level retrieval can also obscure
+the relationship between a recommendation and its surrounding definitions,
+exceptions, and evidence statements. Knowledge graphs provide a more explicit
+representation of medical entities and relations, but their construction
+requires substantial schema design and continuing expert curation. Fixed graph
+relations may incompletely represent qualifiers and narrative context in
+clinical guidelines, while incorporating revised recommendations requires
+coordinated updates to nodes, relations, and downstream retrieval logic.
+
+Phenotype-centered diagnostic systems introduce a different information
+bottleneck. DeepRare and traditional phenotype-matching tools represent patient
+findings using Human Phenotype Ontology terms, which facilitates standardized
+matching across diseases. However, converting a complete clinical narrative
+into a set of ontology terms is inherently lossy. Temporal progression,
+quantitative measurements, anatomical details, disease severity, procedural
+context, and interactions among findings may be simplified or discarded.
+Automatically extracted HPO profiles may also vary with extraction prompts,
+models, or terminology mapping. Because these profiles become the principal
+input to downstream retrieval and diagnosis, omitted or inconsistently encoded
+findings can propagate through the pipeline and produce unstable candidate
+rankings. Standardized phenotypes therefore remain useful retrieval signals,
+but they should not replace the original clinical narrative as the source of
+patient-specific diagnostic evidence.
+
+\systemname{} addresses these limitations by separating retrieval representations
+from diagnostic evidence. Structured positive features are used to improve
+similar-case and guideline retrieval, while the complete original case remains
+available to the diagnostic agents and is the only permitted source of facts
+about the current patient. This prevents the structured representation from
+becoming a lossy substitute for the record. Candidate diagnoses are generated
+independently by the language model and the similar-case module, merged by
+ICD-10-CM code, and subsequently constrained throughout evidence retrieval and
+final ranking. PubMed sections and previous cases are explicitly labelled as
+external evidence, reducing the risk that retrieved information will be
+incorrectly restated as an observed patient finding. The bounded second-round
+judgement further focuses retrieval on unresolved distinctions without allowing
+an open-ended reasoning loop.
+
+The Medical Skill architecture extends this separation from patient
+representation to clinical knowledge representation. Instead of treating a
+guideline as an undifferentiated collection of retrievable chunks, each
+guideline is compiled into a disease-scoped module containing explicit scope
+metadata, operational instructions, a recommendation index, the complete source
+text, and a local retrieval procedure. At run time, skills are selected only
+when their disease scope and required qualifiers match the diagnostic
+candidates. The recommendation index supports efficient localization, whereas
+the full guideline text remains the final source used to verify context. The
+resulting workflow can be summarized as
+\emph{guideline $\rightarrow$ structured clinical knowledge $\rightarrow$
+disease-specific skill $\rightarrow$ conditional retrieval $\rightarrow$
+evidence-grounded reasoning}. This organization preserves the traceability of
+the original document while adding clinical selection rules that are difficult
+to express through vector similarity alone.
+
+Medical Skills also provide practical advantages for maintaining a clinical
+knowledge system. Because each skill is an independent module, a revised
+guideline can be recompiled and reviewed without rebuilding an entire knowledge
+graph or changing unrelated disease modules. Its metadata defines when the
+knowledge is applicable, its source text supports auditing, and its execution
+instructions define how an agent should retrieve and verify evidence. New
+disease areas can therefore be added incrementally, and different agents can
+invoke the same guideline knowledge without embedding the complete guideline
+library in every prompt. This modularity makes the system better aligned with
+clinical workflows, in which clinicians consult different specialty guidelines
+according to the current differential diagnosis rather than search all medical
+documents uniformly.
+
+The findings suggest that diagnostic support benefits from combining
+complementary forms of evidence rather than treating language-model knowledge,
+retrieved documents, or historical cases as individually sufficient. Similar
+cases provide empirical precedents, PubMed retrieval addresses targeted
+knowledge gaps, and guideline skills supply clinically qualified
+recommendations. Their value lies not only in potentially improving diagnostic
+ranking, but also in making the basis for a ranking easier to inspect. The
+candidate constraint and explicit evidence provenance further reduce the space
+in which unsupported diagnoses or citations can be introduced, although they
+cannot eliminate errors caused by incomplete records, missing candidates,
+inadequate evidence, or incorrect clinical weighting.
+
+In clinical practice, such a system could reduce the time clinicians spend
+searching guidelines, literature, and comparable cases, while preserving access
+to the underlying evidence for independent review. It may be particularly useful
+for non-specialist physicians who encounter unfamiliar digestive diseases or
+lack immediate access to subspecialty expertise. The system is intended to
+support, rather than automate, clinical judgement: clinicians must still assess
+the completeness of the record, verify retrieved evidence, resolve conflicting
+findings, and determine the investigations required for confirmation.
+Prospective studies are needed to establish whether the proposed workflow
+improves diagnostic efficiency, consistency, and patient outcomes in real
+clinical settings.
 
 \section{Limitations}
 
-Discuss dataset representativeness, retrospective design, coding quality,
-possible information leakage, dependence on external models and databases,
-guideline coverage, and the need for prospective evaluation. State explicitly
-that the system supports research and technical demonstration and does not
-replace clinician diagnosis, treatment decisions, or in-person assessment.
+Several limitations define the scope of the present study. First, the current
+collection of guideline skills covers only a subset of digestive diseases and
+clinical contexts. A diagnosis for which no directly applicable skill is
+available must rely on similar cases, PubMed evidence, and the language model's
+internal knowledge. Even when a relevant guideline is present, its scope may not
+cover every disease stage, complication, procedure, or patient subgroup. The
+quality of a compiled skill also depends on the completeness of the source
+document and the accuracy with which its scope, recommendation index, and full
+text are represented. Future work should expand the skill library
+systematically, introduce expert review of compiled skills, and establish a
+versioned update process so that revised or superseded guidelines can be
+identified and replaced without compromising provenance.
+
+Second, evaluation was limited by the availability of datasets containing
+complete case information suitable for diagnosis. Many accessible clinical
+datasets provide only structured variables, short case descriptions, isolated
+notes, or previously assigned diagnostic labels. Such data do not reproduce the
+longitudinal narratives, examination findings, laboratory trends, imaging,
+endoscopy, pathology, and clinical context that physicians integrate during
+diagnosis. Conversely, datasets containing sufficiently complete records are
+difficult to share because of privacy, governance, and institutional access
+constraints. The present results may therefore not represent the full diversity
+of digestive diseases, institutions, documentation styles, or patient
+populations. In addition, the recorded principal ICD-10-CM code is an
+administrative reference rather than an independently adjudicated diagnostic
+gold standard and may contain coding errors or omit clinically plausible
+alternatives. Evaluation on larger multi-institutional cohorts with clinician-
+adjudicated reference diagnoses is needed.
+
+Third, the current system accepts textual case narratives only. Imaging,
+endoscopic photographs, histopathology slides, physiological waveforms, and raw
+genomic data must first be interpreted elsewhere and documented in text before
+they can inform the diagnostic pipeline. This restriction may discard visual or
+quantitative patterns that are difficult to describe completely and makes
+performance dependent on the quality of the written report. Extending the
+framework to multimodal models and modality-specific tools could allow the
+system to reason over source images and measurements while retaining the same
+provenance boundary between patient observations and external knowledge.
+
+Fourth, the candidate-constrained design improves output consistency but places
+an upper bound on final diagnostic recall: a disease omitted by both the initial
+language-model hypotheses and similar-case retrieval cannot be introduced by
+later evidence retrieval. Similarly, relevant evidence may be missed because of
+imperfect search planning, incomplete PubMed indexing, or overly restrictive
+guideline-skill matching. The system also depends on external language models,
+PubMed availability, and the quality and representativeness of the local case
+bank. Changes to model versions or external databases may affect reproducibility
+and diagnostic ranking. Future studies should evaluate candidate-recovery
+mechanisms, alternative retrieval strategies, and performance under controlled
+changes to models and knowledge sources.
+
+Finally, this retrospective technical evaluation did not measure how clinicians
+interact with the system or whether its evidence presentation reduces review
+time, changes diagnostic decisions, or improves patient outcomes. It also did
+not evaluate conversational collection of missing information from patients or
+clinicians. Prospective studies should assess usability, calibration, failure
+recognition, and the effect of the system on clinical workflow across different
+levels of specialist experience. \systemname{} is intended only for research and
+technical demonstration. It does not replace clinician diagnosis, treatment
+decisions, or in-person medical assessment.
 
 \section{Acknowledgments}
 
@@ -472,6 +619,56 @@ empty. These fallbacks affected evidence availability but did not relax the fina
 five-code schema or the constraint that patient facts originate only from the
 case record.
 
+\subsection{Baselines}
+
+We compared \systemname{} with recent general-purpose and medical LLMs, three
+scales of the Qwen3.5 family, and representative medical agentic systems. The
+baselines were organized as follows.
+
+\paragraph{Latest LLMs.}
+\begin{itemize}
+  \item \textbf{DeepSeek-V4-Pro} is DeepSeek's proprietary flagship reasoning
+  model and supports configurable reasoning effort through its API
+  \cite{deepseek2026v4pro}.
+  \item \textbf{GPT-5.6 Sol} is OpenAI's proprietary flagship model for complex
+  reasoning and professional tasks; we used the \texttt{gpt-5.6-sol} API model
+  \cite{openai2026gpt56sol}.
+  \item \textbf{Claude Opus 5} is Anthropic's proprietary high-capability model
+  for long-horizon reasoning and agentic workloads; we used the
+  \texttt{claude-opus-5} API model \cite{anthropic2026opus5}.
+  \item \textbf{Baichuan-M2-32B} is an open-weight 32-billion-parameter medical
+  reasoning model trained with domain adaptation and multi-stage reinforcement
+  learning supported by a large verifier system \cite{baichuan2025m2}.
+  \item \textbf{DiagAgent-14B} is an open-weight medical diagnostic model
+  optimized through multi-turn reinforcement learning in a virtual clinical
+  environment \cite{qiu2025diagagent}.
+\end{itemize}
+
+\paragraph{Qwen3.5 model family.}
+We evaluated \textbf{Qwen3.5-9B}, \textbf{Qwen3.5-27B}, and
+\textbf{Qwen3.5-122B-A10B} to measure the effect of model scale under a common
+model family. The first two are dense models, whereas Qwen3.5-122B-A10B is a
+sparse mixture-of-experts model with 122 billion total parameters and
+approximately 10 billion activated parameters per token \cite{qwen2026qwen35}.
+
+\paragraph{Other agentic systems.}
+\begin{itemize}
+  \item \textbf{MDAgents} adaptively selects solo or group collaboration based
+  on estimated task complexity and coordinates expert assessment, discussion,
+  and review for medical decision-making \cite{kim2024mdagents}.
+  \item \textbf{DeepRare} is a multi-agent rare-disease diagnosis system that
+  combines a central host, specialized agent servers, more than 40 tools, and
+  external medical knowledge to produce ranked diagnoses with traceable
+  evidence \cite{zhao2025deeprare}.
+\end{itemize}
+
+For standalone LLM comparison, each model received the same complete case text
+and diagnostic instruction and was required to return five unique principal
+diagnosis candidates with ICD-10-CM codes. No similar-case, PubMed, or local
+guideline evidence was supplied to these standalone models. Agentic-system
+outputs were evaluated under the same Top-$k$ ICD-prefix criteria described
+below.
+
 \subsection{Evaluation}
 
 Batch evaluation used the recorded principal ICD-10-CM code as the reference
@@ -516,11 +713,77 @@ instructions needed to reproduce the reported experiments.
 Provide a self-contained legend, explain each panel, and define every acronym,
 color, symbol, and statistical annotation.
 
+\clearpage
 \appendix
 \section{Supplementary Information}
 
-Place extended methods, prompts, additional analyses, dataset descriptions, and
-case studies here, or move them to a separate supplementary manuscript if the
-target journal requires separate submission files.
+\subsection{Diagnostic Results (Table Version)}
+
+\begin{table}[h]
+  \centering
+  \caption*{\textbf{Extended Data Table 2} $\mid$ Digestive disease diagnosis
+  results (complete-case input)}
+  \label{tab:extended-results}
+  \setlength{\tabcolsep}{6.5pt}
+  \renewcommand{\arraystretch}{1.16}
+  \begin{tabular}{lcccccc}
+    \toprule
+    & \multicolumn{3}{c}{ICD-10-CM category} &
+      \multicolumn{3}{c}{ICD-10-CM subcategory} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    Model & R@1 & R@3 & R@5 & R@1 & R@3 & R@5 \\
+    \midrule
+
+    \multicolumn{7}{c}{\colorbox{gray!15}{\makebox[0.91\textwidth][c]{\textbf{Latest LLMs}}}} \\
+    DeepSeek-V4-Pro
+      & \colorbox{cyan!18}{\strut\textbf{64.06}} & 74.61 & 76.83
+      & \colorbox{cyan!18}{\strut\textbf{44.87}} & 55.50 & 57.34 \\
+    GPT-5.6 Sol
+      & -- & -- & -- & -- & -- & -- \\
+    Claude Opus 5
+      & -- & -- & -- & -- & -- & -- \\
+    Baichuan-M2-32B
+      & 44.50 & 55.13 & 57.64 & 9.45 & 13.36 & 15.35 \\
+    DiagAgent-14B
+      & 36.90 & 49.30 & 53.43 & 3.84 & 6.42 & 7.08 \\
+    \midrule
+
+    \multicolumn{7}{c}{\colorbox{gray!15}{\makebox[0.91\textwidth][c]{\textbf{Qwen3.5 Model Family}}}} \\
+    Qwen3.5-9B
+      & 43.25 & 52.92 & 55.20 & 13.73 & 17.71 & 18.75 \\
+    Qwen3.5-27B
+      & 55.28 & 71.00 & 73.51 & 28.41 & 37.12 & 39.63 \\
+    Qwen3.5-122B-A10B
+      & 59.63 & 73.58 & 75.94 & 31.37 & 41.62 & 43.25 \\
+    \midrule
+
+    \multicolumn{7}{c}{\colorbox{gray!15}{\makebox[0.91\textwidth][c]{\textbf{Other Agentic Systems}}}} \\
+    MDAgents
+      & -- & -- & -- & -- & -- & -- \\
+    DeepRare
+      & -- & -- & -- & -- & -- & -- \\
+    \midrule
+
+    \multicolumn{7}{c}{\colorbox{gray!15}{\makebox[0.91\textwidth][c]{\textbf{Medical Skill Hub System}}}} \\
+    Medical Skill Hub (DeepSeek-V4-Pro)
+      & 62.88 & \colorbox{cyan!18}{\strut\textbf{81.11}}
+      & \colorbox{cyan!18}{\strut\textbf{86.13}} & 44.13
+      & \colorbox{cyan!18}{\strut\textbf{66.94}}
+      & \colorbox{cyan!18}{\strut\textbf{73.06}} \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.35em}
+  \begin{minipage}{0.98\textwidth}
+    \footnotesize
+    \textit{Note:} All values are percentages (\%). Results were evaluated on
+    1,355 MIMIC-IV cases. ICD-10-CM category and subcategory agreement used the
+    first three and four code characters, respectively. Standalone LLM results
+    use the initial five diagnostic hypotheses; the Medical Skill Hub row uses
+    the final five diagnoses. Cases without a valid model output were counted as
+    misses. Bold blue-shaded cells denote the best observed result in each
+    metric; ``--'' indicates that a result was not available.
+  \end{minipage}
+\end{table}
 
 \end{document}

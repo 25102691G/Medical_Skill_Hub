@@ -15,15 +15,15 @@ if [[ -f "$PROJECT_ROOT/.env" ]]; then
     set +a
 fi
 
-INPUT="database/mimic_test.csv"
-LIMIT=2000
+INPUT="database/mimic_test_random_200.csv"
+LIMIT=49
 # 不同模型的 workers推荐值
 # openai-gpt-5.5 
 # deepseek-v4-pro: 50
 # qwen3.5-27b: 40
 # qwen3.5-122b-a10b: 15
-WORKERS=15
-HISTORY_OUTPUT="output/batch/Qwen3.5-122B-A10B_mimic_test_2000_20260904_162902_958833.jsonl"
+WORKERS=100
+HISTORY_OUTPUT="output/batch/deepseek-v4-pro_mimic_test_random_200_1_20260908_124706_724740.jsonl"
 MODEL="${DIAGNOSIS_PROVIDER:-}"
 
 HISTORY_ARGS=()

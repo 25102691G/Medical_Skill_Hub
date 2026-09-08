@@ -179,8 +179,8 @@
       \strng{authornamehash}{e3deba50a6bc3f5f595fc832498c303f}
       \strng{authorfullhash}{05c58504bd2039972f708acbdbb8c698}
       \strng{authorfullhashraw}{05c58504bd2039972f708acbdbb8c698}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{journaltitle}{Information Processing \& Management}
@@ -235,8 +235,8 @@
       \strng{authornamehash}{bacb2af35bde68e3692dbc3a479bda48}
       \strng{authorfullhash}{8e81fd98b1eef3ab93e6cbe7e60f152a}
       \strng{authorfullhashraw}{8e81fd98b1eef3ab93e6cbe7e60f152a}
-      \field{sortinit}{4}
-      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{eprintclass}{cs.CL}
@@ -280,8 +280,8 @@
       \strng{authornamehash}{d73c10636cb0de0ad5d8c187d36e41d9}
       \strng{authorfullhash}{d73c10636cb0de0ad5d8c187d36e41d9}
       \strng{authorfullhashraw}{d73c10636cb0de0ad5d8c187d36e41d9}
-      \field{sortinit}{5}
-      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{booktitle}{Proceedings of the 32nd International ACM SIGIR Conference on Research and Development in Information Retrieval}
@@ -291,6 +291,290 @@
       \range{pages}{2}
       \verb{doi}
       \verb 10.1145/1571941.1572114
+      \endverb
+    \endentry
+    \entry{deepseek2026v4pro}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=264d9bb481d458fdda428e70a2bfe2dd}{%
+           family={{DeepSeek}},
+           familyi={D\bibinitperiod}}}%
+      }
+      \strng{namehash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{fullhash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{fullhashraw}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{bibnamehash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{authorbibnamehash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{authornamehash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{authorfullhash}{264d9bb481d458fdda428e70a2bfe2dd}
+      \strng{authorfullhashraw}{264d9bb481d458fdda428e70a2bfe2dd}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{{DeepSeek-V4-Pro} {GA} Release}
+      \field{urlday}{7}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{year}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://api-docs.deepseek.com/news/news260813/
+      \endverb
+      \verb{url}
+      \verb https://api-docs.deepseek.com/news/news260813/
+      \endverb
+    \endentry
+    \entry{openai2026gpt56sol}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=0523b13262b12c215d8009938f5c14f1}{%
+           family={{OpenAI}},
+           familyi={O\bibinitperiod}}}%
+      }
+      \strng{namehash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{fullhash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{fullhashraw}{0523b13262b12c215d8009938f5c14f1}
+      \strng{bibnamehash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{authorbibnamehash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{authornamehash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{authorfullhash}{0523b13262b12c215d8009938f5c14f1}
+      \strng{authorfullhashraw}{0523b13262b12c215d8009938f5c14f1}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{{GPT-5.6 Sol} Model}
+      \field{urlday}{7}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{year}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://developers.openai.com/api/docs/models/gpt-5.6-sol
+      \endverb
+      \verb{url}
+      \verb https://developers.openai.com/api/docs/models/gpt-5.6-sol
+      \endverb
+    \endentry
+    \entry{anthropic2026opus5}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=f431db65cea024a5f19eab835afefee2}{%
+           family={{Anthropic}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{f431db65cea024a5f19eab835afefee2}
+      \strng{fullhash}{f431db65cea024a5f19eab835afefee2}
+      \strng{fullhashraw}{f431db65cea024a5f19eab835afefee2}
+      \strng{bibnamehash}{f431db65cea024a5f19eab835afefee2}
+      \strng{authorbibnamehash}{f431db65cea024a5f19eab835afefee2}
+      \strng{authornamehash}{f431db65cea024a5f19eab835afefee2}
+      \strng{authorfullhash}{f431db65cea024a5f19eab835afefee2}
+      \strng{authorfullhashraw}{f431db65cea024a5f19eab835afefee2}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Introducing {Claude Opus 5}}
+      \field{urlday}{7}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{year}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.anthropic.com/news/claude-opus-5
+      \endverb
+      \verb{url}
+      \verb https://www.anthropic.com/news/claude-opus-5
+      \endverb
+    \endentry
+    \entry{baichuan2025m2}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=7afe9b222750569a2b78f254829fe86f}{%
+           family={{Baichuan-M2 Team}},
+           familyi={B\bibinitperiod}}}%
+      }
+      \strng{namehash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{fullhash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{fullhashraw}{7afe9b222750569a2b78f254829fe86f}
+      \strng{bibnamehash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{authorbibnamehash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{authornamehash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{authorfullhash}{7afe9b222750569a2b78f254829fe86f}
+      \strng{authorfullhashraw}{7afe9b222750569a2b78f254829fe86f}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.LG}
+      \field{eprinttype}{arXiv}
+      \field{journaltitle}{arXiv preprint arXiv:2509.02208}
+      \field{title}{{Baichuan-M2}: Scaling Medical Capability with Large Verifier System}
+      \field{year}{2025}
+      \verb{doi}
+      \verb 10.48550/arXiv.2509.02208
+      \endverb
+      \verb{eprint}
+      \verb 2509.02208
+      \endverb
+    \endentry
+    \entry{qiu2025diagagent}{article}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{hash=01e5701bfc8adeda59fe2b677d8229c0}{%
+           family={Qiu},
+           familyi={Q\bibinitperiod},
+           given={Pengcheng},
+           giveni={P\bibinitperiod}}}%
+        {{hash=ea1e821fc31b5e2b94176991502f7078}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Chaoyi},
+           giveni={C\bibinitperiod}}}%
+        {{hash=a3321207aad4f5f06d37649508ce1b73}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Junwei},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{fullhash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{fullhashraw}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{bibnamehash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{authorbibnamehash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{authornamehash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{authorfullhash}{c8e45ff0b5bca086aef3541311ccac51}
+      \strng{authorfullhashraw}{c8e45ff0b5bca086aef3541311ccac51}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.CL}
+      \field{eprinttype}{arXiv}
+      \field{journaltitle}{arXiv preprint arXiv:2510.24654}
+      \field{title}{Evolving Diagnostic Agents in a Virtual Clinical Environment}
+      \field{year}{2025}
+      \verb{doi}
+      \verb 10.48550/arXiv.2510.24654
+      \endverb
+      \verb{eprint}
+      \verb 2510.24654
+      \endverb
+    \endentry
+    \entry{qwen2026qwen35}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=4622c4bb7444dadba22813c2addff5e7}{%
+           family={{Qwen Team}},
+           familyi={Q\bibinitperiod}}}%
+      }
+      \strng{namehash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{fullhash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{fullhashraw}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{bibnamehash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{authorbibnamehash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{authornamehash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{authorfullhash}{4622c4bb7444dadba22813c2addff5e7}
+      \strng{authorfullhashraw}{4622c4bb7444dadba22813c2addff5e7}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{month}{2}
+      \field{title}{{Qwen3.5}: Towards Native Multimodal Agents}
+      \field{urlday}{7}
+      \field{urlmonth}{9}
+      \field{urlyear}{2026}
+      \field{year}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://qwen.ai/blog?id=qwen3.5
+      \endverb
+      \verb{url}
+      \verb https://qwen.ai/blog?id=qwen3.5
+      \endverb
+    \endentry
+    \entry{kim2024mdagents}{inproceedings}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{hash=7e87b5a95d8966d5f3412521863a141e}{%
+           family={Kim},
+           familyi={K\bibinitperiod},
+           given={Yubin},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=eff197c14f5fc203da7f61c7acaa831c}{%
+           family={Park},
+           familyi={P\bibinitperiod},
+           given={Chanwoo},
+           giveni={C\bibinitperiod}}}%
+        {{hash=4b21b26de7a110b410528d2ae2104db2}{%
+           family={Jeong},
+           familyi={J\bibinitperiod},
+           given={Hyewon},
+           giveni={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{fullhash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{fullhashraw}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{bibnamehash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{authorbibnamehash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{authornamehash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{authorfullhash}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \strng{authorfullhashraw}{1d3c6c4a94dcb7511bb9684eb42392c0}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Advances in Neural Information Processing Systems}
+      \field{eprinttype}{arXiv}
+      \field{title}{{MDAgents}: An Adaptive Collaboration of {LLMs} for Medical Decision-Making}
+      \field{volume}{37}
+      \field{year}{2024}
+      \verb{eprint}
+      \verb 2404.15155
+      \endverb
+    \endentry
+    \entry{zhao2025deeprare}{article}{}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{3}{}{%
+        {{hash=116522fdab8c1e42858f94ac7b4650ca}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Weike},
+           giveni={W\bibinitperiod}}}%
+        {{hash=ea1e821fc31b5e2b94176991502f7078}{%
+           family={Wu},
+           familyi={W\bibinitperiod},
+           given={Chaoyi},
+           giveni={C\bibinitperiod}}}%
+        {{hash=2dc2a3bfb5ea06662187c4e4c026799d}{%
+           family={Fan},
+           familyi={F\bibinitperiod},
+           given={Yanjie},
+           giveni={Y\bibinitperiod}}}%
+      }
+      \strng{namehash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{fullhash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{fullhashraw}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{bibnamehash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{authorbibnamehash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{authornamehash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{authorfullhash}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \strng{authorfullhashraw}{b7d959e8bd31d7c04e2596b3a1ba8ebf}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{eprintclass}{cs.CL}
+      \field{eprinttype}{arXiv}
+      \field{journaltitle}{arXiv preprint arXiv:2506.20430}
+      \field{title}{An Agentic System for Rare Disease Diagnosis with Traceable Reasoning}
+      \field{year}{2025}
+      \verb{doi}
+      \verb 10.48550/arXiv.2506.20430
+      \endverb
+      \verb{eprint}
+      \verb 2506.20430
       \endverb
     \endentry
   \enddatalist

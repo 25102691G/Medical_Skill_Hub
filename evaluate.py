@@ -5,6 +5,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "output" / "evaluate"
+GUIDELINE_MAPPING_PATH = (
+    PROJECT_ROOT / "database" / "mimic_test_icd_guideline_mapping.json"
+)
 METHODS = (
     "llm_hypotheses",
     "similar_case_bm25",
@@ -219,12 +222,24 @@ def _evaluate_llm_hypotheses_file(input_path: Path, output_path: Path) -> Path:
 
 
 def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
+    with GUIDELINE_MAPPING_PATH.open("r", encoding="utf-8") as mapping_file:
+        guideline_mapping_data = json.load(mapping_file)
+    applicable_guidelines_by_icd = {
+        _normalize_icd_code(item["icd_code"]): item["applicable_guidelines"]
+        for item in guideline_mapping_data["records"]
+    }
+
     cutoffs = (1, 3, 5)
     total = 0
     recall_hits = {
         metric: {cutoff: 0 for cutoff in cutoffs}
         for metric in METRICS
     }
+    applicable_case_count = 0
+    hit_case_count = 0
+    retrieved_guideline_count = 0
+    applicable_retrieved_guideline_count = 0
+    case_recall_sum = 0.0
 
     with (
         input_path.open("r", encoding="utf-8") as input_file,
@@ -235,6 +250,31 @@ def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
                 continue
             record = json.loads(line)
             golden_icd_code = record["icd_code"].strip()
+            applicable_guidelines = applicable_guidelines_by_icd[
+                _normalize_icd_code(golden_icd_code)
+            ]
+            retrieved_guidelines = list(
+                dict.fromkeys(record["rag_baseline_result"]["skill_names"])
+            )
+            applicable_guideline_set = set(applicable_guidelines)
+            matched_applicable_guidelines = [
+                skill_name
+                for skill_name in retrieved_guidelines
+                if skill_name in applicable_guideline_set
+            ]
+            rag_guideline_hit = int(bool(matched_applicable_guidelines))
+            rag_guideline_recall = (
+                len(matched_applicable_guidelines) / len(retrieved_guidelines)
+                if retrieved_guidelines
+                else 0.0
+            )
+            applicable_case_count += bool(applicable_guidelines)
+            hit_case_count += rag_guideline_hit
+            retrieved_guideline_count += len(retrieved_guidelines)
+            applicable_retrieved_guideline_count += len(
+                matched_applicable_guidelines
+            )
+            case_recall_sum += rag_guideline_recall
             predicted_icd_codes = [
                 diagnosis["icd_code"].strip()
                 for diagnosis in record["rag_baseline_result"][
@@ -262,6 +302,18 @@ def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
                             "predicted_icd_codes": predicted_icd_codes,
                             "evaluated_ranks": evaluated_ranks,
                         },
+                        "rag_search_result": {
+                            "applicable_guidelines": applicable_guidelines,
+                            "retrieved_guidelines": retrieved_guidelines,
+                            "matched_applicable_guidelines": (
+                                matched_applicable_guidelines
+                            ),
+                            "has_applicable_guideline": bool(
+                                applicable_guidelines
+                            ),
+                            "rag_guideline_hit": rag_guideline_hit,
+                            "rag_guideline_recall": rag_guideline_recall,
+                        },
                     },
                     ensure_ascii=False,
                 )
@@ -287,7 +339,21 @@ def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
                     for cutoff in cutoffs
                 }
                 for metric in METRICS
-            }
+            },
+            "rag_search_result": {
+                "applicable_case_count": applicable_case_count,
+                "hit_case_count": hit_case_count,
+                "retrieved_guideline_count": retrieved_guideline_count,
+                "applicable_retrieved_guideline_count": (
+                    applicable_retrieved_guideline_count
+                ),
+                "applicable_guideline_hit_rate": (
+                    hit_case_count / applicable_case_count
+                    if applicable_case_count
+                    else None
+                ),
+                "applicable_guideline_recall_rate": case_recall_sum / total,
+            },
         }
         output_file.write(
             json.dumps(
@@ -303,6 +369,28 @@ def _evaluate_rag_baseline_file(input_path: Path, output_path: Path) -> Path:
         summary,
         methods=("rag_baseline",),
     )
+    rag_search_summary = summary["rag_search_result"]
+    rag_guideline_hit_rate = rag_search_summary[
+        "applicable_guideline_hit_rate"
+    ]
+    print("RAG Search Results (macro average)")
+    print(
+        "applicable guideline hit rate: "
+        + (
+            f"{rag_guideline_hit_rate:.2%}"
+            if rag_guideline_hit_rate is not None
+            else "N/A"
+        )
+        + " "
+        f"({rag_search_summary['hit_case_count']}/"
+        f"{rag_search_summary['applicable_case_count']})"
+    )
+    print(
+        "applicable guideline recall rate: "
+        f"{rag_search_summary['applicable_guideline_recall_rate']:.2%} "
+        f"(average of {total} case recall values)"
+    )
+    print()
     print(f"Evaluation details: {output_path}", file=sys.stderr)
     return output_path
 
@@ -324,6 +412,13 @@ def evaluate_file(input_path: Path) -> Path:
     if "multi_round_diagnosis" not in first_record:
         return _evaluate_llm_hypotheses_file(input_path, output_path)
 
+    with GUIDELINE_MAPPING_PATH.open("r", encoding="utf-8") as mapping_file:
+        guideline_mapping_data = json.load(mapping_file)
+    applicable_guidelines_by_icd = {
+        _normalize_icd_code(item["icd_code"]): item["applicable_guidelines"]
+        for item in guideline_mapping_data["records"]
+    }
+
     total = 0
     final_recall_hits = {
         method: {
@@ -338,6 +433,14 @@ def evaluate_file(input_path: Path) -> Path:
     ] = {}
     used_skill_count = 0
     skill_counts: dict[str, int] = {}
+    final_guideline_counts = {
+        "applicable_case_count": 0,
+        "hit_case_count": 0,
+        "retrieved_guideline_count": 0,
+        "applicable_retrieved_guideline_count": 0,
+        "case_recall_sum": 0.0,
+    }
+    round_guideline_counts: dict[int, dict[str, int | float]] = {}
 
     with (
         input_path.open("r", encoding="utf-8") as input_file,
@@ -349,6 +452,10 @@ def evaluate_file(input_path: Path) -> Path:
             record = json.loads(line)
             golden_icd_code = record["icd_code"].strip()
             golden_diagnosis = record["long_title"].strip()
+            applicable_guidelines = applicable_guidelines_by_icd[
+                _normalize_icd_code(golden_icd_code)
+            ]
+            applicable_guideline_set = set(applicable_guidelines)
             multi_round_diagnosis = record["multi_round_diagnosis"]
             round_evaluations = []
             for round_result in multi_round_diagnosis["rounds"]:
@@ -401,6 +508,32 @@ def evaluate_file(input_path: Path) -> Path:
                     )
                     for method in METHODS
                 }
+                retrieved_guidelines = list(
+                    dict.fromkeys(
+                        round_result["guideline_search_result"]["skill_names"]
+                    )
+                )
+                matched_applicable_guidelines = [
+                    skill_name
+                    for skill_name in retrieved_guidelines
+                    if skill_name in applicable_guideline_set
+                ]
+                applicable_guideline_hit = int(
+                    bool(matched_applicable_guidelines)
+                )
+                applicable_guideline_recall = (
+                    len(matched_applicable_guidelines) / len(retrieved_guidelines)
+                    if retrieved_guidelines
+                    else 0.0
+                )
+                guideline_evaluation = {
+                    "applicable_guidelines": applicable_guidelines,
+                    "retrieved_guidelines": retrieved_guidelines,
+                    "matched_applicable_guidelines": matched_applicable_guidelines,
+                    "has_applicable_guideline": bool(applicable_guidelines),
+                    "applicable_guideline_hit": applicable_guideline_hit,
+                    "applicable_guideline_recall": applicable_guideline_recall,
+                }
                 round_number = round_result["round"]
                 round_evaluations.append(
                     {
@@ -432,6 +565,7 @@ def evaluate_file(input_path: Path) -> Path:
                             ],
                             "evaluated_ranks": evaluated_ranks["final_diagnosis"],
                         },
+                        "guideline_search_result": guideline_evaluation,
                     }
                 )
                 round_totals[round_number] = round_totals.get(round_number, 0) + 1
@@ -455,6 +589,27 @@ def evaluate_file(input_path: Path) -> Path:
                                 round_hits[method][metric][cutoff] += (
                                     evaluated_rank <= cutoff
                                 )
+                guideline_counts = round_guideline_counts.setdefault(
+                    round_number,
+                    {
+                        "applicable_case_count": 0,
+                        "hit_case_count": 0,
+                        "retrieved_guideline_count": 0,
+                        "applicable_retrieved_guideline_count": 0,
+                        "case_recall_sum": 0.0,
+                    },
+                )
+                guideline_counts["applicable_case_count"] += bool(
+                    applicable_guidelines
+                )
+                guideline_counts["hit_case_count"] += applicable_guideline_hit
+                guideline_counts["retrieved_guideline_count"] += len(
+                    retrieved_guidelines
+                )
+                guideline_counts["applicable_retrieved_guideline_count"] += len(
+                    matched_applicable_guidelines
+                )
+                guideline_counts["case_recall_sum"] += applicable_guideline_recall
 
             evaluation_record = {
                 "subject_id": record.get("subject_id"),
@@ -470,6 +625,24 @@ def evaluate_file(input_path: Path) -> Path:
 
             total += 1
             final_round = multi_round_diagnosis["rounds"][-1]
+            final_guideline_evaluation = round_evaluations[-1][
+                "guideline_search_result"
+            ]
+            final_guideline_counts["applicable_case_count"] += (
+                final_guideline_evaluation["has_applicable_guideline"]
+            )
+            final_guideline_counts["hit_case_count"] += (
+                final_guideline_evaluation["applicable_guideline_hit"]
+            )
+            final_guideline_counts["retrieved_guideline_count"] += len(
+                final_guideline_evaluation["retrieved_guidelines"]
+            )
+            final_guideline_counts[
+                "applicable_retrieved_guideline_count"
+            ] += len(final_guideline_evaluation["matched_applicable_guidelines"])
+            final_guideline_counts["case_recall_sum"] += final_guideline_evaluation[
+                "applicable_guideline_recall"
+            ]
             if final_round["diagnosis_result"]["used_skill"]:
                 used_skill_count += 1
             for skill_name in final_round["diagnosis_result"]["skill_names"]:
@@ -558,6 +731,27 @@ def evaluate_file(input_path: Path) -> Path:
                 "search_planning_result"
             ],
             "final_diagnosis": flat_final_summary["final_diagnosis"],
+            "guideline_search_result": {
+                "applicable_case_count": final_guideline_counts[
+                    "applicable_case_count"
+                ],
+                "hit_case_count": final_guideline_counts["hit_case_count"],
+                "retrieved_guideline_count": final_guideline_counts[
+                    "retrieved_guideline_count"
+                ],
+                "applicable_retrieved_guideline_count": final_guideline_counts[
+                    "applicable_retrieved_guideline_count"
+                ],
+                "applicable_guideline_hit_rate": (
+                    final_guideline_counts["hit_case_count"]
+                    / final_guideline_counts["applicable_case_count"]
+                    if final_guideline_counts["applicable_case_count"]
+                    else None
+                ),
+                "applicable_guideline_recall_rate": (
+                    final_guideline_counts["case_recall_sum"] / total
+                ),
+            },
         }
         flat_round_summaries = [
             {
@@ -592,6 +786,40 @@ def evaluate_file(input_path: Path) -> Path:
                     "search_planning_result"
                 ],
                 "final_diagnosis": round_summary["final_diagnosis"],
+                "guideline_search_result": {
+                    "applicable_case_count": round_guideline_counts[
+                        round_summary["round"]
+                    ]["applicable_case_count"],
+                    "hit_case_count": round_guideline_counts[
+                        round_summary["round"]
+                    ]["hit_case_count"],
+                    "retrieved_guideline_count": round_guideline_counts[
+                        round_summary["round"]
+                    ]["retrieved_guideline_count"],
+                    "applicable_retrieved_guideline_count": (
+                        round_guideline_counts[round_summary["round"]][
+                            "applicable_retrieved_guideline_count"
+                        ]
+                    ),
+                    "applicable_guideline_hit_rate": (
+                        round_guideline_counts[round_summary["round"]][
+                            "hit_case_count"
+                        ]
+                        / round_guideline_counts[round_summary["round"]][
+                            "applicable_case_count"
+                        ]
+                        if round_guideline_counts[round_summary["round"]][
+                            "applicable_case_count"
+                        ]
+                        else None
+                    ),
+                    "applicable_guideline_recall_rate": (
+                        round_guideline_counts[round_summary["round"]][
+                            "case_recall_sum"
+                        ]
+                        / round_summary["total"]
+                    ),
+                },
             }
             for round_summary in flat_round_summaries
         ]
@@ -609,6 +837,22 @@ def evaluate_file(input_path: Path) -> Path:
         output_file.write(json.dumps(summary_record, ensure_ascii=False) + "\n")
 
     _print_recall_table("Final Results", total, flat_final_summary)
+    guideline_summary = final_summary["guideline_search_result"]
+    guideline_hit_rate = guideline_summary["applicable_guideline_hit_rate"]
+    print("Guideline Search Results (macro average)")
+    print(
+        "applicable guideline hit rate: "
+        + (f"{guideline_hit_rate:.2%}" if guideline_hit_rate is not None else "N/A")
+        + " "
+        f"({guideline_summary['hit_case_count']}/"
+        f"{guideline_summary['applicable_case_count']})"
+    )
+    print(
+        "applicable guideline recall rate: "
+        f"{guideline_summary['applicable_guideline_recall_rate']:.2%} "
+        f"(average of {total} case recall values)"
+    )
+    print()
     for round_summary in flat_round_summaries:
         _print_recall_table(
             f"Round {round_summary['round']}",

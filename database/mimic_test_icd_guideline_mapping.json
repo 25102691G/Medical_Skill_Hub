@@ -7,6 +7,7 @@
     {
       "icd_code": "A020",
       "long_title": "Salmonella enteritis",
+      "long_title_zh": "沙门菌肠炎",
       "case_count": 1,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -15,6 +16,7 @@
     {
       "icd_code": "A033",
       "long_title": "Shigellosis due to Shigella sonnei",
+      "long_title_zh": "宋内志贺菌所致志贺菌病",
       "case_count": 1,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -23,6 +25,7 @@
     {
       "icd_code": "A043",
       "long_title": "Enterohemorrhagic Escherichia coli infection",
+      "long_title_zh": "肠出血性大肠埃希菌感染",
       "case_count": 1,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -31,6 +34,7 @@
     {
       "icd_code": "A045",
       "long_title": "Campylobacter enteritis",
+      "long_title_zh": "弯曲菌肠炎",
       "case_count": 2,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -39,6 +43,7 @@
     {
       "icd_code": "A047",
       "long_title": "Enterocolitis due to Clostridium difficile",
+      "long_title_zh": "艰难梭菌所致小肠结肠炎",
       "case_count": 9,
       "applicable_guidelines": [
         "中国艰难梭菌感染诊治及预防指南(2024)",
@@ -48,6 +53,7 @@
     {
       "icd_code": "A0472",
       "long_title": "Enterocolitis due to Clostridium difficile, not specified as recurrent",
+      "long_title_zh": "艰难梭菌所致小肠结肠炎，未特指为复发性",
       "case_count": 3,
       "applicable_guidelines": [
         "中国艰难梭菌感染诊治及预防指南(2024)",
@@ -57,6 +63,7 @@
     {
       "icd_code": "A049",
       "long_title": "Bacterial intestinal infection, unspecified",
+      "long_title_zh": "细菌性肠道感染，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -65,6 +72,7 @@
     {
       "icd_code": "A0811",
       "long_title": "Acute gastroenteropathy due to Norwalk agent",
+      "long_title_zh": "诺沃克病毒所致急性胃肠病",
       "case_count": 1,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -73,6 +81,7 @@
     {
       "icd_code": "A084",
       "long_title": "Viral intestinal infection, unspecified",
+      "long_title_zh": "病毒性肠道感染，未特指",
       "case_count": 16,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -81,6 +90,7 @@
     {
       "icd_code": "A09",
       "long_title": "Infectious gastroenteritis and colitis, unspecified",
+      "long_title_zh": "感染性胃肠炎和结肠炎，未特指",
       "case_count": 12,
       "applicable_guidelines": [
         "成人急性感染性腹泻诊疗专家共识"
@@ -89,6 +99,7 @@
     {
       "icd_code": "B159",
       "long_title": "Hepatitis A without hepatic coma",
+      "long_title_zh": "甲型肝炎，不伴肝昏迷",
       "case_count": 4,
       "applicable_guidelines": [
         "病毒性肝炎健康管理专家共识（2021年）"
@@ -97,6 +108,7 @@
     {
       "icd_code": "B169",
       "long_title": "Acute hepatitis B without delta-agent and without hepatic coma",
+      "long_title_zh": "急性乙型肝炎，不伴丁型肝炎病毒感染及肝昏迷",
       "case_count": 2,
       "applicable_guidelines": [
         "病毒性肝炎健康管理专家共识（2021年）"
@@ -105,6 +117,7 @@
     {
       "icd_code": "B1710",
       "long_title": "Acute hepatitis C without hepatic coma",
+      "long_title_zh": "急性丙型肝炎，不伴肝昏迷",
       "case_count": 2,
       "applicable_guidelines": [
         "2025+KASL临床实践指南：丙型肝炎的管理",
@@ -114,6 +127,7 @@
     {
       "icd_code": "B179",
       "long_title": "Acute viral hepatitis, unspecified",
+      "long_title_zh": "急性病毒性肝炎，未特指",
       "case_count": 6,
       "applicable_guidelines": [
         "病毒性肝炎健康管理专家共识（2021年）"
@@ -122,6 +136,7 @@
     {
       "icd_code": "B1921",
       "long_title": "Unspecified viral hepatitis C with hepatic coma",
+      "long_title_zh": "未特指的丙型病毒性肝炎，伴肝昏迷",
       "case_count": 2,
       "applicable_guidelines": [
         "2025+KASL临床实践指南：丙型肝炎的管理",
@@ -131,12 +146,14 @@
     {
       "icd_code": "B3781",
       "long_title": "Candidal esophagitis",
+      "long_title_zh": "念珠菌性食管炎",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C155",
       "long_title": "Malignant neoplasm of lower third of esophagus",
+      "long_title_zh": "食管下三分之一恶性肿瘤",
       "case_count": 6,
       "applicable_guidelines": [
         "食管癌诊疗指南"
@@ -145,6 +162,7 @@
     {
       "icd_code": "C159",
       "long_title": "Malignant neoplasm of esophagus, unspecified",
+      "long_title_zh": "食管恶性肿瘤，未特指",
       "case_count": 6,
       "applicable_guidelines": [
         "食管癌诊疗指南"
@@ -153,6 +171,7 @@
     {
       "icd_code": "C160",
       "long_title": "Malignant neoplasm of cardia",
+      "long_title_zh": "胃贲门恶性肿瘤",
       "case_count": 12,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -161,6 +180,7 @@
     {
       "icd_code": "C161",
       "long_title": "Malignant neoplasm of fundus of stomach",
+      "long_title_zh": "胃底恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -169,6 +189,7 @@
     {
       "icd_code": "C162",
       "long_title": "Malignant neoplasm of body of stomach",
+      "long_title_zh": "胃体恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -177,6 +198,7 @@
     {
       "icd_code": "C163",
       "long_title": "Malignant neoplasm of pyloric antrum",
+      "long_title_zh": "胃幽门窦恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -185,6 +207,7 @@
     {
       "icd_code": "C165",
       "long_title": "Malignant neoplasm of lesser curvature of stomach, unspecified",
+      "long_title_zh": "胃小弯恶性肿瘤，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -193,6 +216,7 @@
     {
       "icd_code": "C169",
       "long_title": "Malignant neoplasm of stomach, unspecified",
+      "long_title_zh": "胃恶性肿瘤，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中华医学会胃癌临床诊疗指南（2021版）"
@@ -201,6 +225,7 @@
     {
       "icd_code": "C170",
       "long_title": "Malignant neoplasm of duodenum",
+      "long_title_zh": "十二指肠恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": [
         "原发性小肠肿瘤多学科综合治疗中国专家共识_2025版_"
@@ -209,6 +234,7 @@
     {
       "icd_code": "C171",
       "long_title": "Malignant neoplasm of jejunum",
+      "long_title_zh": "空肠恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "原发性小肠肿瘤多学科综合治疗中国专家共识_2025版_"
@@ -217,6 +243,7 @@
     {
       "icd_code": "C180",
       "long_title": "Malignant neoplasm of cecum",
+      "long_title_zh": "盲肠恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -227,12 +254,14 @@
     {
       "icd_code": "C181",
       "long_title": "Malignant neoplasm of appendix",
+      "long_title_zh": "阑尾恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C182",
       "long_title": "Malignant neoplasm of ascending colon",
+      "long_title_zh": "升结肠恶性肿瘤",
       "case_count": 5,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -243,6 +272,7 @@
     {
       "icd_code": "C183",
       "long_title": "Malignant neoplasm of hepatic flexure",
+      "long_title_zh": "结肠肝曲恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -253,6 +283,7 @@
     {
       "icd_code": "C184",
       "long_title": "Malignant neoplasm of transverse colon",
+      "long_title_zh": "横结肠恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -263,6 +294,7 @@
     {
       "icd_code": "C185",
       "long_title": "Malignant neoplasm of splenic flexure",
+      "long_title_zh": "结肠脾曲恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -273,6 +305,7 @@
     {
       "icd_code": "C186",
       "long_title": "Malignant neoplasm of descending colon",
+      "long_title_zh": "降结肠恶性肿瘤",
       "case_count": 4,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -283,6 +316,7 @@
     {
       "icd_code": "C187",
       "long_title": "Malignant neoplasm of sigmoid colon",
+      "long_title_zh": "乙状结肠恶性肿瘤",
       "case_count": 9,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -293,6 +327,7 @@
     {
       "icd_code": "C188",
       "long_title": "Malignant neoplasm of overlapping sites of colon",
+      "long_title_zh": "结肠交搭跨越部位恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -303,6 +338,7 @@
     {
       "icd_code": "C189",
       "long_title": "Malignant neoplasm of colon, unspecified",
+      "long_title_zh": "结肠恶性肿瘤，未特指",
       "case_count": 2,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-结肠癌_2024版_",
@@ -313,6 +349,7 @@
     {
       "icd_code": "C19",
       "long_title": "Malignant neoplasm of rectosigmoid junction",
+      "long_title_zh": "直肠乙状结肠交界处恶性肿瘤",
       "case_count": 6,
       "applicable_guidelines": [
         "中国结直肠癌诊疗规范(2023版)",
@@ -322,6 +359,7 @@
     {
       "icd_code": "C20",
       "long_title": "Malignant neoplasm of rectum",
+      "long_title_zh": "直肠恶性肿瘤",
       "case_count": 12,
       "applicable_guidelines": [
         "中国结直肠癌诊疗规范(2023版)",
@@ -331,6 +369,7 @@
     {
       "icd_code": "C210",
       "long_title": "Malignant neoplasm of anus, unspecified",
+      "long_title_zh": "肛门恶性肿瘤，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-肛管癌_2024 版_"
@@ -339,6 +378,7 @@
     {
       "icd_code": "C218",
       "long_title": "Malignant neoplasm of overlapping sites of rectum, anus and anal canal",
+      "long_title_zh": "直肠、肛门和肛管交搭跨越部位恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "中国恶性肿瘤整合诊治指南-肛管癌_2024 版_"
@@ -347,6 +387,7 @@
     {
       "icd_code": "C220",
       "long_title": "Liver cell carcinoma",
+      "long_title_zh": "肝细胞癌",
       "case_count": 12,
       "applicable_guidelines": [
         "原发性肝癌诊疗指南（2026版）",
@@ -356,6 +397,7 @@
     {
       "icd_code": "C221",
       "long_title": "Intrahepatic bile duct carcinoma",
+      "long_title_zh": "肝内胆管癌",
       "case_count": 9,
       "applicable_guidelines": [
         "胆管癌诊断与治疗——外科专家共识（2025版）"
@@ -364,18 +406,21 @@
     {
       "icd_code": "C228",
       "long_title": "Malignant neoplasm of liver, primary, unspecified as to type",
+      "long_title_zh": "原发性肝恶性肿瘤，类型未特指",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C23",
       "long_title": "Malignant neoplasm of gallbladder",
+      "long_title_zh": "胆囊恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C240",
       "long_title": "Malignant neoplasm of extrahepatic bile duct",
+      "long_title_zh": "肝外胆管恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": [
         "胆管癌诊断与治疗——外科专家共识（2025版）"
@@ -384,12 +429,14 @@
     {
       "icd_code": "C241",
       "long_title": "Malignant neoplasm of ampulla of Vater",
+      "long_title_zh": "法特壶腹恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C248",
       "long_title": "Malignant neoplasm of overlapping sites of biliary tract",
+      "long_title_zh": "胆道交搭跨越部位恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "胆管癌诊断与治疗——外科专家共识（2025版）"
@@ -398,6 +445,7 @@
     {
       "icd_code": "C250",
       "long_title": "Malignant neoplasm of head of pancreas",
+      "long_title_zh": "胰头恶性肿瘤",
       "case_count": 27,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -407,6 +455,7 @@
     {
       "icd_code": "C251",
       "long_title": "Malignant neoplasm of body of pancreas",
+      "long_title_zh": "胰体恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -416,6 +465,7 @@
     {
       "icd_code": "C252",
       "long_title": "Malignant neoplasm of tail of pancreas",
+      "long_title_zh": "胰尾恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -425,6 +475,7 @@
     {
       "icd_code": "C253",
       "long_title": "Malignant neoplasm of pancreatic duct",
+      "long_title_zh": "胰管恶性肿瘤",
       "case_count": 3,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -434,6 +485,7 @@
     {
       "icd_code": "C258",
       "long_title": "Malignant neoplasm of overlapping sites of pancreas",
+      "long_title_zh": "胰腺交搭跨越部位恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -443,6 +495,7 @@
     {
       "icd_code": "C259",
       "long_title": "Malignant neoplasm of pancreas, unspecified",
+      "long_title_zh": "胰腺恶性肿瘤，未特指",
       "case_count": 5,
       "applicable_guidelines": [
         "胰腺癌诊疗指南",
@@ -452,12 +505,14 @@
     {
       "icd_code": "C49A2",
       "long_title": "Gastrointestinal stromal tumor of stomach",
+      "long_title_zh": "胃肠道间质瘤（胃）",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C49A3",
       "long_title": "Gastrointestinal stromal tumor of small intestine",
+      "long_title_zh": "胃肠道间质瘤（小肠）",
       "case_count": 2,
       "applicable_guidelines": [
         "原发性小肠肿瘤多学科综合治疗中国专家共识_2025版_"
@@ -466,120 +521,140 @@
     {
       "icd_code": "C784",
       "long_title": "Secondary malignant neoplasm of small intestine",
+      "long_title_zh": "小肠继发性恶性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C785",
       "long_title": "Secondary malignant neoplasm of large intestine and rectum",
+      "long_title_zh": "大肠和直肠继发性恶性肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C786",
       "long_title": "Secondary malignant neoplasm of retroperitoneum and peritoneum",
+      "long_title_zh": "腹膜后和腹膜继发性恶性肿瘤",
       "case_count": 6,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C787",
       "long_title": "Secondary malignant neoplasm of liver and intrahepatic bile duct",
+      "long_title_zh": "肝和肝内胆管继发性恶性肿瘤",
       "case_count": 8,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C7A1",
       "long_title": "Malignant poorly differentiated neuroendocrine tumors",
+      "long_title_zh": "低分化恶性神经内分泌肿瘤",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C7A8",
       "long_title": "Other malignant neuroendocrine tumors",
+      "long_title_zh": "其他恶性神经内分泌肿瘤",
       "case_count": 6,
       "applicable_guidelines": []
     },
     {
       "icd_code": "C7B8",
       "long_title": "Other secondary neuroendocrine tumors",
+      "long_title_zh": "其他继发性神经内分泌肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D120",
       "long_title": "Benign neoplasm of cecum",
+      "long_title_zh": "盲肠良性肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D122",
       "long_title": "Benign neoplasm of ascending colon",
+      "long_title_zh": "升结肠良性肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D123",
       "long_title": "Benign neoplasm of transverse colon",
+      "long_title_zh": "横结肠良性肿瘤",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D125",
       "long_title": "Benign neoplasm of sigmoid colon",
+      "long_title_zh": "乙状结肠良性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D126",
       "long_title": "Benign neoplasm of colon, unspecified",
+      "long_title_zh": "结肠良性肿瘤，未特指",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D128",
       "long_title": "Benign neoplasm of rectum",
+      "long_title_zh": "直肠良性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D132",
       "long_title": "Benign neoplasm of duodenum",
+      "long_title_zh": "十二指肠良性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D134",
       "long_title": "Benign neoplasm of liver",
+      "long_title_zh": "肝良性肿瘤",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D135",
       "long_title": "Benign neoplasm of extrahepatic bile ducts",
+      "long_title_zh": "肝外胆管良性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D136",
       "long_title": "Benign neoplasm of pancreas",
+      "long_title_zh": "胰腺良性肿瘤",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D137",
       "long_title": "Benign neoplasm of endocrine pancreas",
+      "long_title_zh": "胰腺内分泌部良性肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "D376",
       "long_title": "Neoplasm of uncertain behavior of liver, gallbladder and bile ducts",
+      "long_title_zh": "肝、胆囊和胆管动态未定肿瘤",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "I81",
       "long_title": "Portal vein thrombosis",
+      "long_title_zh": "门静脉血栓形成",
       "case_count": 7,
       "applicable_guidelines": [
         "中国血栓性疾病防治指南"
@@ -588,6 +663,7 @@
     {
       "icd_code": "I820",
       "long_title": "Budd-Chiari syndrome",
+      "long_title_zh": "巴德-基亚里综合征",
       "case_count": 1,
       "applicable_guidelines": [
         "中国血栓性疾病防治指南"
@@ -596,24 +672,28 @@
     {
       "icd_code": "I8500",
       "long_title": "Esophageal varices without bleeding",
+      "long_title_zh": "食管静脉曲张，不伴出血",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "I864",
       "long_title": "Gastric varices",
+      "long_title_zh": "胃静脉曲张",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K209",
       "long_title": "Esophagitis, unspecified",
+      "long_title_zh": "食管炎，未特指",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K210",
       "long_title": "Gastro-esophageal reflux disease with esophagitis",
+      "long_title_zh": "胃食管反流病，伴食管炎",
       "case_count": 2,
       "applicable_guidelines": [
         "2025版《美国胃肠内镜学会胃食管反流病诊疗指南》解读",
@@ -623,6 +703,7 @@
     {
       "icd_code": "K219",
       "long_title": "Gastro-esophageal reflux disease without esophagitis",
+      "long_title_zh": "胃食管反流病，不伴食管炎",
       "case_count": 9,
       "applicable_guidelines": [
         "2025版《美国胃肠内镜学会胃食管反流病诊疗指南》解读",
@@ -632,12 +713,14 @@
     {
       "icd_code": "K220",
       "long_title": "Achalasia of cardia",
+      "long_title_zh": "贲门失弛缓症",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K2211",
       "long_title": "Ulcer of esophagus with bleeding",
+      "long_title_zh": "食管溃疡，伴出血",
       "case_count": 2,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）"
@@ -646,24 +729,28 @@
     {
       "icd_code": "K222",
       "long_title": "Esophageal obstruction",
+      "long_title_zh": "食管梗阻",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K223",
       "long_title": "Perforation of esophagus",
+      "long_title_zh": "食管穿孔",
       "case_count": 5,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K224",
       "long_title": "Dyskinesia of esophagus",
+      "long_title_zh": "食管运动障碍",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K250",
       "long_title": "Acute gastric ulcer with hemorrhage",
+      "long_title_zh": "急性胃溃疡，伴出血",
       "case_count": 4,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）",
@@ -674,6 +761,7 @@
     {
       "icd_code": "K254",
       "long_title": "Chronic or unspecified gastric ulcer with hemorrhage",
+      "long_title_zh": "慢性或未特指的胃溃疡，伴出血",
       "case_count": 18,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）",
@@ -684,6 +772,7 @@
     {
       "icd_code": "K255",
       "long_title": "Chronic or unspecified gastric ulcer with perforation",
+      "long_title_zh": "慢性或未特指的胃溃疡，伴穿孔",
       "case_count": 1,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -693,6 +782,7 @@
     {
       "icd_code": "K260",
       "long_title": "Acute duodenal ulcer with hemorrhage",
+      "long_title_zh": "急性十二指肠溃疡，伴出血",
       "case_count": 1,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）",
@@ -703,6 +793,7 @@
     {
       "icd_code": "K261",
       "long_title": "Acute duodenal ulcer with perforation",
+      "long_title_zh": "急性十二指肠溃疡，伴穿孔",
       "case_count": 1,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -712,6 +803,7 @@
     {
       "icd_code": "K264",
       "long_title": "Chronic or unspecified duodenal ulcer with hemorrhage",
+      "long_title_zh": "慢性或未特指的十二指肠溃疡，伴出血",
       "case_count": 13,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）",
@@ -722,6 +814,7 @@
     {
       "icd_code": "K265",
       "long_title": "Chronic or unspecified duodenal ulcer with perforation",
+      "long_title_zh": "慢性或未特指的十二指肠溃疡，伴穿孔",
       "case_count": 1,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -731,6 +824,7 @@
     {
       "icd_code": "K269",
       "long_title": "Duodenal ulcer, unspecified as acute or chronic, without hemorrhage or perforation",
+      "long_title_zh": "十二指肠溃疡，未特指急性或慢性，不伴出血或穿孔",
       "case_count": 2,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -740,6 +834,7 @@
     {
       "icd_code": "K284",
       "long_title": "Chronic or unspecified gastrojejunal ulcer with hemorrhage",
+      "long_title_zh": "慢性或未特指的胃空肠溃疡，伴出血",
       "case_count": 2,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）",
@@ -750,6 +845,7 @@
     {
       "icd_code": "K285",
       "long_title": "Chronic or unspecified gastrojejunal ulcer with perforation",
+      "long_title_zh": "慢性或未特指的胃空肠溃疡，伴穿孔",
       "case_count": 2,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -759,6 +855,7 @@
     {
       "icd_code": "K289",
       "long_title": "Gastrojejunal ulcer, unspecified as acute or chronic, without hemorrhage or perforation",
+      "long_title_zh": "胃空肠溃疡，未特指急性或慢性，不伴出血或穿孔",
       "case_count": 2,
       "applicable_guidelines": [
         "日本胃肠病学会消化性溃疡循证临床实践指南(2020版)解读",
@@ -768,12 +865,14 @@
     {
       "icd_code": "K2920",
       "long_title": "Alcoholic gastritis without bleeding",
+      "long_title_zh": "酒精性胃炎，不伴出血",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K2950",
       "long_title": "Unspecified chronic gastritis without bleeding",
+      "long_title_zh": "未特指的慢性胃炎，不伴出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国慢性胃炎诊治指南（2022年，上海）"
@@ -782,54 +881,63 @@
     {
       "icd_code": "K2960",
       "long_title": "Other gastritis without bleeding",
+      "long_title_zh": "其他胃炎，不伴出血",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K2961",
       "long_title": "Other gastritis with bleeding",
+      "long_title_zh": "其他胃炎，伴出血",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K2970",
       "long_title": "Gastritis, unspecified, without bleeding",
+      "long_title_zh": "胃炎，未特指，不伴出血",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K2971",
       "long_title": "Gastritis, unspecified, with bleeding",
+      "long_title_zh": "胃炎，未特指，伴出血",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K30",
       "long_title": "Functional dyspepsia",
+      "long_title_zh": "功能性消化不良",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K311",
       "long_title": "Adult hypertrophic pyloric stenosis",
+      "long_title_zh": "成人肥厚性幽门狭窄",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K315",
       "long_title": "Obstruction of duodenum",
+      "long_title_zh": "十二指肠梗阻",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K317",
       "long_title": "Polyp of stomach and duodenum",
+      "long_title_zh": "胃和十二指肠息肉",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K31811",
       "long_title": "Angiodysplasia of stomach and duodenum with bleeding",
+      "long_title_zh": "胃和十二指肠血管发育不良，伴出血",
       "case_count": 3,
       "applicable_guidelines": [
         "急性上消化道出血急诊诊治流程专家共识（2020版）"
@@ -838,24 +946,28 @@
     {
       "icd_code": "K31819",
       "long_title": "Angiodysplasia of stomach and duodenum without bleeding",
+      "long_title_zh": "胃和十二指肠血管发育不良，不伴出血",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K3182",
       "long_title": "Dieulafoy lesion (hemorrhagic) of stomach and duodenum",
+      "long_title_zh": "胃和十二指肠Dieulafoy病变（出血性）",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K3184",
       "long_title": "Gastroparesis",
+      "long_title_zh": "胃轻瘫",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K352",
       "long_title": "Acute appendicitis with generalized peritonitis",
+      "long_title_zh": "急性阑尾炎，伴弥漫性腹膜炎",
       "case_count": 12,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -865,6 +977,7 @@
     {
       "icd_code": "K353",
       "long_title": "Acute appendicitis with localized peritonitis",
+      "long_title_zh": "急性阑尾炎，伴局限性腹膜炎",
       "case_count": 17,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -874,6 +987,7 @@
     {
       "icd_code": "K3530",
       "long_title": "Acute appendicitis with localized peritonitis, without perforation or gangrene",
+      "long_title_zh": "急性阑尾炎，伴局限性腹膜炎，不伴穿孔或坏疽",
       "case_count": 1,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -883,6 +997,7 @@
     {
       "icd_code": "K3532",
       "long_title": "Acute appendicitis with perforation, localized peritonitis, and gangrene, without abscess",
+      "long_title_zh": "急性阑尾炎，伴穿孔、局限性腹膜炎和坏疽，不伴脓肿",
       "case_count": 7,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -892,6 +1007,7 @@
     {
       "icd_code": "K3533",
       "long_title": "Acute appendicitis with perforation, localized peritonitis, and gangrene, with abscess",
+      "long_title_zh": "急性阑尾炎，伴穿孔、局限性腹膜炎和坏疽，伴脓肿",
       "case_count": 4,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -901,6 +1017,7 @@
     {
       "icd_code": "K3580",
       "long_title": "Unspecified acute appendicitis",
+      "long_title_zh": "急性阑尾炎，未特指",
       "case_count": 74,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -910,6 +1027,7 @@
     {
       "icd_code": "K3589",
       "long_title": "Other acute appendicitis",
+      "long_title_zh": "其他急性阑尾炎",
       "case_count": 1,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -919,6 +1037,7 @@
     {
       "icd_code": "K35891",
       "long_title": "Other acute appendicitis without perforation, with gangrene",
+      "long_title_zh": "其他急性阑尾炎，不伴穿孔，伴坏疽",
       "case_count": 1,
       "applicable_guidelines": [
         "急性阑尾炎超声检查及报告规范专家共识_2025版_",
@@ -928,6 +1047,7 @@
     {
       "icd_code": "K36",
       "long_title": "Other appendicitis",
+      "long_title_zh": "其他阑尾炎",
       "case_count": 1,
       "applicable_guidelines": [
         "美国胃肠内镜外科医师学会《阑尾炎诊断与治疗指南(2024)》解读"
@@ -936,6 +1056,7 @@
     {
       "icd_code": "K37",
       "long_title": "Unspecified appendicitis",
+      "long_title_zh": "阑尾炎，未特指",
       "case_count": 2,
       "applicable_guidelines": [
         "美国胃肠内镜外科医师学会《阑尾炎诊断与治疗指南(2024)》解读"
@@ -944,6 +1065,7 @@
     {
       "icd_code": "K4020",
       "long_title": "Bilateral inguinal hernia, without obstruction or gangrene, not specified as recurrent",
+      "long_title_zh": "双侧腹股沟疝，不伴梗阻或坏疽，未特指为复发性",
       "case_count": 1,
       "applicable_guidelines": [
         "腹股沟疝诊疗指南(2025版)"
@@ -952,6 +1074,7 @@
     {
       "icd_code": "K4091",
       "long_title": "Unilateral inguinal hernia, without obstruction or gangrene, recurrent",
+      "long_title_zh": "单侧腹股沟疝，不伴梗阻或坏疽，复发性",
       "case_count": 1,
       "applicable_guidelines": [
         "腹股沟疝诊疗指南(2025版)"
@@ -960,12 +1083,14 @@
     {
       "icd_code": "K4130",
       "long_title": "Unilateral femoral hernia, with obstruction, without gangrene, not specified as recurrent",
+      "long_title_zh": "单侧股疝，伴梗阻，不伴坏疽，未特指为复发性",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K420",
       "long_title": "Umbilical hernia with obstruction, without gangrene",
+      "long_title_zh": "脐疝，伴梗阻，不伴坏疽",
       "case_count": 6,
       "applicable_guidelines": [
         "成人脐疝诊疗指南(2026版)"
@@ -974,6 +1099,7 @@
     {
       "icd_code": "K421",
       "long_title": "Umbilical hernia with gangrene",
+      "long_title_zh": "脐疝，伴坏疽",
       "case_count": 1,
       "applicable_guidelines": [
         "成人脐疝诊疗指南(2026版)"
@@ -982,6 +1108,7 @@
     {
       "icd_code": "K429",
       "long_title": "Umbilical hernia without obstruction or gangrene",
+      "long_title_zh": "脐疝，不伴梗阻或坏疽",
       "case_count": 2,
       "applicable_guidelines": [
         "成人脐疝诊疗指南(2026版)"
@@ -990,6 +1117,7 @@
     {
       "icd_code": "K430",
       "long_title": "Incisional hernia with obstruction, without gangrene",
+      "long_title_zh": "切口疝，伴梗阻，不伴坏疽",
       "case_count": 8,
       "applicable_guidelines": [
         "腹壁切口疝诊断和治疗指南(2025版)"
@@ -998,42 +1126,49 @@
     {
       "icd_code": "K435",
       "long_title": "Parastomal hernia without obstruction or gangrene",
+      "long_title_zh": "造口旁疝，不伴梗阻或坏疽",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K436",
       "long_title": "Other and unspecified ventral hernia with obstruction, without gangrene",
+      "long_title_zh": "其他和未特指的腹壁疝，伴梗阻，不伴坏疽",
       "case_count": 8,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K440",
       "long_title": "Diaphragmatic hernia with obstruction, without gangrene",
+      "long_title_zh": "膈疝，伴梗阻，不伴坏疽",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K449",
       "long_title": "Diaphragmatic hernia without obstruction or gangrene",
+      "long_title_zh": "膈疝，不伴梗阻或坏疽",
       "case_count": 9,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K450",
       "long_title": "Other specified abdominal hernia with obstruction, without gangrene",
+      "long_title_zh": "其他特指的腹疝，伴梗阻，不伴坏疽",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K460",
       "long_title": "Unspecified abdominal hernia with obstruction, without gangrene",
+      "long_title_zh": "未特指的腹疝，伴梗阻，不伴坏疽",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5000",
       "long_title": "Crohn's disease of small intestine without complications",
+      "long_title_zh": "小肠克罗恩病，不伴并发症",
       "case_count": 6,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1042,6 +1177,7 @@
     {
       "icd_code": "K50012",
       "long_title": "Crohn's disease of small intestine with intestinal obstruction",
+      "long_title_zh": "小肠克罗恩病，伴肠梗阻",
       "case_count": 5,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）",
@@ -1051,6 +1187,7 @@
     {
       "icd_code": "K50014",
       "long_title": "Crohn's disease of small intestine with abscess",
+      "long_title_zh": "小肠克罗恩病，伴脓肿",
       "case_count": 3,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1059,6 +1196,7 @@
     {
       "icd_code": "K50018",
       "long_title": "Crohn's disease of small intestine with other complication",
+      "long_title_zh": "小肠克罗恩病，伴其他并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1067,6 +1205,7 @@
     {
       "icd_code": "K50019",
       "long_title": "Crohn's disease of small intestine with unspecified complications",
+      "long_title_zh": "小肠克罗恩病，伴未特指并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1075,6 +1214,7 @@
     {
       "icd_code": "K5010",
       "long_title": "Crohn's disease of large intestine without complications",
+      "long_title_zh": "大肠克罗恩病，不伴并发症",
       "case_count": 3,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1083,6 +1223,7 @@
     {
       "icd_code": "K50112",
       "long_title": "Crohn's disease of large intestine with intestinal obstruction",
+      "long_title_zh": "大肠克罗恩病，伴肠梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1091,6 +1232,7 @@
     {
       "icd_code": "K50113",
       "long_title": "Crohn's disease of large intestine with fistula",
+      "long_title_zh": "大肠克罗恩病，伴瘘",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1099,6 +1241,7 @@
     {
       "icd_code": "K5080",
       "long_title": "Crohn's disease of both small and large intestine without complications",
+      "long_title_zh": "小肠和大肠克罗恩病，不伴并发症",
       "case_count": 2,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1107,6 +1250,7 @@
     {
       "icd_code": "K50811",
       "long_title": "Crohn's disease of both small and large intestine with rectal bleeding",
+      "long_title_zh": "小肠和大肠克罗恩病，伴直肠出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1115,6 +1259,7 @@
     {
       "icd_code": "K50812",
       "long_title": "Crohn's disease of both small and large intestine with intestinal obstruction",
+      "long_title_zh": "小肠和大肠克罗恩病，伴肠梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1123,6 +1268,7 @@
     {
       "icd_code": "K50813",
       "long_title": "Crohn's disease of both small and large intestine with fistula",
+      "long_title_zh": "小肠和大肠克罗恩病，伴瘘",
       "case_count": 2,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1131,6 +1277,7 @@
     {
       "icd_code": "K50814",
       "long_title": "Crohn's disease of both small and large intestine with abscess",
+      "long_title_zh": "小肠和大肠克罗恩病，伴脓肿",
       "case_count": 2,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1139,6 +1286,7 @@
     {
       "icd_code": "K5090",
       "long_title": "Crohn's disease, unspecified, without complications",
+      "long_title_zh": "克罗恩病，未特指，不伴并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1147,6 +1295,7 @@
     {
       "icd_code": "K50912",
       "long_title": "Crohn's disease, unspecified, with intestinal obstruction",
+      "long_title_zh": "克罗恩病，未特指，伴肠梗阻",
       "case_count": 6,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1155,6 +1304,7 @@
     {
       "icd_code": "K50914",
       "long_title": "Crohn's disease, unspecified, with abscess",
+      "long_title_zh": "克罗恩病，未特指，伴脓肿",
       "case_count": 1,
       "applicable_guidelines": [
         "中国克罗恩病诊治指南（2023年·广州）"
@@ -1163,6 +1313,7 @@
     {
       "icd_code": "K5100",
       "long_title": "Ulcerative (chronic) pancolitis without complications",
+      "long_title_zh": "溃疡性（慢性）全结肠炎，不伴并发症",
       "case_count": 5,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1171,6 +1322,7 @@
     {
       "icd_code": "K51011",
       "long_title": "Ulcerative (chronic) pancolitis with rectal bleeding",
+      "long_title_zh": "溃疡性（慢性）全结肠炎，伴直肠出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1179,6 +1331,7 @@
     {
       "icd_code": "K5120",
       "long_title": "Ulcerative (chronic) proctitis without complications",
+      "long_title_zh": "溃疡性（慢性）直肠炎，不伴并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1187,6 +1340,7 @@
     {
       "icd_code": "K51211",
       "long_title": "Ulcerative (chronic) proctitis with rectal bleeding",
+      "long_title_zh": "溃疡性（慢性）直肠炎，伴直肠出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1195,6 +1349,7 @@
     {
       "icd_code": "K51318",
       "long_title": "Ulcerative (chronic) rectosigmoiditis with other complication",
+      "long_title_zh": "溃疡性（慢性）直肠乙状结肠炎，伴其他并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1203,6 +1358,7 @@
     {
       "icd_code": "K51511",
       "long_title": "Left sided colitis with rectal bleeding",
+      "long_title_zh": "左侧结肠炎，伴直肠出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1211,6 +1367,7 @@
     {
       "icd_code": "K51512",
       "long_title": "Left sided colitis with intestinal obstruction",
+      "long_title_zh": "左侧结肠炎，伴肠梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1219,6 +1376,7 @@
     {
       "icd_code": "K5180",
       "long_title": "Other ulcerative colitis without complications",
+      "long_title_zh": "其他溃疡性结肠炎，不伴并发症",
       "case_count": 2,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1227,6 +1385,7 @@
     {
       "icd_code": "K51811",
       "long_title": "Other ulcerative colitis with rectal bleeding",
+      "long_title_zh": "其他溃疡性结肠炎，伴直肠出血",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1235,6 +1394,7 @@
     {
       "icd_code": "K5190",
       "long_title": "Ulcerative colitis, unspecified, without complications",
+      "long_title_zh": "溃疡性结肠炎，未特指，不伴并发症",
       "case_count": 12,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1243,6 +1403,7 @@
     {
       "icd_code": "K51911",
       "long_title": "Ulcerative colitis, unspecified with rectal bleeding",
+      "long_title_zh": "溃疡性结肠炎，未特指，伴直肠出血",
       "case_count": 4,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1251,6 +1412,7 @@
     {
       "icd_code": "K51918",
       "long_title": "Ulcerative colitis, unspecified with other complication",
+      "long_title_zh": "溃疡性结肠炎，未特指，伴其他并发症",
       "case_count": 1,
       "applicable_guidelines": [
         "中国溃疡性结肠炎诊治指南（2023年·西安）"
@@ -1259,36 +1421,42 @@
     {
       "icd_code": "K520",
       "long_title": "Gastroenteritis and colitis due to radiation",
+      "long_title_zh": "放射性胃肠炎和结肠炎",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K521",
       "long_title": "Toxic gastroenteritis and colitis",
+      "long_title_zh": "中毒性胃肠炎和结肠炎",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K52832",
       "long_title": "Lymphocytic colitis",
+      "long_title_zh": "淋巴细胞性结肠炎",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5289",
       "long_title": "Other specified noninfective gastroenteritis and colitis",
+      "long_title_zh": "其他特指的非感染性胃肠炎和结肠炎",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K529",
       "long_title": "Noninfective gastroenteritis and colitis, unspecified",
+      "long_title_zh": "非感染性胃肠炎和结肠炎，未特指",
       "case_count": 18,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K55021",
       "long_title": "Focal (segmental) acute infarction of small intestine",
+      "long_title_zh": "小肠局灶性（节段性）急性梗死",
       "case_count": 2,
       "applicable_guidelines": [
         "中国急性肠系膜缺血外科临床诊治专家共识",
@@ -1298,6 +1466,7 @@
     {
       "icd_code": "K55039",
       "long_title": "Acute (reversible) ischemia of large intestine, extent unspecified",
+      "long_title_zh": "大肠急性（可逆性）缺血，范围未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性肠系膜缺血外科临床诊治专家共识",
@@ -1308,6 +1477,7 @@
     {
       "icd_code": "K55059",
       "long_title": "Acute (reversible) ischemia of intestine, part and extent unspecified",
+      "long_title_zh": "肠急性（可逆性）缺血，部位和范围未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性肠系膜缺血外科临床诊治专家共识",
@@ -1317,6 +1487,7 @@
     {
       "icd_code": "K55069",
       "long_title": "Acute infarction of intestine, part and extent unspecified",
+      "long_title_zh": "肠急性梗死，部位和范围未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性肠系膜缺血外科临床诊治专家共识",
@@ -1326,6 +1497,7 @@
     {
       "icd_code": "K551",
       "long_title": "Chronic vascular disorders of intestine",
+      "long_title_zh": "肠慢性血管疾病",
       "case_count": 4,
       "applicable_guidelines": [
         "缺血性肠病的危险因素及其诊治研究进展"
@@ -1334,6 +1506,7 @@
     {
       "icd_code": "K5521",
       "long_title": "Angiodysplasia of colon with hemorrhage",
+      "long_title_zh": "结肠血管发育不良，伴出血",
       "case_count": 2,
       "applicable_guidelines": [
         "下消化道出血诊治指南（2020）",
@@ -1343,6 +1516,7 @@
     {
       "icd_code": "K559",
       "long_title": "Vascular disorder of intestine, unspecified",
+      "long_title_zh": "肠血管疾病，未特指",
       "case_count": 6,
       "applicable_guidelines": [
         "缺血性肠病的危险因素及其诊治研究进展"
@@ -1351,84 +1525,98 @@
     {
       "icd_code": "K561",
       "long_title": "Intussusception",
+      "long_title_zh": "肠套叠",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K562",
       "long_title": "Volvulus",
+      "long_title_zh": "肠扭转",
       "case_count": 5,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K565",
       "long_title": "Intestinal adhesions [bands] with obstruction (postinfection)",
+      "long_title_zh": "感染后肠粘连（索带）伴梗阻",
       "case_count": 5,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5650",
       "long_title": "Intestinal adhesions [bands], unspecified as to partial versus complete obstruction",
+      "long_title_zh": "肠粘连（索带），未特指部分性或完全性梗阻",
       "case_count": 6,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5651",
       "long_title": "Intestinal adhesions [bands], with partial obstruction",
+      "long_title_zh": "肠粘连（索带），伴部分性梗阻",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5660",
       "long_title": "Unspecified intestinal obstruction",
+      "long_title_zh": "肠梗阻，未特指",
       "case_count": 17,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K56600",
       "long_title": "Partial intestinal obstruction, unspecified as to cause",
+      "long_title_zh": "部分性肠梗阻，病因未特指",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K56609",
       "long_title": "Unspecified intestinal obstruction, unspecified as to partial versus complete obstruction",
+      "long_title_zh": "未特指的肠梗阻，未特指部分性或完全性",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5669",
       "long_title": "Other intestinal obstruction",
+      "long_title_zh": "其他肠梗阻",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K56699",
       "long_title": "Other intestinal obstruction unspecified as to partial versus complete obstruction",
+      "long_title_zh": "其他肠梗阻，未特指部分性或完全性",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K567",
       "long_title": "Ileus, unspecified",
+      "long_title_zh": "肠麻痹，未特指",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5700",
       "long_title": "Diverticulitis of small intestine with perforation and abscess without bleeding",
+      "long_title_zh": "小肠憩室炎，伴穿孔和脓肿，不伴出血",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5711",
       "long_title": "Diverticulosis of small intestine without perforation or abscess with bleeding",
+      "long_title_zh": "小肠憩室病，不伴穿孔或脓肿，伴出血",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5720",
       "long_title": "Diverticulitis of large intestine with perforation and abscess without bleeding",
+      "long_title_zh": "大肠憩室炎，伴穿孔和脓肿，不伴出血",
       "case_count": 32,
       "applicable_guidelines": [
         "2019版《日本结肠憩室出血和结肠憩室炎治疗指南》结肠憩室炎部分精要及解读",
@@ -1439,6 +1627,7 @@
     {
       "icd_code": "K5730",
       "long_title": "Diverticulosis of large intestine without perforation or abscess without bleeding",
+      "long_title_zh": "大肠憩室病，不伴穿孔或脓肿，不伴出血",
       "case_count": 2,
       "applicable_guidelines": [
         "结肠憩室疾病治疗进展"
@@ -1447,6 +1636,7 @@
     {
       "icd_code": "K5731",
       "long_title": "Diverticulosis of large intestine without perforation or abscess with bleeding",
+      "long_title_zh": "大肠憩室病，不伴穿孔或脓肿，伴出血",
       "case_count": 22,
       "applicable_guidelines": [
         "2019版《日本结肠憩室出血和结肠憩室炎治疗指南》结肠憩室炎部分精要及解读",
@@ -1456,6 +1646,7 @@
     {
       "icd_code": "K5732",
       "long_title": "Diverticulitis of large intestine without perforation or abscess without bleeding",
+      "long_title_zh": "大肠憩室炎，不伴穿孔或脓肿，不伴出血",
       "case_count": 22,
       "applicable_guidelines": [
         "2019版《日本结肠憩室出血和结肠憩室炎治疗指南》结肠憩室炎部分精要及解读",
@@ -1466,6 +1657,7 @@
     {
       "icd_code": "K5733",
       "long_title": "Diverticulitis of large intestine without perforation or abscess with bleeding",
+      "long_title_zh": "大肠憩室炎，不伴穿孔或脓肿，伴出血",
       "case_count": 1,
       "applicable_guidelines": [
         "2019版《日本结肠憩室出血和结肠憩室炎治疗指南》结肠憩室炎部分精要及解读",
@@ -1476,24 +1668,28 @@
     {
       "icd_code": "K5780",
       "long_title": "Diverticulitis of intestine, part unspecified, with perforation and abscess without bleeding",
+      "long_title_zh": "肠憩室炎，部位未特指，伴穿孔和脓肿，不伴出血",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5791",
       "long_title": "Diverticulosis of intestine, part unspecified, without perforation or abscess with bleeding",
+      "long_title_zh": "肠憩室病，部位未特指，不伴穿孔或脓肿，伴出血",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K5792",
       "long_title": "Diverticulitis of intestine, part unspecified, without perforation or abscess without bleeding",
+      "long_title_zh": "肠憩室炎，部位未特指，不伴穿孔或脓肿，不伴出血",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K580",
       "long_title": "Irritable bowel syndrome with diarrhea",
+      "long_title_zh": "腹泻型肠易激综合征",
       "case_count": 2,
       "applicable_guidelines": [
         "2020年美国胃肠病学会《肠易激综合征临床指南》解读及中美诊治对比"
@@ -1502,6 +1698,7 @@
     {
       "icd_code": "K589",
       "long_title": "Irritable bowel syndrome without diarrhea",
+      "long_title_zh": "非腹泻型肠易激综合征",
       "case_count": 1,
       "applicable_guidelines": [
         "2020年美国胃肠病学会《肠易激综合征临床指南》解读及中美诊治对比"
@@ -1510,6 +1707,7 @@
     {
       "icd_code": "K5900",
       "long_title": "Constipation, unspecified",
+      "long_title_zh": "便秘，未特指",
       "case_count": 6,
       "applicable_guidelines": [
         "中国成人慢性便秘评估与外科处理临床实践指南(2022版)",
@@ -1519,6 +1717,7 @@
     {
       "icd_code": "K5903",
       "long_title": "Drug induced constipation",
+      "long_title_zh": "药物性便秘",
       "case_count": 1,
       "applicable_guidelines": [
         "便秘外科诊治指南(2025版)"
@@ -1527,6 +1726,7 @@
     {
       "icd_code": "K5909",
       "long_title": "Other constipation",
+      "long_title_zh": "其他便秘",
       "case_count": 2,
       "applicable_guidelines": [
         "中国成人慢性便秘评估与外科处理临床实践指南(2022版)",
@@ -1536,126 +1736,147 @@
     {
       "icd_code": "K611",
       "long_title": "Rectal abscess",
+      "long_title_zh": "直肠脓肿",
       "case_count": 5,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K612",
       "long_title": "Anorectal abscess",
+      "long_title_zh": "肛门直肠脓肿",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K613",
       "long_title": "Ischiorectal abscess",
+      "long_title_zh": "坐骨直肠窝脓肿",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K621",
       "long_title": "Rectal polyp",
+      "long_title_zh": "直肠息肉",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K623",
       "long_title": "Rectal prolapse",
+      "long_title_zh": "直肠脱垂",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K625",
       "long_title": "Hemorrhage of anus and rectum",
+      "long_title_zh": "肛门和直肠出血",
       "case_count": 6,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K627",
       "long_title": "Radiation proctitis",
+      "long_title_zh": "放射性直肠炎",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K629",
       "long_title": "Disease of anus and rectum, unspecified",
+      "long_title_zh": "肛门和直肠疾病，未特指",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K630",
       "long_title": "Abscess of intestine",
+      "long_title_zh": "肠脓肿",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K631",
       "long_title": "Perforation of intestine (nontraumatic)",
+      "long_title_zh": "肠穿孔（非创伤性）",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K632",
       "long_title": "Fistula of intestine",
+      "long_title_zh": "肠瘘",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K633",
       "long_title": "Ulcer of intestine",
+      "long_title_zh": "肠溃疡",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K635",
       "long_title": "Polyp of colon",
+      "long_title_zh": "结肠息肉",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K640",
       "long_title": "First degree hemorrhoids",
+      "long_title_zh": "一度痔",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K642",
       "long_title": "Third degree hemorrhoids",
+      "long_title_zh": "三度痔",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K648",
       "long_title": "Other hemorrhoids",
+      "long_title_zh": "其他痔",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K649",
       "long_title": "Unspecified hemorrhoids",
+      "long_title_zh": "痔，未特指",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K651",
       "long_title": "Peritoneal abscess",
+      "long_title_zh": "腹膜脓肿",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K652",
       "long_title": "Spontaneous bacterial peritonitis",
+      "long_title_zh": "自发性细菌性腹膜炎",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K661",
       "long_title": "Hemoperitoneum",
+      "long_title_zh": "腹腔积血",
       "case_count": 7,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K7010",
       "long_title": "Alcoholic hepatitis without ascites",
+      "long_title_zh": "酒精性肝炎，不伴腹水",
       "case_count": 12,
       "applicable_guidelines": [
         "酒精性肝病防治指南(2018年更新版)"
@@ -1664,6 +1885,7 @@
     {
       "icd_code": "K7011",
       "long_title": "Alcoholic hepatitis with ascites",
+      "long_title_zh": "酒精性肝炎，伴腹水",
       "case_count": 13,
       "applicable_guidelines": [
         "酒精性肝病防治指南(2018年更新版)"
@@ -1672,6 +1894,7 @@
     {
       "icd_code": "K7030",
       "long_title": "Alcoholic cirrhosis of liver without ascites",
+      "long_title_zh": "酒精性肝硬化，不伴腹水",
       "case_count": 4,
       "applicable_guidelines": [
         "肝硬化临床诊治管理指南(2025版)",
@@ -1681,6 +1904,7 @@
     {
       "icd_code": "K7031",
       "long_title": "Alcoholic cirrhosis of liver with ascites",
+      "long_title_zh": "酒精性肝硬化，伴腹水",
       "case_count": 33,
       "applicable_guidelines": [
         "肝硬化临床诊治管理指南(2025版)",
@@ -1691,6 +1915,7 @@
     {
       "icd_code": "K7040",
       "long_title": "Alcoholic hepatic failure without coma",
+      "long_title_zh": "酒精性肝衰竭，不伴昏迷",
       "case_count": 8,
       "applicable_guidelines": [
         "酒精性肝病防治指南(2018年更新版)"
@@ -1699,6 +1924,7 @@
     {
       "icd_code": "K710",
       "long_title": "Toxic liver disease with cholestasis",
+      "long_title_zh": "中毒性肝病，伴胆汁淤积",
       "case_count": 2,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）"
@@ -1707,6 +1933,7 @@
     {
       "icd_code": "K7110",
       "long_title": "Toxic liver disease with hepatic necrosis, without coma",
+      "long_title_zh": "中毒性肝病，伴肝坏死，不伴昏迷",
       "case_count": 2,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）"
@@ -1715,6 +1942,7 @@
     {
       "icd_code": "K712",
       "long_title": "Toxic liver disease with acute hepatitis",
+      "long_title_zh": "中毒性肝病，伴急性肝炎",
       "case_count": 1,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）"
@@ -1723,6 +1951,7 @@
     {
       "icd_code": "K7151",
       "long_title": "Toxic liver disease with chronic active hepatitis with ascites",
+      "long_title_zh": "中毒性肝病，伴慢性活动性肝炎和腹水",
       "case_count": 1,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）"
@@ -1731,6 +1960,7 @@
     {
       "icd_code": "K716",
       "long_title": "Toxic liver disease with hepatitis, not elsewhere classified",
+      "long_title_zh": "中毒性肝病，伴肝炎，不可归类在他处者",
       "case_count": 1,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）"
@@ -1739,6 +1969,7 @@
     {
       "icd_code": "K717",
       "long_title": "Toxic liver disease with fibrosis and cirrhosis of liver",
+      "long_title_zh": "中毒性肝病，伴肝纤维化和肝硬化",
       "case_count": 1,
       "applicable_guidelines": [
         "中国药物性肝损伤基层诊疗与管理指南（2024年）",
@@ -1749,24 +1980,28 @@
     {
       "icd_code": "K7200",
       "long_title": "Acute and subacute hepatic failure without coma",
+      "long_title_zh": "急性和亚急性肝衰竭，不伴昏迷",
       "case_count": 11,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K7290",
       "long_title": "Hepatic failure, unspecified without coma",
+      "long_title_zh": "肝衰竭，未特指，不伴昏迷",
       "case_count": 7,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K7291",
       "long_title": "Hepatic failure, unspecified with coma",
+      "long_title_zh": "肝衰竭，未特指，伴昏迷",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K743",
       "long_title": "Primary biliary cirrhosis",
+      "long_title_zh": "原发性胆汁性肝硬化",
       "case_count": 1,
       "applicable_guidelines": [
         "原发性胆汁性胆管炎诊疗指南(2025年版)",
@@ -1776,6 +2011,7 @@
     {
       "icd_code": "K7460",
       "long_title": "Unspecified cirrhosis of liver",
+      "long_title_zh": "肝硬化，未特指",
       "case_count": 3,
       "applicable_guidelines": [
         "肝硬化临床诊治管理指南(2025版)"
@@ -1784,6 +2020,7 @@
     {
       "icd_code": "K7469",
       "long_title": "Other cirrhosis of liver",
+      "long_title_zh": "其他肝硬化",
       "case_count": 15,
       "applicable_guidelines": [
         "肝硬化临床诊治管理指南(2025版)"
@@ -1792,18 +2029,21 @@
     {
       "icd_code": "K750",
       "long_title": "Abscess of liver",
+      "long_title_zh": "肝脓肿",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K754",
       "long_title": "Autoimmune hepatitis",
+      "long_title_zh": "自身免疫性肝炎",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K7581",
       "long_title": "Nonalcoholic steatohepatitis (NASH)",
+      "long_title_zh": "非酒精性脂肪性肝炎（NASH）",
       "case_count": 5,
       "applicable_guidelines": [
         "代谢相关(非酒精性)脂肪性肝病防治指南(2024年版)"
@@ -1812,18 +2052,21 @@
     {
       "icd_code": "K766",
       "long_title": "Portal hypertension",
+      "long_title_zh": "门静脉高压",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K767",
       "long_title": "Hepatorenal syndrome",
+      "long_title_zh": "肝肾综合征",
       "case_count": 4,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K8000",
       "long_title": "Calculus of gallbladder with acute cholecystitis without obstruction",
+      "long_title_zh": "胆囊结石伴急性胆囊炎，不伴梗阻",
       "case_count": 22,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1835,6 +2078,7 @@
     {
       "icd_code": "K8001",
       "long_title": "Calculus of gallbladder with acute cholecystitis with obstruction",
+      "long_title_zh": "胆囊结石伴急性胆囊炎，伴梗阻",
       "case_count": 4,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1846,6 +2090,7 @@
     {
       "icd_code": "K8010",
       "long_title": "Calculus of gallbladder with chronic cholecystitis without obstruction",
+      "long_title_zh": "胆囊结石伴慢性胆囊炎，不伴梗阻",
       "case_count": 8,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1857,6 +2102,7 @@
     {
       "icd_code": "K8012",
       "long_title": "Calculus of gallbladder with acute and chronic cholecystitis without obstruction",
+      "long_title_zh": "胆囊结石伴急慢性胆囊炎，不伴梗阻",
       "case_count": 30,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1868,6 +2114,7 @@
     {
       "icd_code": "K8013",
       "long_title": "Calculus of gallbladder with acute and chronic cholecystitis with obstruction",
+      "long_title_zh": "胆囊结石伴急慢性胆囊炎，伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1879,6 +2126,7 @@
     {
       "icd_code": "K8020",
       "long_title": "Calculus of gallbladder without cholecystitis without obstruction",
+      "long_title_zh": "胆囊结石不伴胆囊炎，不伴梗阻",
       "case_count": 9,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1889,6 +2137,7 @@
     {
       "icd_code": "K8021",
       "long_title": "Calculus of gallbladder without cholecystitis with obstruction",
+      "long_title_zh": "胆囊结石不伴胆囊炎，伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1899,6 +2148,7 @@
     {
       "icd_code": "K8030",
       "long_title": "Calculus of bile duct with cholangitis, unspecified, without obstruction",
+      "long_title_zh": "胆管结石伴未特指胆管炎，不伴梗阻",
       "case_count": 3,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1907,6 +2157,7 @@
     {
       "icd_code": "K8031",
       "long_title": "Calculus of bile duct with cholangitis, unspecified, with obstruction",
+      "long_title_zh": "胆管结石伴未特指胆管炎，伴梗阻",
       "case_count": 6,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1915,6 +2166,7 @@
     {
       "icd_code": "K8032",
       "long_title": "Calculus of bile duct with acute cholangitis without obstruction",
+      "long_title_zh": "胆管结石伴急性胆管炎，不伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1923,6 +2175,7 @@
     {
       "icd_code": "K8033",
       "long_title": "Calculus of bile duct with acute cholangitis with obstruction",
+      "long_title_zh": "胆管结石伴急性胆管炎，伴梗阻",
       "case_count": 4,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1931,6 +2184,7 @@
     {
       "icd_code": "K8040",
       "long_title": "Calculus of bile duct with cholecystitis, unspecified, without obstruction",
+      "long_title_zh": "胆管结石伴未特指胆囊炎，不伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1939,6 +2193,7 @@
     {
       "icd_code": "K8041",
       "long_title": "Calculus of bile duct with cholecystitis, unspecified, with obstruction",
+      "long_title_zh": "胆管结石伴未特指胆囊炎，伴梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -1947,6 +2202,7 @@
     {
       "icd_code": "K8042",
       "long_title": "Calculus of bile duct with acute cholecystitis without obstruction",
+      "long_title_zh": "胆管结石伴急性胆囊炎，不伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "胆囊炎中西医结合诊疗专家共识（2025年）",
@@ -1956,6 +2212,7 @@
     {
       "icd_code": "K8043",
       "long_title": "Calculus of bile duct with acute cholecystitis with obstruction",
+      "long_title_zh": "胆管结石伴急性胆囊炎，伴梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "胆囊炎中西医结合诊疗专家共识（2025年）",
@@ -1965,6 +2222,7 @@
     {
       "icd_code": "K8044",
       "long_title": "Calculus of bile duct with chronic cholecystitis without obstruction",
+      "long_title_zh": "胆管结石伴慢性胆囊炎，不伴梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1975,6 +2233,7 @@
     {
       "icd_code": "K8045",
       "long_title": "Calculus of bile duct with chronic cholecystitis with obstruction",
+      "long_title_zh": "胆管结石伴慢性胆囊炎，伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1985,6 +2244,7 @@
     {
       "icd_code": "K8046",
       "long_title": "Calculus of bile duct with acute and chronic cholecystitis without obstruction",
+      "long_title_zh": "胆管结石伴急慢性胆囊炎，不伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -1995,6 +2255,7 @@
     {
       "icd_code": "K8047",
       "long_title": "Calculus of bile duct with acute and chronic cholecystitis with obstruction",
+      "long_title_zh": "胆管结石伴急慢性胆囊炎，伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2005,6 +2266,7 @@
     {
       "icd_code": "K8050",
       "long_title": "Calculus of bile duct without cholangitis or cholecystitis without obstruction",
+      "long_title_zh": "胆管结石不伴胆管炎或胆囊炎，不伴梗阻",
       "case_count": 14,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -2013,6 +2275,7 @@
     {
       "icd_code": "K8051",
       "long_title": "Calculus of bile duct without cholangitis or cholecystitis with obstruction",
+      "long_title_zh": "胆管结石不伴胆管炎或胆囊炎，伴梗阻",
       "case_count": 23,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -2021,6 +2284,7 @@
     {
       "icd_code": "K8062",
       "long_title": "Calculus of gallbladder and bile duct with acute cholecystitis without obstruction",
+      "long_title_zh": "胆囊和胆管结石伴急性胆囊炎，不伴梗阻",
       "case_count": 4,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2032,6 +2296,7 @@
     {
       "icd_code": "K8063",
       "long_title": "Calculus of gallbladder and bile duct with acute cholecystitis with obstruction",
+      "long_title_zh": "胆囊和胆管结石伴急性胆囊炎，伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2043,6 +2308,7 @@
     {
       "icd_code": "K8064",
       "long_title": "Calculus of gallbladder and bile duct with chronic cholecystitis without obstruction",
+      "long_title_zh": "胆囊和胆管结石伴慢性胆囊炎，不伴梗阻",
       "case_count": 4,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2054,6 +2320,7 @@
     {
       "icd_code": "K8065",
       "long_title": "Calculus of gallbladder and bile duct with chronic cholecystitis with obstruction",
+      "long_title_zh": "胆囊和胆管结石伴慢性胆囊炎，伴梗阻",
       "case_count": 3,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2065,6 +2332,7 @@
     {
       "icd_code": "K8066",
       "long_title": "Calculus of gallbladder and bile duct with acute and chronic cholecystitis without obstruction",
+      "long_title_zh": "胆囊和胆管结石伴急慢性胆囊炎，不伴梗阻",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2076,6 +2344,7 @@
     {
       "icd_code": "K8067",
       "long_title": "Calculus of gallbladder and bile duct with acute and chronic cholecystitis with obstruction",
+      "long_title_zh": "胆囊和胆管结石伴急慢性胆囊炎，伴梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2087,6 +2356,7 @@
     {
       "icd_code": "K8070",
       "long_title": "Calculus of gallbladder and bile duct without cholecystitis without obstruction",
+      "long_title_zh": "胆囊和胆管结石不伴胆囊炎，不伴梗阻",
       "case_count": 5,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2097,6 +2367,7 @@
     {
       "icd_code": "K8071",
       "long_title": "Calculus of gallbladder and bile duct without cholecystitis with obstruction",
+      "long_title_zh": "胆囊和胆管结石不伴胆囊炎，伴梗阻",
       "case_count": 5,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2107,6 +2378,7 @@
     {
       "icd_code": "K8081",
       "long_title": "Other cholelithiasis with obstruction",
+      "long_title_zh": "其他胆石症，伴梗阻",
       "case_count": 1,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -2115,6 +2387,7 @@
     {
       "icd_code": "K810",
       "long_title": "Acute cholecystitis",
+      "long_title_zh": "急性胆囊炎",
       "case_count": 14,
       "applicable_guidelines": [
         "胆囊炎中西医结合诊疗专家共识（2025年）",
@@ -2124,6 +2397,7 @@
     {
       "icd_code": "K811",
       "long_title": "Chronic cholecystitis",
+      "long_title_zh": "慢性胆囊炎",
       "case_count": 2,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2134,6 +2408,7 @@
     {
       "icd_code": "K812",
       "long_title": "Acute cholecystitis with chronic cholecystitis",
+      "long_title_zh": "急性胆囊炎伴慢性胆囊炎",
       "case_count": 1,
       "applicable_guidelines": [
         "中国慢性胆囊炎、胆囊结石内科诊疗共识意见(2018年)",
@@ -2144,6 +2419,7 @@
     {
       "icd_code": "K819",
       "long_title": "Cholecystitis, unspecified",
+      "long_title_zh": "胆囊炎，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "胆囊炎中西医结合诊疗专家共识（2025年）",
@@ -2153,6 +2429,7 @@
     {
       "icd_code": "K822",
       "long_title": "Perforation of gallbladder",
+      "long_title_zh": "胆囊穿孔",
       "case_count": 1,
       "applicable_guidelines": [
         "胆囊良性疾病外科治疗的专家共识(2021版)"
@@ -2161,24 +2438,28 @@
     {
       "icd_code": "K830",
       "long_title": "Cholangitis",
+      "long_title_zh": "胆管炎",
       "case_count": 10,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K8309",
       "long_title": "Other cholangitis",
+      "long_title_zh": "其他胆管炎",
       "case_count": 3,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K831",
       "long_title": "Obstruction of bile duct",
+      "long_title_zh": "胆管梗阻",
       "case_count": 32,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K8500",
       "long_title": "Idiopathic acute pancreatitis without necrosis or infection",
+      "long_title_zh": "特发性急性胰腺炎，不伴坏死或感染",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2187,6 +2468,7 @@
     {
       "icd_code": "K8502",
       "long_title": "Idiopathic acute pancreatitis with infected necrosis",
+      "long_title_zh": "特发性急性胰腺炎，伴感染性坏死",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2195,6 +2477,7 @@
     {
       "icd_code": "K851",
       "long_title": "Biliary acute pancreatitis",
+      "long_title_zh": "胆源性急性胰腺炎",
       "case_count": 7,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2203,6 +2486,7 @@
     {
       "icd_code": "K8510",
       "long_title": "Biliary acute pancreatitis without necrosis or infection",
+      "long_title_zh": "胆源性急性胰腺炎，不伴坏死或感染",
       "case_count": 16,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2211,6 +2495,7 @@
     {
       "icd_code": "K8511",
       "long_title": "Biliary acute pancreatitis with uninfected necrosis",
+      "long_title_zh": "胆源性急性胰腺炎，伴非感染性坏死",
       "case_count": 4,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2219,6 +2504,7 @@
     {
       "icd_code": "K852",
       "long_title": "Alcohol induced acute pancreatitis",
+      "long_title_zh": "酒精诱发的急性胰腺炎",
       "case_count": 4,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2227,6 +2513,7 @@
     {
       "icd_code": "K8520",
       "long_title": "Alcohol induced acute pancreatitis without necrosis or infection",
+      "long_title_zh": "酒精诱发的急性胰腺炎，不伴坏死或感染",
       "case_count": 7,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2235,6 +2522,7 @@
     {
       "icd_code": "K8521",
       "long_title": "Alcohol induced acute pancreatitis with uninfected necrosis",
+      "long_title_zh": "酒精诱发的急性胰腺炎，伴非感染性坏死",
       "case_count": 7,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2243,6 +2531,7 @@
     {
       "icd_code": "K853",
       "long_title": "Drug induced acute pancreatitis",
+      "long_title_zh": "药物诱发的急性胰腺炎",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2251,6 +2540,7 @@
     {
       "icd_code": "K858",
       "long_title": "Other acute pancreatitis",
+      "long_title_zh": "其他急性胰腺炎",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2259,6 +2549,7 @@
     {
       "icd_code": "K8580",
       "long_title": "Other acute pancreatitis without necrosis or infection",
+      "long_title_zh": "其他急性胰腺炎，不伴坏死或感染",
       "case_count": 4,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2267,6 +2558,7 @@
     {
       "icd_code": "K8581",
       "long_title": "Other acute pancreatitis with uninfected necrosis",
+      "long_title_zh": "其他急性胰腺炎，伴非感染性坏死",
       "case_count": 2,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2275,6 +2567,7 @@
     {
       "icd_code": "K859",
       "long_title": "Acute pancreatitis, unspecified",
+      "long_title_zh": "急性胰腺炎，未特指",
       "case_count": 5,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2283,6 +2576,7 @@
     {
       "icd_code": "K8590",
       "long_title": "Acute pancreatitis without necrosis or infection, unspecified",
+      "long_title_zh": "急性胰腺炎，不伴坏死或感染，未特指",
       "case_count": 13,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2291,6 +2585,7 @@
     {
       "icd_code": "K8592",
       "long_title": "Acute pancreatitis with infected necrosis, unspecified",
+      "long_title_zh": "急性胰腺炎，伴感染性坏死，未特指",
       "case_count": 1,
       "applicable_guidelines": [
         "中国急性胰腺炎诊治指南(2021)"
@@ -2299,6 +2594,7 @@
     {
       "icd_code": "K861",
       "long_title": "Other chronic pancreatitis",
+      "long_title_zh": "其他慢性胰腺炎",
       "case_count": 6,
       "applicable_guidelines": [
         "慢性胰腺炎诊治指南（2018，广州）"
@@ -2307,36 +2603,42 @@
     {
       "icd_code": "K863",
       "long_title": "Pseudocyst of pancreas",
+      "long_title_zh": "胰腺假性囊肿",
       "case_count": 5,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K900",
       "long_title": "Celiac disease",
+      "long_title_zh": "乳糜泻",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K913",
       "long_title": "Postprocedural intestinal obstruction",
+      "long_title_zh": "操作后肠梗阻",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K9131",
       "long_title": "Postprocedural partial intestinal obstruction",
+      "long_title_zh": "操作后部分性肠梗阻",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K91850",
       "long_title": "Pouchitis",
+      "long_title_zh": "储袋炎",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "K9186",
       "long_title": "Retained cholelithiasis following cholecystectomy",
+      "long_title_zh": "胆囊切除术后残留胆石症",
       "case_count": 9,
       "applicable_guidelines": [
         "胆石症中西医结合诊疗专家共识（2025年）"
@@ -2345,12 +2647,14 @@
     {
       "icd_code": "K922",
       "long_title": "Gastrointestinal hemorrhage, unspecified",
+      "long_title_zh": "胃肠道出血，未特指",
       "case_count": 15,
       "applicable_guidelines": []
     },
     {
       "icd_code": "Q2733",
       "long_title": "Arteriovenous malformation of digestive system vessel",
+      "long_title_zh": "消化系统血管动静脉畸形",
       "case_count": 1,
       "applicable_guidelines": [
         "血管瘤与脉管畸形诊疗指南（2024版）"
@@ -2359,36 +2663,42 @@
     {
       "icd_code": "Q430",
       "long_title": "Meckel's diverticulum (displaced) (hypertrophic)",
+      "long_title_zh": "梅克尔憩室（异位性）（肥厚性）",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "Q446",
       "long_title": "Cystic disease of liver",
+      "long_title_zh": "肝囊性疾病",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "R160",
       "long_title": "Hepatomegaly, not elsewhere classified",
+      "long_title_zh": "肝大，不可归类在他处者",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "R188",
       "long_title": "Other ascites",
+      "long_title_zh": "其他腹水",
       "case_count": 2,
       "applicable_guidelines": []
     },
     {
       "icd_code": "T85590A",
       "long_title": "Other mechanical complication of bile duct prosthesis, initial encounter",
+      "long_title_zh": "胆管假体的其他机械性并发症，初次就诊",
       "case_count": 1,
       "applicable_guidelines": []
     },
     {
       "icd_code": "T8641",
       "long_title": "Liver transplant rejection",
+      "long_title_zh": "肝移植排斥反应",
       "case_count": 2,
       "applicable_guidelines": []
     }
